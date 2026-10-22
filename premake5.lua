@@ -20,6 +20,7 @@ IncludeDir["ImGui"] = "Source/ThirdParty/ImGui"
 IncludeDir["stb"]   = "Source/ThirdParty/stb"
 IncludeDir["json"]  = "Source/ThirdParty/json"
 IncludeDir["Lua"] = "Source/ThirdParty/Lua/src"
+IncludeDir["sol2"] = "Source/ThirdParty/sol2/include"
 -- premake의 filter는 project()를 만나면 초기화된다.
 -- 두 프로젝트가 같은 런타임(/MDd vs /MD)으로 컴파일되지 않으면 링크가 실패하므로
 -- 공통 설정을 함수로 묶어 각 프로젝트에서 호출한다.
@@ -168,6 +169,7 @@ project "HitoriEngine"
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.json}",
 		"%{IncludeDir.Lua}",
+		"%{IncludeDir.sol2}",
 	}
 
 	links
@@ -210,6 +212,7 @@ project "HitoriEditor"
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.json}",
 		"%{IncludeDir.Lua}",
+		"%{IncludeDir.sol2}",
 	}
 
 	links
