@@ -19,7 +19,7 @@ IncludeDir = {}
 IncludeDir["ImGui"] = "Source/ThirdParty/ImGui"
 IncludeDir["stb"]   = "Source/ThirdParty/stb"
 IncludeDir["json"]  = "Source/ThirdParty/json"
-
+IncludeDir["Lua"] = "Source/ThirdParty/Lua/src"
 -- premake의 filter는 project()를 만나면 초기화된다.
 -- 두 프로젝트가 같은 런타임(/MDd vs /MD)으로 컴파일되지 않으면 링크가 실패하므로
 -- 공통 설정을 함수로 묶어 각 프로젝트에서 호출한다.
@@ -117,7 +117,33 @@ project "ImGui"
 		"dxguid.lib",
 		"d3dcompiler.lib",
 	}
+project "Lua"
+    	location "Source/ThirdParty/Lua"
+    	kind     "StaticLib"
+    	CommonSettings()
 
+    	-- 공통 CRT 설정을 유지하고, Lua 원본은 C로 컴파일한다.
+    	language   "C"
+    	cppdialect "Default"
+
+    	files
+    	{
+        	"%{IncludeDir.Lua}/*.c",
+        	"%{IncludeDir.Lua}/*.h",
+        	"%{IncludeDir.Lua}/*.hpp",
+    	}
+
+    	-- 독립 실행 프로그램의 진입점은 엔진용 라이브러리에서 제외한다.
+    	removefiles
+   	 {
+   	     "%{IncludeDir.Lua}/lua.c",
+  	      "%{IncludeDir.Lua}/luac.c",
+ 	   }
+
+   	 includedirs
+  	  {
+  	      "%{IncludeDir.Lua}",
+  	  }
 
 -- 런타임. 에디터를 모른다. include 경로에 Source/Editor가 없는 것이 그 방벽이다.
 -- location이 소스 루트와 같아야 "모든 파일 표시"에서 폴더가 보인다.
@@ -141,6 +167,7 @@ project "HitoriEngine"
 		"Source/Runtime",
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.json}",
+		"%{IncludeDir.Lua}",
 	}
 
 	links
@@ -149,6 +176,7 @@ project "HitoriEngine"
 		"dxgi.lib",
 		"dxguid.lib",
 		"d3dcompiler.lib",
+		"Lua",
 	}
 
 
@@ -161,7 +189,7 @@ project "HitoriEditor"
 	pchheader "EnginePCH.h"
 	pchsource "Source/Editor/EditorPCH.cpp"
 
-	links { "HitoriEngine", "ImGui" }
+	links { "HitoriEngine", "ImGui", "Lua" }
 
 	files
 	{
@@ -181,6 +209,7 @@ project "HitoriEditor"
 		"%{IncludeDir.ImGui}/backends",
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.json}",
+		"%{IncludeDir.Lua}",
 	}
 
 	links
