@@ -47,7 +47,9 @@ protected:
 	FColor LightColor = FColor(255, 255, 255);
 	float Intensity = 1.0f;
 	bool bVisible = true;
-
+	// 등록책임을 Light로 옮김
+	virtual void CreateRenderState() override;
+	virtual void DestroyRenderState() override;
 private:
 	friend class FScene;
 	FLightSceneProxy* SceneProxy = nullptr;

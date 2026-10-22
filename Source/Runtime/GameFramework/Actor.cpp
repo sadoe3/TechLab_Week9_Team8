@@ -4,8 +4,6 @@
 #include "Engine/Level.h"
 #include "Component/SceneComponent.h"
 #include "Component/ParticleSubUVComponent.h"
-#include "Component/ExponentialHeightFogComponent.h"
-#include "Component/LightComponentBase.h"
 #include "Core/EngineLog.h"
 #include "UObject/Object.h"
 
@@ -21,6 +19,13 @@ AActor::AActor()
 AActor::~AActor()
 {
     TArray<UActorComponent*> ToDelete = Components;
+
+    for (UActorComponent* Component : ToDelete)
+    {
+        if (Component)
+            Component->UnregisterComponent();
+    }
+
     Components.Reset();
     RootComponent = nullptr;
 
@@ -284,12 +289,7 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
     {
         return nullptr;
     }
-
-	if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(NewComponent))
-	{
-        World->GetScene().AddPrimitive(Primitive);
-	}
-    
+        
 	if (USceneComponent* SceneComponent = Cast<USceneComponent>(NewComponent))
 	{
 		SceneComponent->SetupAttachment(RootComponent, EAttachmentRule::KeepRelative);        
@@ -297,6 +297,7 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 
     NewComponent->SetOwner(this);    
     Components.Add(NewComponent);
+    NewComponent->RegisterComponent();
     NewComponent->InitializeComponent();
 
     //if (UParticleSubUVComponent* ParticleSubUV = Cast<UParticleSubUVComponent>(NewComponent))
@@ -337,18 +338,7 @@ void AActor::DestroyComponent(UActorComponent* Component)
         }
     }
 
-    if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-    {
-        World->GetScene().RemovePrimitive(Primitive);
-    }
-    else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-    {
-        World->GetScene().RemoveFogInfo(Fog->GetUUID());
-    }
-    else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
-    {
-        World->GetScene().RemoveLight(Light);
-    }
+    Component->UnregisterComponent();
     RemoveOwnedComponent(Component);
     delete Component;
     return;

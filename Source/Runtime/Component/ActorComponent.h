@@ -17,6 +17,10 @@ public:
 	UActorComponent() { PrimaryComponentTick.Target = this; }
 	virtual ~UActorComponent() override;
 
+	void RegisterComponent();
+	void UnregisterComponent();
+	bool IsRegistered() const { return bRegistered; }
+
 	virtual void InitializeComponent() {};
 	virtual void BeginPlay() {};
 	virtual void TickComponent(float DeltaTime) 
@@ -44,9 +48,19 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record);
 
+protected:
+	// 씬 연결시 등록 자원 준비
+	virtual void OnRegister() {}
+	// 씬 연결 해제 후 자원 정리
+	virtual void OnUnregister() {}
+
+	// 공통 함수를 쓰기 위한 렌더 훅
+	virtual void CreateRenderState() {}
+	virtual void DestroyRenderState() {}
 private:
 	AActor* Owner = nullptr;
 	bool bHiddenInDetails = false;
 	bool bHiddenInGame = false;
 	bool bIsActive = true;
+	bool bRegistered = false;
 };

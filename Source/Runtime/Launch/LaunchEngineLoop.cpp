@@ -19,6 +19,9 @@
 #include "Core/Async/TaskPool.h"
 
 #include "UObject/UObjectGlobals.h"
+#include "Component/ActorComponent.h"
+#include "Engine/World.h"
+#include "UObject/UObjectIterator.h"
 
 namespace
 {
@@ -182,6 +185,21 @@ void FEngineLoop::Exit()
 		GEngine->PreExit();
 	}
 	bEngineInitialized = false;
+
+	// 대량 Proxy를 먼저 일괄 제거
+	for (TObjectIterator<UWorld> It; It; ++It)
+	{
+		FScene& Scene = It->GetScene();
+		Scene.RemoveAllPrimitives();
+		Scene.RemoveAllFogInfo();
+		Scene.RemoveAllLights();
+	}
+
+	// Owner와 World가 살아 있는 동안 등록 상태와 개별 자원을 정리
+	for (TObjectIterator<UActorComponent> It; It; ++It)
+	{
+		It->UnregisterComponent();
+	}
 
 	// UAssetManager도 UObject이므로 일괄 삭제 전에 종료한다.
 	UAssetManager::Shutdown();

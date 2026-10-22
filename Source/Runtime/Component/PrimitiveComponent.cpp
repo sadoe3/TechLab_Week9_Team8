@@ -7,6 +7,8 @@
 
 #include "Engine/PrimitiveSceneProxy.h"
 #include "Engine/Scene.h"
+#include "GameFramework/Actor.h"
+#include "Engine/World.h"
 
 namespace
 {
@@ -147,4 +149,16 @@ bool UPrimitiveComponent::TraceMesh(const FRay& WorldRay, const FStaticMeshData&
 bool UPrimitiveComponent::TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT)
 {
 	return RayIntersectsMesh(LocalRay, Mesh, OutT);
+}
+
+void UPrimitiveComponent::CreateRenderState()
+{
+	Super::CreateRenderState();
+	GetOwner()->GetWorld()->GetScene().AddPrimitive(this);
+}
+
+void UPrimitiveComponent::DestroyRenderState()
+{
+	GetOwner()->GetWorld()->GetScene().RemovePrimitive(this);
+	Super::DestroyRenderState();
 }

@@ -89,7 +89,9 @@ protected:
 	bool bVisible = true;
 	bool bCastShadow = true;
 	bool bReceiveShadow = true;
-
+	// 등록 책임을 프리미티브로 옮김
+	virtual void CreateRenderState() override;
+	virtual void DestroyRenderState() override;
 private:
 	friend class FScene;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;

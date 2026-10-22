@@ -13,8 +13,6 @@
 
 #include "Collision/Ray.h"
 #include "Component/BillboardComponent.h"
-#include "Component/ExponentialHeightFogComponent.h"
-#include "Component/LightComponentBase.h"
 
 #include "Component/StaticMeshComponent.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
@@ -90,12 +88,7 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 
 	for (UActorComponent* Component : NewActor->GetComponents())
 	{
-		if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-			Scene.AddPrimitive(Primitive);
-		else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-			Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
-		else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
-			Scene.AddLight(Light);
+		Component->RegisterComponent();
 	}
 
 	// 4. Level->Actors에 등록
@@ -535,26 +528,10 @@ bool UWorld::DestroyActor(AActor* Actor)
 	FString ActorName = Actor->GetName();
 	uint32 ActorUUID = Actor->GetUUID();
 
-	// 3. 프록시 제거
-	for (UActorComponent* Component : Actor->GetComponents())
-	{
-		if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-		{
-			Scene.RemovePrimitive(Primitive);
-		}
-		else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-		{
-			Scene.RemoveFogInfo(Fog->GetUUID());
-		}
-		else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
-		{
-			Scene.RemoveLight(Light);
-		}
-	}
-
+	// 3. 틱 함수 제거
 	Actor->RegisterAllActorTickFunctions(false);
 
-	// 4. Actor 삭제
+	// 4. Actor 삭제 -> 소멸자에서 프록시 제거
 	delete Actor;
 
 	HTR_LOG(Info, "Destroy Actor : {} UUID {}", ActorName, ActorUUID);
@@ -725,13 +702,7 @@ void UWorld::PostDuplicate(bool bDuplicateForPIE)
 		{
 			if (USceneComponent* SceneComp = Cast<USceneComponent>(Component))
 				SceneComp->MarkTransformDirty();        // 부착/상대 Transform이 바뀌었으니 다시 계산
-
-			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-				Scene.AddPrimitive(Primitive);
-			else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-				Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
-			else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
-				Scene.AddLight(Light);
+			Component->RegisterComponent();
 		}
 
 		BeginPlayList.Enqueue(Actor);   // Tick 등록은 BeginPlay에서 함

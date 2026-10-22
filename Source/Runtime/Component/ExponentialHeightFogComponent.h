@@ -26,7 +26,9 @@ public:
 
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
 	virtual void OnTransformDirty() override;
-
+protected:
+	virtual void CreateRenderState() override;
+	virtual void DestroyRenderState() override;
 private:
 	void UpdateSceneFogInfo();
 

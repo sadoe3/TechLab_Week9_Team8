@@ -27,3 +27,27 @@ void UActorComponent::Serialize(FStructuredArchive::FRecord Record)
 		Owner = static_cast<AActor*>(OwnerObj);
 	}
 }
+
+void UActorComponent::RegisterComponent()
+{
+	if (bRegistered || !Owner)
+		return;
+
+	UWorld* World = Owner->GetWorld();
+	if (!World)
+		return;
+
+	bRegistered = true;
+	OnRegister();
+	CreateRenderState();
+}
+
+void UActorComponent::UnregisterComponent()
+{
+	if (!bRegistered)
+		return;
+
+	bRegistered = false;
+	DestroyRenderState();
+	OnUnregister();
+}
