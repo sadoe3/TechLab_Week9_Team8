@@ -30,6 +30,7 @@
 #include "Editor/HitoriEd/EditorResourcePaths.h"
 #include "UObject/UObjectIterator.h"
 #include "Component/SpotLightComponent.h"
+#include "Component/ShapeComponent.h"
 #include "Component/DirectionalLightComponent.h"
 #include "Core/ResourcePaths.h"
 
@@ -850,6 +851,14 @@ void UEditorEngine::RenderOverlayPass(FEditorViewportClient* OverlayClient, UWor
 			if (SpotLight && SpotLight->GetOwner() && SpotLight->GetOwner()->GetWorld() == &ViewWorld)
 			{
 				SpotLight->DrawDebug(LineBatcher.get());
+			}
+		}
+		for (TObjectIterator<UShapeComponent> Shape; Shape; ++Shape)
+		{
+			if (Shape->GetOwner() && Shape->GetOwner()->GetWorld() == &ViewWorld && Shape->IsVisible())
+			{
+				if (!Shape->ShouldDrawOnlyIfSelected() || Shape->GetOwner() == OutlinerPanel->GetSelectedActor())
+					Shape->DrawDebug(LineBatcher.get());
 			}
 		}
 		LineBatcher->OnRender(ViewProjection);

@@ -23,6 +23,9 @@ public:
 	void AddBox(FBox BoundingBox, FVector4 Color);
 	// 로컬 AABB의 모서리를 각각 월드로 옮겨 그린다. 회전이 살아있는 OBB가 된다.
 	void AddOrientedBox(const FBox& LocalBox, const FMatrix& WorldMatrix, const FVector4& Color);
+	// 중심과 크기는 월드 기준. Capsule의 HalfHeight는 반구를 포함하며 Radius 이상이다.
+	void AddSphere(const FVector& Center, float Radius, const FVector4& Color);
+	void AddCapsule(const FVector& Center, float Radius, float HalfHeight, const FQuat& Rotation, const FVector4& Color);
 	void AddPath(const TArray<FVector>& Points, const FVector4& Color);
 	void AddArrow(
 		const FVector& Start,
