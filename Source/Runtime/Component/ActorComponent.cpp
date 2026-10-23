@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 
 #include "GameFramework/Actor.h"
+#include "Engine/World.h"
 
 UActorComponent::~UActorComponent()
 {
@@ -52,10 +53,15 @@ void UActorComponent::UnregisterComponent()
 	OnUnregister();
 }
 
+bool UActorComponent::CanRunGameplay() const
+{
+	return bRegistered && !bPendingDestroy && !bStopping && Owner && Owner->CanRunGameplay();
+}
+
 void UActorComponent::DispatchInitializeComponent()
 {
 	// 등록이 끝난 컴포넌트만 초기화 가능
-	if (!bRegistered || bInitialized || bInitializing)
+	if (!CanRunGameplay() || bInitialized || bInitializing)
 	{
 		return;
 	}
@@ -68,7 +74,7 @@ void UActorComponent::DispatchInitializeComponent()
 void UActorComponent::DispatchBeginPlay()
 {
 	// 등록 및 초기화가 끝난 컴포넌트만 시작 가능
-	if (!bRegistered || !bInitialized || bHasBegunPlay || bBeginningPlay)
+	if (!CanRunGameplay() || !bInitialized || bHasBegunPlay || bBeginningPlay)
 	{
 		return;
 	}
@@ -76,4 +82,11 @@ void UActorComponent::DispatchBeginPlay()
 	BeginPlay();
 	bHasBegunPlay = true;
 	bBeginningPlay = false;
+
+	// 이미 시작한 Actor에 나중에 추가된 컴포넌트도 자신의 Tick을 등록합니다.
+	// 훅에서 등록을 해제했을 수 있으므로 반환 후 다시 검사합니다.
+	if (CanRunGameplay()) 
+	{
+		PrimaryComponentTick.RegisterTickFunction(Owner->GetWorld()->GetTickTaskManager());
+	}
 }

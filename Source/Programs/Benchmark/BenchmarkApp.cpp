@@ -126,7 +126,7 @@ bool UBenchmarkEngine::Init()
 		HTR_LOG(Warning, "Failed to load scene: {}", ScenePath);
 
 	InitEditorTools();
-
+	World->BeginPlay();
 	return true;
 }
 

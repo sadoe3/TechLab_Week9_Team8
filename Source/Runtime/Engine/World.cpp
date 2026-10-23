@@ -24,6 +24,8 @@
 #include "Core/Async/TaskPool.h"
 
 #include "UObject/UObjectGlobals.h"
+#include "UObject/UObjectHash.h"
+
 
 DECLARE_CYCLE_STAT("Actor Tick", STAT_ActorTick); // Actor 틱 측정
 DECLARE_CYCLE_STAT("Update All Transforms", STAT_UpdateAllTransforms); // 각 Transform의 Update 시간 측정
@@ -95,35 +97,32 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 	PersistentLevel->AddActor(NewActor);
 
 	// 5. PlayList에 추가
-	BeginPlayList.Enqueue(NewActor);
+	QueueActorForBeginPlay(NewActor);
 
 	return NewActor;
 }
 
 void UWorld::Tick(float DeltaTime)
 {
+	if (HasBegunPlay())
+	{
+		StartPendingObjects();
+	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_UpdateAllTransforms);
 		Scene.UpdateAllTransforms();
 	}
 
-	// 에디터 월드면 더이상 틱을 돌리지 않는다.
-	if (WorldType != EWorldType::Editor)
+	if (!IsGameWorld() || !HasBegunPlay())
 	{
-		while (!BeginPlayList.IsEmpty())
-		{
-			BeginPlayList.Peek()->DispatchBeginPlay();
-			BeginPlayList.Dequeue();
-		}
-
-		{
-			SCOPE_CYCLE_COUNTER(STAT_ActorTick);
-			// 모든 Actor를 도는 대신 등록된 Tick 함수(메인 카메라 포함)만 실행한다.
-			TickTaskManager.RunAllTickGroups(DeltaTime);
-		}
+		return;
 	}
 
-
+	{
+		SCOPE_CYCLE_COUNTER(STAT_ActorTick);
+		// 모든 Actor를 도는 대신 등록된 Tick 함수(메인 카메라 포함)만 실행한다.
+		TickTaskManager.RunAllTickGroups(DeltaTime);
+	}
 }
 
 void UWorld::ClearWorld()
@@ -132,10 +131,7 @@ void UWorld::ClearWorld()
 	SetViewTarget(nullptr);
 
 	// BeginPlay 대기 중인 Actor 제거
-	while (!BeginPlayList.IsEmpty())
-	{
-		BeginPlayList.Dequeue();
-	}
+	BeginPlayList.Reset();
 
 	// 액터를 지우기 전에 렌더 프록시와 틱 등록부터 푼다. ClearActors는 액터를 delete만 하므로,
 	// 그대로 두면 지워진 컴포넌트를 가리키는 프록시가 FScene에 남아 다음 프레임에 터진다.
@@ -464,6 +460,13 @@ void UWorld::CreateFallbackCamera()
 
 	FallbackCamera->World = this;
 	FallbackCamera->Level = nullptr;
+	for (UActorComponent* Component : FallbackCamera->GetComponents())
+	{
+		if (Component)
+		{
+			Component->RegisterComponent();
+		}
+	}
 	FallbackCamera->GetCameraComponent()->SetRelativeLocation(FVector(-5.0f, -5.0f, 5.0f));
 
 	// 최초에는 내장 카메라를 현재 시점으로 선택합니다.
@@ -474,12 +477,16 @@ UCameraComponent* UWorld::FindCameraComponent(AActor* Actor) const
 {
 	// 선택 대상 검증은 이 함수에 모읍니다.
 	if (!Actor || Actor->GetWorld() != this)
+	{
 		return nullptr;
+	}
 
 	for (UActorComponent* Component : Actor->GetComponents())
 	{
 		if (UCameraComponent* Camera = Cast<UCameraComponent>(Component))
+		{
 			return Camera;
+		}
 	}
 
 	return nullptr;
@@ -538,20 +545,20 @@ bool UWorld::DestroyActor(AActor* Actor)
 		SetViewTarget(nullptr);
 
 	// 1. BeginPlay 대기열에서 제거
-	TQueue<AActor*> NewBeginPlayList;
-
-	while (!BeginPlayList.IsEmpty())
-	{
-		AActor* PendingActor = BeginPlayList.Peek();
-		BeginPlayList.Dequeue();
-
-		if (PendingActor != Actor)
-		{
-			NewBeginPlayList.Enqueue(PendingActor);
-		}
-	}
-
-	BeginPlayList = std::move(NewBeginPlayList);
+	//TQueue<AActor*> NewBeginPlayList;
+	//
+	//while (!BeginPlayList.IsEmpty())
+	//{
+	//	AActor* PendingActor = BeginPlayList.Peek();
+	//	BeginPlayList.Dequeue();
+	//
+	//	if (PendingActor != Actor)
+	//	{
+	//		NewBeginPlayList.Enqueue(PendingActor);
+	//	}
+	//}
+	//
+	//BeginPlayList = std::move(NewBeginPlayList);
 
 	// 2. Level의 Actors에서 제거
 	for (int32 i = Level->Actors.Num() - 1; i >= 0; --i)
@@ -678,6 +685,29 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 
 void UWorld::BeginPlay()
 {
+	if (!IsGameWorld() || PlayState != EWorldPlayState::NotStarted)
+	{
+		return;
+	}
+
+	PlayState = EWorldPlayState::Starting;
+
+	QueueActorForBeginPlay(FallbackCamera);
+
+	for (ULevel* level : Levels)
+	{
+		if (!level)
+		{
+			continue;
+		}
+		for (AActor* Actor : level->GetActors())
+		{
+			QueueActorForBeginPlay(Actor);
+		}
+	}
+
+	StartPendingObjects();
+	PlayState = EWorldPlayState::Playing;
 }
 
 void UWorld::EndPlay()
@@ -743,7 +773,7 @@ void UWorld::PostDuplicate(bool bDuplicateForPIE)
 			Component->RegisterComponent();
 		}
 
-		BeginPlayList.Enqueue(Actor);   // Tick 등록은 BeginPlay에서 함
+		QueueActorForBeginPlay(Actor);   // Tick 등록은 BeginPlay에서 함
 	}
 
 	Scene.BuildBVH();
@@ -757,4 +787,111 @@ void UWorld::Serialize(FStructuredArchive::FRecord Record)
 	PersistentLevel->Serialize(Record.EnterRecord("PersistentLevel"));
 
 	// ViewTarget 선택은 실행 상태이므로 여기서 별도 저장하지 않습니다.
+}
+
+
+void UWorld::QueueActorForBeginPlay(AActor* Actor)
+{
+	if (!IsRunningPlay() || !Actor || Actor->GetWorld() != this || Actor->HasBegunPlay())
+	{
+		return;
+	}
+
+	BeginPlayList.Enqueue(Actor->GetUUID());
+}
+
+void UWorld::QueueComponentForBeginPlay(UActorComponent* Component)
+{
+	if (!IsRunningPlay() || !Component || !Component->IsRegistered() || Component->HasBegunPlay())
+	{
+		return;
+	}
+
+	AActor* Owner = Component->GetOwner();
+	if (!Owner || Owner->GetWorld() != this)
+	{
+		return;
+	}
+
+	BeginPlayList.Enqueue(Component->GetUUID());
+}
+
+void UWorld::StartPendingObjects()
+{
+	if (!IsRunningPlay())
+	{
+		return;
+	}
+
+	TArray<uint32> ActorsToStart;
+	TArray<uint32> ComponentsToStart;
+
+	// 콜백중 삭제를 대비해서 매번 탐색
+	const auto FindComponent = [this](uint32 UUID) -> UActorComponent*
+		{
+			UActorComponent* Component = Cast<UActorComponent>(FindObjectByUUID(UUID));
+			AActor* Owner = Component ? Component->GetOwner() : nullptr;
+			return Owner && Owner->GetWorld() == this ? Component : nullptr;
+		};
+
+	
+	const uint32 PendingCount = BeginPlayList.Num();
+	for (uint32 Index = 0; Index < PendingCount; ++Index)
+	{
+		const uint32 UUID = BeginPlayList.Peek();
+		BeginPlayList.Dequeue();
+
+		if (AActor* Actor = Cast<AActor>(FindObjectByUUID(UUID)))
+		{
+			if (Actor->GetWorld() != this || Actor->HasBegunPlay())
+			{
+				continue;
+			}
+
+			ActorsToStart.Add(UUID);
+
+			for (UActorComponent* Component : Actor->GetComponents())
+			{
+				if (Component)
+				{
+					ComponentsToStart.Add(Component->GetUUID());
+				}
+			}
+		}
+		else if (FindComponent(UUID))
+		{
+			ComponentsToStart.Add(UUID);
+		}
+	}
+
+	for (uint32 UUID : ComponentsToStart)
+	{
+		if (UActorComponent* Component = FindComponent(UUID))
+		{
+			Component->DispatchInitializeComponent();
+		}
+	}
+
+	for (uint32 UUID : ComponentsToStart)
+	{
+		if (UActorComponent* Component = FindComponent(UUID))
+		{
+			Component->DispatchBeginPlay();
+		}
+	}
+
+	for (uint32 UUID : ActorsToStart)
+	{
+		AActor* Actor = Cast<AActor>(FindObjectByUUID(UUID));
+		if (Actor && Actor->GetWorld() == this)
+		{
+			Actor->DispatchBeginPlay();
+		}
+	}
+
+	// Fallback도 시작하지만, 선택되지 않았다면 Tick 등록은 해제합니다.
+	if (FallbackCamera)
+	{
+		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+	}
 }

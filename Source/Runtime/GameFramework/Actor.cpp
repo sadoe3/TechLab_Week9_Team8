@@ -39,29 +39,23 @@ void AActor::BeginPlay()
 {
 }
 
+bool AActor::CanRunGameplay() const
+{
+    return World && World->IsRunningPlay();
+}
+
 void AActor::DispatchBeginPlay()
 {
     // 중복 시작 막음
-    if (!World || bHasBegunPlay || bBeginningPlay)
+    if (!CanRunGameplay() || bBeginningPlay || bHasBegunPlay)
+    {
         return;
+    }
 
     bBeginningPlay = true;
 
     // 콜백에서 AddComponent()가 호출돼도 순회 배열이 재할당되지 않게 복사
     const TArray<UActorComponent*> StartingComponents = Components;
-
-    
-    for (UActorComponent* Component : StartingComponents)
-    {
-        if (Component)
-            Component->DispatchInitializeComponent();
-    }
-
-    for (UActorComponent* Component : StartingComponents)
-    {
-        if (Component)
-            Component->DispatchBeginPlay();
-    }
 
     // 컴포넌트 준비 후 액터 호출
     BeginPlay();
@@ -73,23 +67,31 @@ void AActor::DispatchBeginPlay()
 }
 void AActor::RegisterAllActorTickFunctions(bool bRegister)
 {
-	if (bRegister && !World)
-		return;
+	if (bRegister && (!bHasBegunPlay || !CanRunGameplay()))
+    {
+        return;
+    }
 
 	// bCanEverTick이 꺼진 함수는 등록하지 않으므로 정적 메시 액터는 매 프레임 순회 대상에서 빠진다.
 	auto Apply = [&](FTickFunction& Function)
 	{
 		if (bRegister)
-			Function.RegisterTickFunction(World->GetTickTaskManager());
+        {
+            Function.RegisterTickFunction(World->GetTickTaskManager());
+        }
 		else
-			Function.UnRegisterTickFunction();
+        {
+            Function.UnRegisterTickFunction();
+        }
 	};
 
 	Apply(PrimaryActorTick);
 	for (UActorComponent* Component : Components)
 	{
-		if (Component)
-			Apply(Component->PrimaryComponentTick);
+		if (Component&& (!bRegister || (Component->HasBegunPlay() && Component->CanRunGameplay())))
+        {
+            Apply(Component->PrimaryComponentTick);
+        }
 	}
 }
 
@@ -288,8 +290,7 @@ bool AActor::Destroy()
 
 UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 {
-    if (!ComponentClass 
-        || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
+    if (!ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
     {
         return nullptr;
     }
@@ -314,12 +315,10 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
     NewComponent->SetOwner(this);    
     Components.Add(NewComponent);
     NewComponent->RegisterComponent();
-    NewComponent->DispatchInitializeComponent();
-
+    
     if (World)
     {
-        NewComponent->DispatchBeginPlay();
-        RegisterAllActorTickFunctions(true);
+        World->QueueComponentForBeginPlay(NewComponent);
     }
 
 	return NewComponent;

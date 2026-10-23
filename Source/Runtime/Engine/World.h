@@ -33,6 +33,13 @@ struct FRenderStats
 	void Reset() { *this = FRenderStats(); }
 };
 
+enum class EWorldPlayState : uint8
+{
+	NotStarted,
+	Starting,
+	Playing
+};
+
 class UWorld : public UObject
 {
 	DECLARE_CLASS(UWorld, UObject)
@@ -86,6 +93,30 @@ public:
 	void BeginPlay();
 	void EndPlay();
 
+	// 게임월드 여부 판정. 플레이 시작에 사용
+	bool IsGameWorld()const
+	{
+		return WorldType == EWorldType::Game ||
+			WorldType == EWorldType::PIE;
+	}
+
+	// 시작했는가/초기화중인가
+	bool IsRunningPlay()const 
+	{
+		return IsGameWorld()&& (PlayState == EWorldPlayState::Starting
+			|| PlayState == EWorldPlayState::Playing);
+	}
+
+	// 시작했는가
+	bool HasBegunPlay()const
+	{
+		return PlayState == EWorldPlayState::Playing;
+	}
+
+	// 틱 도중에 생성된 액터/컴포넌트들을 다음 프레임에 시작시키기 위한 함수
+	void QueueActorForBeginPlay(AActor* Actor);
+	void QueueComponentForBeginPlay(UActorComponent* Component);
+
 	FScene& GetScene() { return Scene; }
 	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
 
@@ -130,7 +161,8 @@ private:
 	// 등록된 Tick 함수만 실행한다. Actor보다 먼저 사라져도 남은 함수와의 연결을 스스로 끊는다.
 	FTickTaskManager TickTaskManager;
 
-	TQueue<AActor*> BeginPlayList;
+	// UUID로 액터/컴포넌트 관리
+	TQueue<uint32> BeginPlayList;
 
 	// World가 생성·보관하는 최종 복귀용 카메라 액터입니다.
 	ACameraActor* FallbackCamera = nullptr;
@@ -151,4 +183,7 @@ private:
 
 	FRenderStats RenderStats;
 
+	void StartPendingObjects();
+
+	EWorldPlayState PlayState = EWorldPlayState::NotStarted;
 };

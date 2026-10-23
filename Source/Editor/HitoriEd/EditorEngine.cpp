@@ -1214,6 +1214,7 @@ void UEditorEngine::StartPlayInEditorSession()
     PIEViewport->BeginPlay(MakeUnique<FGameViewportClient>(*PlayWorld));
     // BeginPlay는 입력을 차단한다. 아래 일반 프레임 갱신이 첫 World Tick 전에 한 번 허용한다.
 	OnActiveWorldChanged();
+	PlayWorld->BeginPlay();
 }
 
 UWorld* UEditorEngine::CreatePIEWorldByDuplication(FWorldContext& PIEContext, UWorld* InEditorWorld)
