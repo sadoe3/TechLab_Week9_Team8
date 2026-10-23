@@ -13,3 +13,5 @@ void GetObjectsOfClass(const UClass* ClassToLookFor, TArray<UObject*>& Results, 
 
 void HashObject(UObject* Obj, const UClass* Class); 
 void UnhashObject(UObject* Obj, const UClass* Class);
+
+UObject* FindObjectByUUID(uint32 InUUID);

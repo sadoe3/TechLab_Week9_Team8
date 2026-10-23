@@ -67,13 +67,29 @@ void GetObjectsOfClass(const UClass* ClassToLookFor, TArray<UObject*>& Results, 
 	}
 }
 
+static TMap<uint32, UObject*>& GetUUIDToObjects()
+{
+	static TMap<uint32, UObject*> Objects;
+	return Objects;
+}
+
 void HashObject(UObject* Obj, const UClass* Class)
 {
 	GetClassToObjects()[Class].Add(Obj);
+	GetUUIDToObjects().Add(Obj->GetUUID(), Obj);
 }
 
 void UnhashObject(UObject* Obj, const UClass* Class)
 {
+	GetUUIDToObjects().Remove(Obj->GetUUID());
+
 	if (TSet<UObject*>* Objects = GetClassToObjects().Find(Class))
 		Objects->Remove(Obj);
+}
+
+
+
+UObject* FindObjectByUUID(uint32 InUUID)
+{
+	return GetUUIDToObjects().FindRef(InUUID);
 }
