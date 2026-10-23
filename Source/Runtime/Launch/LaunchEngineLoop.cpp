@@ -158,7 +158,13 @@ bool FEngineLoop::Tick()
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_EngineTick);
-		GEngine->Tick(EngineTimer::GetDeltaTime());
+		// 프레임 시작·실행
+		const float DeltaTime = EngineTimer::GetDeltaTime();
+		GEngine->PreTick(DeltaTime);
+		GEngine->Tick(DeltaTime);
+		// 렌더 참조 정리 후 종료 요청 처리
+		Renderer->ReleaseSceneReferences();
+		GEngine->PostTick(DeltaTime);
 	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_Present);

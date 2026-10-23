@@ -64,8 +64,14 @@ public:
 
 	// Device·Window·Swapchain·AssetManager가 준비된 뒤 호출된다.
 	virtual bool Init();
+	// 프레임 시작 요청 처리
+	virtual void PreTick(float) {}
 	// 한 프레임의 갱신과 모든 렌더 패스를 기록한다. Present는 FEngineLoop가 호출 직후에 한다.
 	virtual void Tick(float DeltaTime) = 0;
+	// World 비소유 참조 정리
+	virtual void ReleaseWorldReferences(UWorld*) {}
+	// 프레임 종료 요청 처리
+	virtual void PostTick(float) {}
 	virtual void OnResize(uint32 Width, uint32 Height) {}
 	// UObject 일괄 정리와 GPU 자원 해제 전에 호출된다.
 	virtual void PreExit() {};
@@ -75,7 +81,7 @@ public:
 	FWorldContext& CreateNewWorldContext(EWorldType WorldType);
 	FWorldContext* GetWorldContextFromWorld(const UWorld* InWorld);
 	void DestroyWorldContext(UWorld* InWorld);
-
+	
 	UAssetManager* AssetManager;
 protected:
 	FEngineLoop& GetEngineLoop() const { return *EngineLoop; }

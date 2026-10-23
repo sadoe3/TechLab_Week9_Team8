@@ -129,6 +129,9 @@ public:
 	void ResetStaticDrawGroups() { StaticGroups.clear(); }
 	void AddStaticDrawGroup(const FStaticDrawGroup* Group) { StaticGroups.push_back(Group); }
 
+	//CPU 렌더 참조 정리
+	void ReleaseSceneReferences();
+
 	// RenderOpaque가 보관한 반투명 패킷을 먼 것부터 그린다.
 	void RenderTranslucent(const FMatrix& ViewProjection);
 

@@ -370,29 +370,38 @@ bool UEditorEngine::Init()
 	return true;
 }
 
-// 프레임 시작·View 상태·월드 갱신 후 View별 오프스크린 렌더와 UI 합성을 진행한다.
-// 입력·창 메시지는 FEngineLoop가 먼저 처리하고 Present는 호출 직후에 한다.
-void UEditorEngine::Tick(const float DeltaTime)
+void UEditorEngine::PreTick(float DeltaTime)
 {
-	// PIE 창의 닫기 버튼은 앱이 아니라 PIE 세션만 끝낸다.
+	// 종료요청 수집
 	if (PIEWindow && PIEWindow->ConsumeCloseRequest())
 	{
 		RequestEndPlayMap();
 	}
-	if (bRequestEndPlayMapQueued) 
-	{ 
-		bRequestEndPlayMapQueued = false; 
-		EndPlayMap(); 
-	}
-	if (bPlaySessionRequested)	
+
+	// PIE 창의 닫기 버튼은 앱이 아니라 PIE 세션만 끝낸다.
+
+	// 이번 프레임 요청 확정
+	const bool bStopRequested = bRequestEndPlayMapQueued;
+	const bool bStartRequested = bPlaySessionRequested;
+	bRequestEndPlayMapQueued = false;
+	bPlaySessionRequested = false;
+
+	if (bStopRequested)
 	{
-		bPlaySessionRequested = false;
-		if (!PlayWorld)
-		{
-			StartPlayInEditorSession();
-		}
+		EndPlayMap();
 	}
 
+	if (bStartRequested && !PlayWorld)
+	{
+		StartPlayInEditorSession();
+	}
+
+}
+
+// 프레임 시작·View 상태·월드 갱신 후 View별 오프스크린 렌더와 UI 합성을 진행한다.
+// 입력·창 메시지는 FEngineLoop가 먼저 처리하고 Present는 호출 직후에 한다.
+void UEditorEngine::Tick(const float DeltaTime)
+{
 	BeginFrame(DeltaTime);
 	// 임시: 선택된 Actor를 복제해서 결과를 로그로 확인 (PIE 연결 후 삭제)
 	if (!IsPlaying() && !ImGui::GetIO().WantTextInput && FInputSystem::IsKeyPressed(EKeyCode::F9))
@@ -414,6 +423,43 @@ void UEditorEngine::Tick(const float DeltaTime)
 	TickWorldAndEditor(DeltaTime);
 	RenderViewports();
 	EndFrame();
+}
+
+void UEditorEngine::ReleaseWorldReferences(UWorld* World)
+{
+	if (World != EditorWorld && World != PlayWorld)
+	{
+		return;
+	}
+
+	// 선택·편집 참조 해제
+	ResetSceneSelection();
+
+	// Viewport 수집 자료 정리
+	if (ViewportsPanel)
+	{
+		for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
+		{
+			if (FViewport* Viewport = ViewportsPanel->GetViewport(Index))
+			{
+				Viewport->ClearSceneData();
+			}
+		}
+	}
+
+	if (PIEViewport)
+	{
+		PIEViewport->ClearSceneData();
+	}
+
+	// 렌더 수집 참조 해제
+	SceneRenderer.EndFrame();
+
+	if (Renderer)
+	{
+		Renderer->ReleaseSceneReferences();
+	}
+
 }
 
 // DeltaTime을 패널에 전달하고 에디터 단축키를 처리한다.
@@ -1130,26 +1176,22 @@ void UEditorEngine::PreExit()
 // 선택과 Gizmo 참조를 정리한 뒤 Actor를 삭제한다.
 void UEditorEngine::DeleteActor(AActor* Actor)
 {
-	if (!Actor)
-		return;
 	// 실행 중 삭제는 게임 로직이 들고 있는 참조를 깨뜨릴 수 있어 Pause 상태에서만 허용한다.
-	if (IsPlaying() && !bIsPaused)
+	if (!Actor || (IsPlaying() && !bIsPaused))
+	{
 		return;
-
-	OutlinerPanel->SelectActor(nullptr);
-	DetailsPanel->SelectComponent(nullptr);
-
+	}
 	Actor->Destroy();
 }
 
 void UEditorEngine::DeleteComponent(UActorComponent* Component)
 {
-	if (!Component)
+	if (!Component || (IsPlaying() && !bIsPaused))
+	{
 		return;
-	if (IsPlaying() && !bIsPaused)
-		return;
-	DetailsPanel->SelectComponent(nullptr);
-	Outline->SetTarget(nullptr);
+	}
+
+	// Actor 삭제 경로 사용
 	Component->GetOwner()->DestroyComponent(Component);
 }
 
@@ -1353,10 +1395,29 @@ void UEditorEngine::CopyPIEWindowToBackbuffer()
 // 씬 변경으로 무효화된 에디터의 선택 참조를 모두 해제한다.
 void UEditorEngine::ResetSceneSelection()
 {
-	Gizmo->SetTarget(nullptr, false);
-	Outline->SetTarget(nullptr);
-	DetailsPanel->SetTarget(nullptr);
-	OutlinerPanel->SelectActor(nullptr);
+	// 패널 선택·예약 참조 해제
+	if (OutlinerPanel)
+	{
+		OutlinerPanel->ResetSelection();
+	}
+
+	if (DetailsPanel)
+	{
+		DetailsPanel->ResetSelection();
+	}
+
+	// 편집 도구 참조 해제
+	if (Gizmo)
+	{
+		Gizmo->EndDrag();
+		Gizmo->SetTarget(nullptr, false);
+	}
+
+	if (Outline)
+	{
+		Outline->SetTarget(nullptr);
+	}
+
 }
 
 // 새 씬 생성이 성공하면 에디터 선택 상태를 초기화한다.

@@ -50,7 +50,9 @@ class UEditorEngine : public UEngine
 public:
 	FEngineConfig GetConfig() const override;
 	bool Init() override;
+	void PreTick(float DeltaTime) override;
 	void Tick(float DeltaTime) override;
+	void ReleaseWorldReferences(UWorld* World) override;
 	void PreExit() override;
 
 	// Active View의 입력과 Picking 결과만 Gizmo 및 선택 상태에 반영한다.

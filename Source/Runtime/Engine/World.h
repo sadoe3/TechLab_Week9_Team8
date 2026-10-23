@@ -146,6 +146,7 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 private:
+	friend class AActor;
 	// World가 생성하는 최종 복귀용 카메라를 준비합니다.
 	void CreateFallbackCamera();
 
@@ -200,4 +201,7 @@ private:
 	bool bClearingWorld = false;
 	bool bShuttingDown = false;
 	bool bShutdown = false;
+
+	// 삭제 전 외부 참조 정리
+	void ReleaseExternalReferences();
 };

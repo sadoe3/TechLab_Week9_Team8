@@ -152,18 +152,15 @@ void UBenchmarkEngine::InitEditorTools()
 	EditorUI = MakeUnique<FEditorUI>();
 	EditorUI->Init(true, true);
 
-	// File 메뉴로 씬을 바꾼다. 기존 액터가 지워지므로 선택(기즈모·아웃라인·디테일)을 먼저 비운다.
-	// 아웃라이너 선택을 비우면 콜백으로 기즈모·아웃라인·디테일 선택도 함께 비워진다.
+	// 씬 변경 전 비소유 참조 정리
 	EditorUI->SetOpenSceneCallback([this]()
 		{
-			OutlinerPanel->SelectActor(nullptr);
-			DetailsPanel->SelectComponent(nullptr);
+			ReleaseWorldReferences(World);
 			FEditorFileUtils::LoadScene(World);
 		});
 	EditorUI->SetNewSceneCallback([this]()
 		{
-			OutlinerPanel->SelectActor(nullptr);
-			DetailsPanel->SelectComponent(nullptr);
+			ReleaseWorldReferences(World);
 			FEditorFileUtils::NewScene(World);
 		});
 
@@ -185,9 +182,8 @@ void UBenchmarkEngine::InitEditorTools()
 	OutlinerPanel->SetDeleteActorCallback(
 		[this](AActor* Actor)
 		{
-			// 선택된 물체를 지우면 선택 표시(UUID·박스)가 해제된 포인터를 읽지 않도록 먼저 비운다.
-			if (UPrimitiveComponent* Selected = GetSelectedPrimitive(); Selected && Selected->GetOwner() == Actor)
-				SelectScene(nullptr);
+			// 삭제 전 비소유 참조 정리
+			ReleaseWorldReferences(World);
 			World->DestroyActor(Actor);
 		});
 
@@ -397,6 +393,43 @@ void UBenchmarkEngine::Tick(float DeltaTime)
 
 	GetEngineLoop().EndBackbufferPass();
 	FStatRegistry::EndFrame();
+}
+
+void UBenchmarkEngine::ReleaseWorldReferences(UWorld* InWorld)
+{
+	if (InWorld != World)
+	{
+		return;
+	}
+
+	// 선택·예약 참조 해제
+	if (OutlinerPanel)
+	{
+		OutlinerPanel->ResetSelection();
+	}
+
+	if (DetailsPanel)
+	{
+		DetailsPanel->ResetSelection();
+	}
+
+	if (Gizmo)
+	{
+		Gizmo->EndDrag();
+		Gizmo->SetTarget(nullptr);
+	}
+
+	if (Outline)
+	{
+		Outline->SetTarget(nullptr);
+	}
+
+	// 렌더 수집 참조 해제
+	RenderQueue.Reset();
+	if (FRenderer* Renderer = GetEngineLoop().GetRenderer())
+	{
+		Renderer->ReleaseSceneReferences();
+	}
 }
 
 void UBenchmarkEngine::PreExit()

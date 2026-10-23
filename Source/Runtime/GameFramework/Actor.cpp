@@ -395,6 +395,12 @@ void AActor::DestroyComponent(UActorComponent* Component)
     bStopping = true;
     Component->bPendingDestroy = true;
 
+    // 삭제 전 외부 참조 해제
+    if (World)
+    {
+        World->ReleaseExternalReferences();
+    }
+
     Component->DispatchEndPlay();
     Component->DispatchUninitializeComponent();
 

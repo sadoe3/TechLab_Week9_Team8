@@ -30,6 +30,8 @@ public:
 	bool Init() override;
 	void Tick(float DeltaTime) override;
 	void PreExit() override;
+	// World 비소유 참조 정리
+	void ReleaseWorldReferences(UWorld* InWorld) override;
 
 private:
 	// ImGui로 프로파일링 오버레이를 그린다.

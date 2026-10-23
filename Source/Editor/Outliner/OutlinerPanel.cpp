@@ -154,3 +154,10 @@ AActor* FOutlinerPanel::GetSelectedActor() const
 {
     return Cast<AActor>(SelectedObject);
 }
+
+void FOutlinerPanel::ResetSelection()
+{
+    // 선택·삭제 예약 해제
+    SelectedObject = nullptr;
+    PendingDeleteActor = nullptr;
+}

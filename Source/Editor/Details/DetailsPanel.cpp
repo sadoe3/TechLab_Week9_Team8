@@ -23,6 +23,7 @@
 #include "UObject/UObjectIterator.h"
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
+#include "UObject/UObjectHash.h"
 #include <algorithm>
 
 
@@ -1194,10 +1195,11 @@ void FDetailsPanel::DrawSceneComponentNode(USceneComponent* Component, USceneCom
 
 	USceneComponent* DragComponent = Component;
 
-	// source: Root 제외, 현재 Component를 payload에 담음
+	// source: Root 제외, 현재 Component의 UUID를 payload에 담음
 	if (Component != Root && ImGui::BeginDragDropSource())
 	{
-		ImGui::SetDragDropPayload(EditorDragDrop::Component, &Component, sizeof(USceneComponent*));
+		const uint32 UUID = Component->GetUUID();
+		ImGui::SetDragDropPayload(EditorDragDrop::Component, &UUID, sizeof(UUID));
 		ImGui::EndDragDropSource();
 	}
 	// target: 모든 행이 가능, payload를 받아 현재 Component를 부모로 사용
@@ -1205,9 +1207,17 @@ void FDetailsPanel::DrawSceneComponentNode(USceneComponent* Component, USceneCom
 	{
 		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(EditorDragDrop::Component))
 		{
-			USceneComponent* DroppedComponent = *static_cast<USceneComponent**>(Payload->Data);
-			PendingDroppedComponent = DroppedComponent;
-			PendingDragComponent = DragComponent;
+			if (Payload->DataSize == sizeof(uint32))
+			{
+				const uint32 UUID = *static_cast<const uint32*>(Payload->Data);
+				USceneComponent* DroppedComponent =	Cast<USceneComponent>(FindObjectByUUID(UUID));
+
+				if (DroppedComponent && DroppedComponent->GetOwner() == Component->GetOwner())
+				{
+					PendingDroppedComponent = DroppedComponent;
+					PendingDragComponent = DragComponent;
+				}
+			}
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -1423,4 +1433,19 @@ void FDetailsPanel::DrawShadowPreview(ULightComponent* Light)
         DrawList->PopClipRect();
         ImGui::TreePop();
     }
+}
+
+void FDetailsPanel::ResetSelection()
+{
+	// 선택·편집·예약 참조 해제
+	TargetActor = nullptr;
+	TargetComponent = nullptr;
+	PendingDeleteComponent = nullptr;
+	EditingNameComponent = nullptr;
+	PendingDroppedComponent = nullptr;
+	PendingDragComponent = nullptr;
+
+	bFocusNameEdit = false;
+	bIsEditingName = false;
+	ComponentNameEditBuffer[0] = '\0';
 }

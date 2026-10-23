@@ -25,7 +25,7 @@
 
 #include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectHash.h"
-
+#include "Engine/Engine.h"
 
 DECLARE_CYCLE_STAT("Actor Tick", STAT_ActorTick); // Actor 틱 측정
 DECLARE_CYCLE_STAT("Update All Transforms", STAT_UpdateAllTransforms); // 각 Transform의 Update 시간 측정
@@ -139,6 +139,7 @@ void UWorld::ClearWorld()
 	}
 
 	bClearingWorld = true;
+	ReleaseExternalReferences();
 	BeginPlayList.Reset();
 	// Level 액터를 삭제하기 전에 시점을 내장 카메라로 돌립니다.
 	SetViewTarget(nullptr);
@@ -598,6 +599,7 @@ bool UWorld::DestroyActor(AActor* Actor)
 	}
 
 	// 삭제 전 종료·초기화 해제
+	ReleaseExternalReferences();
 	Actor->DispatchEndPlay();
 	Actor->UninitializeComponents();
 
@@ -766,6 +768,7 @@ void UWorld::EndPlay()
 	}
 
 	PlayState = EWorldPlayState::Ending;
+	ReleaseExternalReferences();
 	BeginPlayList.Reset();
 
 	TArray<AActor*> EndingActors;
@@ -1018,4 +1021,29 @@ void UWorld::Shutdown()
 
 	bShutdown = true;
 	bShuttingDown = false;
+}
+
+void UWorld::ReleaseExternalReferences()
+{
+	// 엔진의 비소유 참조 해제
+	if (GEngine)
+	{
+		GEngine->ReleaseWorldReferences(this);
+	}
+
+	// World 수집 자료 정리
+	VisibleProxies.Reset();
+	LODInputs.Reset();
+	SelectedLODs.Reset();
+
+	for (FGatherChunk& Chunk : GatherChunks)
+	{
+		Chunk.Packets.Reset();
+		Chunk.SlowPathIndices.Reset();
+
+		for (FStaticDrawGroup& Group : Chunk.Groups)
+		{
+			Group.Items.clear();
+		}
+	}
 }

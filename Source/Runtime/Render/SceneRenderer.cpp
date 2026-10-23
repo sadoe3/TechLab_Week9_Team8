@@ -357,6 +357,9 @@ void FSceneRenderer::EndFrame()
     RenderObjects.Reset();
     CapturedWorld = nullptr;
     bFrameActive = false;
+
+    // 그림자 View 수집 자료 정리
+    RegisteredShadowViews.Reset();
 }
 
 void FSceneRenderer::CaptureWorld(UWorld& World)
