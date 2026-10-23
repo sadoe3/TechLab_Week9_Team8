@@ -14,6 +14,7 @@
 #include "Camera/CameraActor.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
+#include "Containers/Queue.h"
 
 //class ACameraActor;
 class ULevel;
@@ -126,6 +127,15 @@ public:
 	void QueueActorForBeginPlay(AActor* Actor);
 	void QueueComponentForBeginPlay(UActorComponent* Component);
 
+	// 프레임 종료 시 삭제할 예약 수
+	uint32 GetPendingDestroyCount() const
+	{
+		return PendingDestroyList.Num();
+	}
+
+	// 엔진 프레임 종료 전용 처리
+	void FlushPendingDestruction(uint32 RequestCount);
+
 	FScene& GetScene() { return Scene; }
 	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
 
@@ -204,4 +214,16 @@ private:
 
 	// 삭제 전 외부 참조 정리
 	void ReleaseExternalReferences();
+
+	// 검증된 Component의 삭제 예약
+	void QueueComponentForDestroy(UActorComponent* Component);
+
+	// 실제 Actor 삭제
+	void DestroyActorNow(AActor* Actor);
+
+	// Actor·Component 삭제 식별자
+	TQueue<uint32> PendingDestroyList;
+
+	// 삭제 배치 재진입 방지
+	bool bFlushingPendingDestroy = false;
 };

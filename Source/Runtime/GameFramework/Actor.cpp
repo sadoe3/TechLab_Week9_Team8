@@ -45,7 +45,7 @@ void AActor::BeginPlay()
 
 bool AActor::CanRunGameplay() const
 {
-    return !bStopping && World && World->IsRunningPlay() && World->AcceptsChanges();
+    return !bPendingDestroy && !bStopping && World && World->IsRunningPlay() && World->AcceptsChanges();
 
 }
 
@@ -334,15 +334,13 @@ FTransform AActor::GetActorTransform() const
 
 bool AActor::Destroy()
 {
-    if (!World)
-        return false;
-
-    return World->DestroyActor(this);
+    // World에 삭제 예약 요청
+    return World && World->DestroyActor(this);
 }
 
 UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 {
-    if (bStopping || (World && !World->AcceptsChanges()) ||
+    if (bPendingDestroy || bStopping || (World && !World->AcceptsChanges()) ||
         !ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
     {
         return nullptr;
@@ -379,48 +377,50 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 
 void AActor::DestroyComponent(UActorComponent* Component)
 {
-    if (!Component || Component->GetOwner() != this || bStopping || Component->IsPendingDestroy()
-        || (World && !World->AcceptsChanges()))
+    // Level 소속 Component의 삭제 요청 검증
+    if (!Component || Component->GetOwner() != this || !World || !Level
+        || bPendingDestroy || Component->IsPendingDestroy() || !World->AcceptsChanges())
     {
         return;
     }
 
-    if (Component == RootComponent)
+    // Root·기본 서브오브젝트 보호
+    if (Component == RootComponent || Component->HasAnyFlags(EObjectFlags::RF_DefaultSubObject))
     {
-        HTR_LOG(Warning, "DefaultSceneRoot cannot be deleted.");
+        HTR_LOG(Warning, "Root/default components cannot be deleted individually.");
         return;
     }
 
-    // 종료 중 중첩 변경 차단
+    World->QueueComponentForDestroy(Component);
+}
+
+void AActor::DestroyComponentNow(UActorComponent* Component)
+{
+    // 실제 구성 변경 구간
     bStopping = true;
-    Component->bPendingDestroy = true;
-
-    // 삭제 전 외부 참조 해제
-    if (World)
-    {
-        World->ReleaseExternalReferences();
-    }
+    World->ReleaseExternalReferences();
 
     Component->DispatchEndPlay();
     Component->DispatchUninitializeComponent();
 
+    // 자식의 기존 상위 Component 복귀
     if (USceneComponent* Parent = Cast<USceneComponent>(Component))
     {
         TArray<USceneComponent*> Children = Parent->GetAttachChildren();
-        for (USceneComponent* Candidate : Children)
+        for (USceneComponent* Child : Children)
         {
-            if (!Candidate)
+            if (!Child)
             {
                 continue;
             }
 
-            Candidate->DetachFromParent(EAttachmentRule::KeepWorld);
-            Candidate->SetupAttachment(Parent->GetAttachParent(), EAttachmentRule::KeepWorld);
+            Child->DetachFromParent(EAttachmentRule::KeepWorld);
+            Child->SetupAttachment(Parent->GetAttachParent(), EAttachmentRule::KeepWorld);
         }
     }
 
     // 삭제 전 시점 복구
-    if (World && World->GetMainCamera() == Component)
+    if (World->GetMainCamera() == Component)
     {
         World->SetViewTarget(nullptr);
     }
@@ -444,8 +444,13 @@ void AActor::OnDefaultSubobjectCreated(UObject* Subobject)
 UActorComponent* AActor::FindComponentByName(FName Name) const
 {
     for (UActorComponent* Component : Components)
+    {
         if (Component && Component->GetFName() == Name)
+        {
             return Component;
+        }
+    }
+    
     return nullptr;
 }
 

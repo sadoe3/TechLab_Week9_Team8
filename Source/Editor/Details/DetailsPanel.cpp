@@ -1212,7 +1212,12 @@ void FDetailsPanel::DrawSceneComponentNode(USceneComponent* Component, USceneCom
 				const uint32 UUID = *static_cast<const uint32*>(Payload->Data);
 				USceneComponent* DroppedComponent =	Cast<USceneComponent>(FindObjectByUUID(UUID));
 
-				if (DroppedComponent && DroppedComponent->GetOwner() == Component->GetOwner())
+				// 삭제 예정 대상의 재부착 차단
+				AActor* Owner = Component->GetOwner();
+
+				if (DroppedComponent && Owner && DroppedComponent->GetOwner() == Owner
+					&& !Owner->IsPendingDestroy() && !Component->IsPendingDestroy()
+					&& !DroppedComponent->IsPendingDestroy())
 				{
 					PendingDroppedComponent = DroppedComponent;
 					PendingDragComponent = DragComponent;

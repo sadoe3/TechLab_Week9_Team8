@@ -105,7 +105,7 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 
 void UWorld::Tick(float DeltaTime)
 {
-	if (!AcceptsChanges())
+	if (bFlushingPendingDestroy || !AcceptsChanges())
 	{
 		return;
 	}
@@ -132,8 +132,8 @@ void UWorld::Tick(float DeltaTime)
 
 void UWorld::ClearWorld()
 {
-	// 중복 정리와 종료 중 진입 차단
-	if (bClearingWorld || bShutdown || PlayState == EWorldPlayState::Ending)
+	// 삭제 배치/정리/종료 중 재진입 차단
+	if (bFlushingPendingDestroy || bClearingWorld || bShutdown || PlayState == EWorldPlayState::Ending)
 	{
 		return;
 	}
@@ -141,6 +141,7 @@ void UWorld::ClearWorld()
 	bClearingWorld = true;
 	ReleaseExternalReferences();
 	BeginPlayList.Reset();
+	PendingDestroyList.Reset();
 	// Level 액터를 삭제하기 전에 시점을 내장 카메라로 돌립니다.
 	SetViewTarget(nullptr);
 
@@ -544,7 +545,7 @@ UCameraComponent* UWorld::FindCameraComponent(AActor* Actor) const
 
 bool UWorld::SetViewTarget(AActor* Actor)
 {
-	if (Actor && !AcceptsChanges())
+	if (Actor && (!AcceptsChanges() || Actor->IsPendingDestroy()))
 	{
 		return false;
 	}
@@ -553,7 +554,7 @@ bool UWorld::SetViewTarget(AActor* Actor)
 
 	// 카메라가 없으면 현재 선택과 Tick 등록 상태를 유지합니다.
 	UCameraComponent* NewCamera = FindCameraComponent(NewViewTarget);
-	if (!NewCamera)
+	if (!NewCamera || NewCamera->IsPendingDestroy())
 		return false;
 
 	if (MainViewTarget == NewViewTarget)
@@ -586,19 +587,29 @@ int32 UWorld::GetActorNum()
 
 bool UWorld::DestroyActor(AActor* Actor)
 {
-	if (!AcceptsChanges() || !Actor || Actor->GetWorld() != this || Actor->bStopping)
+	// Level 소속 Actor의 삭제 요청 검증
+	if (!AcceptsChanges() || !Actor || Actor->GetWorld() != this || !Actor->GetLevel())
 	{
 		return false;
 	}
 
+	// 중복 요청의 성공 처리
+	if (Actor->bPendingDestroy)
+	{
+		return true;
+	}
+
+	Actor->bPendingDestroy = true;
+	PendingDestroyList.Enqueue(Actor->GetUUID());
+
+	return true;
+}
+
+void UWorld::DestroyActorNow(AActor* Actor)
+{
 	ULevel* Level = Actor->GetLevel();
 
-	if (!Level)
-	{
-		return false;
-	}
-
-	// 삭제 전 종료·초기화 해제
+	// 외부 참조 해제와 종료
 	ReleaseExternalReferences();
 	Actor->DispatchEndPlay();
 	Actor->UninitializeComponents();
@@ -609,28 +620,72 @@ bool UWorld::DestroyActor(AActor* Actor)
 		SetViewTarget(nullptr);
 	}
 
-	// 2. Level의 Actors에서 제거
-	for (int32 i = Level->Actors.Num() - 1; i >= 0; --i)
+	// Level 소유 목록 제거
+	for (int32 Index = Level->Actors.Num() - 1; Index >= 0; --Index)
 	{
-		if (Level->Actors[i] == Actor)
+		if (Level->Actors[Index] == Actor)
 		{
-			Level->Actors.RemoveAt(i, 1);
+			Level->Actors.RemoveAt(Index, 1);
 			break;
 		}
 	}
 
-	FString ActorName = Actor->GetName();
-	uint32 ActorUUID = Actor->GetUUID();
+	const FString ActorName = Actor->GetName();
+	const uint32 ActorUUID = Actor->GetUUID();
 
-	// 3. 틱 함수 제거
+	// Tick·소유 Component 해제
 	Actor->RegisterAllActorTickFunctions(false);
-
-	// 4. Actor 삭제 -> 소멸자에서 프록시 제거
 	delete Actor;
 
 	HTR_LOG(Info, "Destroy Actor : {} UUID {}", ActorName, ActorUUID);
+}
 
-	return true;
+void UWorld::FlushPendingDestruction(uint32 RequestCount)
+{
+	const uint32 Count = std::min(RequestCount, PendingDestroyList.Num());
+
+	if (Count == 0 || bFlushingPendingDestroy || !AcceptsChanges())
+	{
+		return;
+	}
+
+	bFlushingPendingDestroy = true;
+
+	// 확정한 요청만 처리
+	for (uint32 Index = 0; Index < Count; ++Index)
+	{
+		const uint32 UUID = PendingDestroyList.Peek();
+		PendingDestroyList.Dequeue();
+
+		UObject* Object = FindObjectByUUID(UUID);
+
+		if (AActor* Actor = Cast<AActor>(Object))
+		{
+			if (Actor->GetWorld() == this && Actor->IsPendingDestroy())
+			{
+				DestroyActorNow(Actor);
+			}
+		}
+		else if (UActorComponent* Component = Cast<UActorComponent>(Object))
+		{
+			AActor* Owner = Component->GetOwner();
+
+			// Owner 삭제 예약은 Actor 경로에서 일괄 처리
+			if (Owner && Owner->GetWorld() == this && !Owner->IsPendingDestroy() && Component->IsPendingDestroy())
+			{
+				Owner->DestroyComponentNow(Component);
+			}
+		}
+	}
+
+	bFlushingPendingDestroy = false;
+}
+
+void UWorld::QueueComponentForDestroy(UActorComponent* Component)
+{
+	// 호출자가 검증한 Component의 삭제 예약
+	Component->bPendingDestroy = true;
+	PendingDestroyList.Enqueue(Component->GetUUID());
 }
 
 // 다른 World의 객체를 제외하고 Component 교차 중 최근접 결과를 선택한다.
@@ -734,7 +789,7 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 
 void UWorld::BeginPlay()
 {
-	if (!AcceptsChanges() || !IsGameWorld() || PlayState != EWorldPlayState::NotStarted)
+	if (bFlushingPendingDestroy || !AcceptsChanges() || !IsGameWorld() || PlayState != EWorldPlayState::NotStarted)
 	{
 		return;
 	}
@@ -762,7 +817,8 @@ void UWorld::BeginPlay()
 void UWorld::EndPlay()
 {
 	// 중복 종료와 재진입 차단
-	if (bClearingWorld || PlayState == EWorldPlayState::NotStarted || PlayState == EWorldPlayState::Ending)
+	if (bFlushingPendingDestroy || bClearingWorld || PlayState == EWorldPlayState::NotStarted 
+		|| PlayState == EWorldPlayState::Ending)
 	{
 		return;
 	}
@@ -993,7 +1049,7 @@ void UWorld::StartPendingObjects()
 void UWorld::Shutdown()
 {
 	// 중복 Shutdown과 정리 중 진입 차단
-	if (bShutdown || bShuttingDown || bClearingWorld || PlayState == EWorldPlayState::Ending)
+	if (bFlushingPendingDestroy || bShutdown || bShuttingDown || bClearingWorld || PlayState == EWorldPlayState::Ending)
 	{
 		return;
 	}

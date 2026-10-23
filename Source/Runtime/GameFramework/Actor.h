@@ -42,7 +42,10 @@ public:
 
 	const TArray<UActorComponent*>& GetComponents() const { return Components; }
 	USceneComponent* GetRootComponent() const { return RootComponent; }
-	void SetRootComponent(USceneComponent* SceneComponent) { RootComponent = SceneComponent; }
+	void SetRootComponent(USceneComponent* SceneComponent) {
+		if (SceneComponent && SceneComponent->IsPendingDestroy()){ return; }
+		RootComponent = SceneComponent;
+	}
 
 	void RemoveOwnedComponent(UActorComponent* Component);
 	
@@ -54,7 +57,11 @@ public:
 	bool TryGetActorBounds(FBox& OutBounds) const;
 
 	bool Destroy();
-	
+	// 삭제 예정 여부
+	bool IsPendingDestroy() const
+	{
+		return bPendingDestroy;
+	}
 	//xx삭제 예정
 	friend class UWorld;
 
@@ -88,4 +95,9 @@ private:
 	bool bBeginningPlay = false;
 	bool bHasBegunPlay = false;
 	bool bStopping = false;
+
+	// World가 호출하는 실제 Component 삭제
+	void DestroyComponentNow(UActorComponent* Component);
+	// 삭제 예정 상태
+	bool bPendingDestroy = false;
 };

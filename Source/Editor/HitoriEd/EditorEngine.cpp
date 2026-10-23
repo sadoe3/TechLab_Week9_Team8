@@ -462,6 +462,23 @@ void UEditorEngine::ReleaseWorldReferences(UWorld* World)
 
 }
 
+void UEditorEngine::PostTick(float DeltaTime)
+{
+	// 모든 World의 처리 개수 선확정
+	const uint32 EditorCount = EditorWorld ? EditorWorld->GetPendingDestroyCount() : 0;
+	const uint32 PlayCount = PlayWorld ? PlayWorld->GetPendingDestroyCount() : 0;
+
+	if (EditorWorld)
+	{
+		EditorWorld->FlushPendingDestruction(EditorCount);
+	}
+
+	if (PlayWorld)
+	{
+		PlayWorld->FlushPendingDestruction(PlayCount);
+	}
+}
+
 // DeltaTime을 패널에 전달하고 에디터 단축키를 처리한다.
 void UEditorEngine::BeginFrame(const float DeltaTime)
 {

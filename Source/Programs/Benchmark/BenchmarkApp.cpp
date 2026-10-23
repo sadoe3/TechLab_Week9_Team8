@@ -152,15 +152,13 @@ void UBenchmarkEngine::InitEditorTools()
 	EditorUI = MakeUnique<FEditorUI>();
 	EditorUI->Init(true, true);
 
-	// 씬 변경 전 비소유 참조 정리
+	// 공통 씬 변경 경로 사용
 	EditorUI->SetOpenSceneCallback([this]()
 		{
-			ReleaseWorldReferences(World);
 			FEditorFileUtils::LoadScene(World);
 		});
 	EditorUI->SetNewSceneCallback([this]()
 		{
-			ReleaseWorldReferences(World);
 			FEditorFileUtils::NewScene(World);
 		});
 
@@ -182,8 +180,7 @@ void UBenchmarkEngine::InitEditorTools()
 	OutlinerPanel->SetDeleteActorCallback(
 		[this](AActor* Actor)
 		{
-			// 삭제 전 비소유 참조 정리
-			ReleaseWorldReferences(World);
+			// 공통 Actor 삭제 경로 사용
 			World->DestroyActor(Actor);
 		});
 
@@ -429,6 +426,15 @@ void UBenchmarkEngine::ReleaseWorldReferences(UWorld* InWorld)
 	if (FRenderer* Renderer = GetEngineLoop().GetRenderer())
 	{
 		Renderer->ReleaseSceneReferences();
+	}
+}
+
+void UBenchmarkEngine::PostTick(float DeltaTime)
+{
+	// Benchmark World 삭제 처리
+	if (World)
+	{
+		World->FlushPendingDestruction(World->GetPendingDestroyCount());
 	}
 }
 

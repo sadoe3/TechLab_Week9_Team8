@@ -53,6 +53,7 @@ public:
 	void PreTick(float DeltaTime) override;
 	void Tick(float DeltaTime) override;
 	void ReleaseWorldReferences(UWorld* World) override;
+	void PostTick(float DeltaTime) override;
 	void PreExit() override;
 
 	// Active View의 입력과 Picking 결과만 Gizmo 및 선택 상태에 반영한다.
@@ -78,6 +79,7 @@ public:
 	void EndPlayMap();
 
 	bool IsPlaying() const { return PlayWorld != nullptr; }
+
 
 	////FEditorDelegates::PrePIEEnded / EndPIE.Broadcast()
 	//void TeardownPlaySession(const FWorldContext& PIEContext);            // 액터 EndPlay, 월드 정리(CleanupWorld)
