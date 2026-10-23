@@ -1,7 +1,8 @@
 #include "EnginePCH.h"
 #include "Scripting/LuaRuntime.h"
+#include "Scripting/LuaBindings.h"
 
-// 기본 라이브러리만 준비하며 게임 객체는 아직 노출하지 않습니다.
+// 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
 {
 	Lua.open_libraries(
@@ -10,6 +11,8 @@ FLuaRuntime::FLuaRuntime()
 		sol::lib::table,
 		sol::lib::string,
 		sol::lib::coroutine);
+
+	LuaBindings::Register(Lua);
 }
 
 // sol::state가 소멸하면서 VM을 해제합니다.
