@@ -112,7 +112,7 @@ void UWorld::Tick(float DeltaTime)
 	{
 		while (!BeginPlayList.IsEmpty())
 		{
-			BeginPlayList.Peek()->BeginPlay();
+			BeginPlayList.Peek()->DispatchBeginPlay();
 			BeginPlayList.Dequeue();
 		}
 

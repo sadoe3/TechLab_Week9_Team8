@@ -50,6 +50,8 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record);
 
+	bool IsInitialized() const { return bInitialized; }
+	bool HasBegunPlay() const { return bHasBegunPlay; }
 	bool IsPendingDestroy() const { return bPendingDestroy; }
 	bool CanRunGameplay() const;
 
@@ -79,8 +81,11 @@ private:
 	void DispatchEndPlay();
 	void DispatchUninitializeComponent();
 
+	// 중복 초기화/시작/정지/삭제를 막는 변수
 	bool bInitialized = false;
+	bool bInitializing = false;
 	bool bHasBegunPlay = false;
+	bool bBeginningPlay = false;
 	bool bStopping = false;
 	bool bPendingDestroy = false;
 };

@@ -51,3 +51,29 @@ void UActorComponent::UnregisterComponent()
 	DestroyRenderState();
 	OnUnregister();
 }
+
+void UActorComponent::DispatchInitializeComponent()
+{
+	// 등록이 끝난 컴포넌트만 초기화 가능
+	if (!bRegistered || bInitialized || bInitializing)
+	{
+		return;
+	}
+	bInitializing = true;
+	InitializeComponent();
+	bInitialized = true;
+	bInitializing = false;
+}
+
+void UActorComponent::DispatchBeginPlay()
+{
+	// 등록 및 초기화가 끝난 컴포넌트만 시작 가능
+	if (!bRegistered || !bInitialized || bHasBegunPlay || bBeginningPlay)
+	{
+		return;
+	}
+	bBeginningPlay = true;
+	BeginPlay();
+	bHasBegunPlay = true;
+	bBeginningPlay = false;
+}

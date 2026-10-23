@@ -37,24 +37,40 @@ AActor::~AActor()
 
 void AActor::BeginPlay()
 {
-	//if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(RootComponent))
-	//{
-	//	World->AddPrimitive(Cast<UPrimitiveComponent>(RootComponent));
-	//}
-
-    for (UActorComponent* Component : Components)
-    {
-        Component->InitializeComponent();
-    }
-
-	for (UActorComponent* Component : Components)
-	{
-		Component->BeginPlay();
-	}
-
-	RegisterAllActorTickFunctions(true);
 }
 
+void AActor::DispatchBeginPlay()
+{
+    // 중복 시작 막음
+    if (!World || bHasBegunPlay || bBeginningPlay)
+        return;
+
+    bBeginningPlay = true;
+
+    // 콜백에서 AddComponent()가 호출돼도 순회 배열이 재할당되지 않게 복사
+    const TArray<UActorComponent*> StartingComponents = Components;
+
+    
+    for (UActorComponent* Component : StartingComponents)
+    {
+        if (Component)
+            Component->DispatchInitializeComponent();
+    }
+
+    for (UActorComponent* Component : StartingComponents)
+    {
+        if (Component)
+            Component->DispatchBeginPlay();
+    }
+
+    // 컴포넌트 준비 후 액터 호출
+    BeginPlay();
+    bHasBegunPlay = true;
+    bBeginningPlay = false;
+
+    // 시작 후 틱함수 등록
+    RegisterAllActorTickFunctions(true);
+}
 void AActor::RegisterAllActorTickFunctions(bool bRegister)
 {
 	if (bRegister && !World)
@@ -298,17 +314,11 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
     NewComponent->SetOwner(this);    
     Components.Add(NewComponent);
     NewComponent->RegisterComponent();
-    NewComponent->InitializeComponent();
-
-    //if (UParticleSubUVComponent* ParticleSubUV = Cast<UParticleSubUVComponent>(NewComponent))
-    //{
-    //    ParticleSubUV->BeginPlay();
-    //    RegisterAllActorTickFunctions(true);
-    //}
+    NewComponent->DispatchInitializeComponent();
 
     if (World)
     {
-        NewComponent->BeginPlay();
+        NewComponent->DispatchBeginPlay();
         RegisterAllActorTickFunctions(true);
     }
 

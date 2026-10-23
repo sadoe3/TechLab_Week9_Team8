@@ -26,6 +26,7 @@ public:
 	virtual void EndPlay() {};
 	// FActorTickFunction이 호출하는 진입점
 	void TickActor(float DeltaTime) { Tick(DeltaTime); }
+	bool HasBegunPlay() const { return bHasBegunPlay; }
 
 	UWorld* GetWorld() const { return World; }
 	ULevel* GetLevel() const { return Level; }
@@ -70,6 +71,8 @@ protected:
 	UWorld* World = nullptr;
 	ULevel* Level = nullptr;
 private:
-	
-
+	// World가 호출하는 공통 시작 진입점
+	void DispatchBeginPlay();
+	bool bBeginningPlay = false;
+	bool bHasBegunPlay = false;
 };
