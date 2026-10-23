@@ -87,8 +87,6 @@ void UnhashObject(UObject* Obj, const UClass* Class)
 		Objects->Remove(Obj);
 }
 
-
-
 UObject* FindObjectByUUID(uint32 InUUID)
 {
 	return GetUUIDToObjects().FindRef(InUUID);

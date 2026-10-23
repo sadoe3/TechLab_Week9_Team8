@@ -2,12 +2,16 @@
 #include "CameraComponent.h"
 #include "Input/InputSystem.h"
 #include "../Collision/Ray.h"
+#include "GameFramework/Actor.h"
+#include "Engine/World.h"
 
-// 외부 입력 관리 시 기본 입력을 생략해 뷰포트 입력과 카메라의 중복 갱신을 막는다.
+// 선택된 카메라만 기본 입력을 처리하며 기존 외부 입력 관리 정책을 유지합니다.
 void UCameraComponent::TickComponent(float DeltaTime)
 {
     Super::TickComponent(DeltaTime);
-	if (bExternalInputManaged)
+	const AActor* Owner = GetOwner();
+	const UWorld* World = Owner ? Owner->GetWorld() : nullptr;
+	if (bExternalInputManaged || !World || World->GetMainCamera() != this)
 		return;
 
     UpdateMovement(DeltaTime);

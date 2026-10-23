@@ -55,7 +55,7 @@ bool UWorld::Init()
 	CurrentLevel = PersistentLevel;
 
 	//카메라 생성
-	CreateMainCamera();
+	CreateFallbackCamera();
 
 	return true;
 }
@@ -128,6 +128,9 @@ void UWorld::Tick(float DeltaTime)
 
 void UWorld::ClearWorld()
 {
+	// Level 액터를 삭제하기 전에 시점을 내장 카메라로 돌립니다.
+	SetViewTarget(nullptr);
+
 	// BeginPlay 대기 중인 Actor 제거
 	while (!BeginPlayList.IsEmpty())
 	{
@@ -445,43 +448,74 @@ void UWorld::GatherRenderPackets(FRenderQueue& RenderQueue, const FLODViewContex
 //	}
 //}
 
-// 메인 카메라 생성
-void UWorld::CreateMainCamera()
+void UWorld::CreateFallbackCamera()
 {
-	if (MainCamera)
+	// 시점 선택이 바뀌어도 내장 카메라는 중복 생성하지 않습니다.
+	if (FallbackCamera)
 		return;
 
-	MainCamera = NewObject<ACameraActor>();
+	FallbackCamera = NewObject<ACameraActor>(this);
 
-	if (!MainCamera)
+	if (!FallbackCamera)
 	{
-		HTR_LOG(Error, "Failed to create MainCamera");
+		HTR_LOG(Error, "Failed to create FallbackCamera");
 		return;
 	}
 
-	MainCamera->World = this;
-	MainCamera->Level = nullptr;
-	MainCamera->GetCameraComponent()->SetRelativeLocation(FVector(-5.0f, -5.0f, 5.0f));
+	FallbackCamera->World = this;
+	FallbackCamera->Level = nullptr;
+	FallbackCamera->GetCameraComponent()->SetRelativeLocation(FVector(-5.0f, -5.0f, 5.0f));
 
-	// 메인 카메라는 Level에 속하지 않아 BeginPlay를 거치지 않으므로 여기서 등록한다.
-	MainCamera->RegisterAllActorTickFunctions(true);
+	// 최초에는 내장 카메라를 현재 시점으로 선택합니다.
+	SetViewTarget(nullptr);
 }
 
-void UWorld::SetMainCamera(ACameraActor* Camera)
+UCameraComponent* UWorld::FindCameraComponent(AActor* Actor) const
 {
-	if (MainCamera == Camera)
-		return;
+	// 선택 대상 검증은 이 함수에 모읍니다.
+	if (!Actor || Actor->GetWorld() != this)
+		return nullptr;
 
-	if (MainCamera)
-		MainCamera->RegisterAllActorTickFunctions(false);
-
-	MainCamera = Camera;
-
-	if (MainCamera)
+	for (UActorComponent* Component : Actor->GetComponents())
 	{
-		MainCamera->World = this;
-		MainCamera->RegisterAllActorTickFunctions(true);
+		if (UCameraComponent* Camera = Cast<UCameraComponent>(Component))
+			return Camera;
 	}
+
+	return nullptr;
+}
+
+bool UWorld::SetViewTarget(AActor* Actor)
+{
+	// nullptr은 내장 카메라로 복귀하는 명시적인 요청입니다.
+	AActor* NewViewTarget = Actor ? Actor : FallbackCamera;
+
+	// 카메라가 없으면 현재 선택과 Tick 등록 상태를 유지합니다.
+	UCameraComponent* NewCamera = FindCameraComponent(NewViewTarget);
+	if (!NewCamera)
+		return false;
+
+	if (MainViewTarget == NewViewTarget)
+		return true;
+
+	// 전환 직후에도 기존 뷰포트의 입력 차단 상태를 유지합니다.
+	if (UCameraComponent* PreviousCamera = GetMainCamera())
+		NewCamera->SetExternalInputManaged(PreviousCamera->IsExternalInputManaged());
+
+	MainViewTarget = NewViewTarget;
+
+	// Level 밖의 내장 카메라만 선택 여부에 따라 Tick을 등록·해제합니다.
+	// 배치 액터의 Tick 등록은 기존 Actor 생명주기가 관리합니다.
+	if (FallbackCamera)
+		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+
+	return true;
+}
+
+UCameraComponent* UWorld::GetMainCamera() const
+{
+	// 컴포넌트 포인터를 따로 보관하지 않고 현재 액터에서 조회합니다.
+	return FindCameraComponent(MainViewTarget);
 }
 
 int32 UWorld::GetActorNum()
@@ -498,6 +532,10 @@ bool UWorld::DestroyActor(AActor* Actor)
 
 	if (!Level)
 		return false;
+
+	// 선택된 액터를 삭제하기 전에 시점 참조를 복구합니다.
+	if (MainViewTarget == Actor)
+		SetViewTarget(nullptr);
 
 	// 1. BeginPlay 대기열에서 제거
 	TQueue<AActor*> NewBeginPlayList;
@@ -718,6 +756,5 @@ void UWorld::Serialize(FStructuredArchive::FRecord Record)
 	FArchive& Ar = Record.GetUnderlyingArchive();
 	PersistentLevel->Serialize(Record.EnterRecord("PersistentLevel"));
 
-	// (선택) 메인 카메라는 레벨에 속하지 않아 따로 쓴다. PIE 시작 시점이나 에디터 시점을 복원할 때 쓸 수 있다.
-	// MainCamera->GetCameraComponent()->Serialize(Record.EnterRecord("MainCamera"));
+	// ViewTarget 선택은 실행 상태이므로 여기서 별도 저장하지 않습니다.
 }

@@ -57,11 +57,14 @@ public:
 
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
-	void CreateMainCamera();
+	// 카메라가 있는 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
+	bool SetViewTarget(AActor* Actor);
 
-	// 카메라 Get/Set
-	void SetMainCamera(ACameraActor* Camera);
-	ACameraActor* GetMainCamera() const { return MainCamera; }
+	// 현재 선택된 시점 제공 액터입니다.
+	AActor* GetViewTarget() const { return MainViewTarget; }
+
+	// 선택된 액터의 첫 카메라 컴포넌트를 반환합니다.
+	UCameraComponent* GetMainCamera() const;
 
 	// Level
 	ULevel* GetPersistentLevel() const { return PersistentLevel; }
@@ -103,6 +106,12 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 private:
+	// World가 생성하는 최종 복귀용 카메라를 준비합니다.
+	void CreateFallbackCamera();
+
+	// 같은 World의 액터에서 첫 카메라 컴포넌트를 찾습니다.
+	UCameraComponent* FindCameraComponent(AActor* Actor) const;
+
 	EWorldType WorldType = EWorldType::None;
 
 	struct alignas(64) FGatherChunk
@@ -123,8 +132,11 @@ private:
 
 	TQueue<AActor*> BeginPlayList;
 
-	//메인 카메라 
-	ACameraActor* MainCamera = nullptr;
+	// World가 생성·보관하는 최종 복귀용 카메라 액터입니다.
+	ACameraActor* FallbackCamera = nullptr;
+
+	// 현재 시점을 제공하는 액터입니다. 배치 액터의 소유권은 가져오지 않습니다.
+	AActor* MainViewTarget = nullptr;
 
 	ULevel* PersistentLevel = nullptr;
 	ULevel* CurrentLevel = nullptr;

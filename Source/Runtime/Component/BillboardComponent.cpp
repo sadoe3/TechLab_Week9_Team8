@@ -188,7 +188,7 @@ void UBillboardComponent::GetWorldTransformedMatrix(FMatrix* OutWorldMatrix) con
 {
 	OutWorldMatrix->SetIdentity();
 
-	const FTransform& Transform = GetOwner()->GetWorld()->GetMainCamera()->GetCameraComponent()->GetTransform();
+	const FTransform& Transform = GetOwner()->GetWorld()->GetMainCamera()->GetTransform();
 
 	FVector Right = Transform.GetRight().Normalized();
 	FVector Up = Transform.GetUp().Normalized();

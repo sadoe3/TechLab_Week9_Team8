@@ -18,7 +18,6 @@
 
 #include "Render/Renderer.h"
 
-#include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 
 #include "Asset/AssetManager.h"
@@ -148,7 +147,7 @@ bool UEditorEngine::Init()
 	TextRenderer->Init();
 
 	// 투영 행렬 생성 
-	UCameraComponent* MainCamera = GetActiveWorld()->GetMainCamera() ? GetActiveWorld()->GetMainCamera()->GetCameraComponent() : nullptr;
+	UCameraComponent* MainCamera = GetActiveWorld()->GetMainCamera();
 	assert(MainCamera != nullptr);
 	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
     {
@@ -163,7 +162,7 @@ bool UEditorEngine::Init()
 	ViewportsPanel->SetMaximizedSlotIndex(SettingsPanel->GetSettings().MaximizedViewportIndex);
 	// 뷰포트 레이아웃 설정
 	ViewportsPanel->SetSlotMaximized(SettingsPanel->GetSettings().bViewportMaximized);
-	GetActiveWorld()->GetMainCamera()->GetCameraComponent()->SetExternalInputManaged(true);
+	MainCamera->SetExternalInputManaged(true);
 
 	/// 삭제 예정
 	//SceneManager = EditorUI->AddEditorPanel<FSceneManager>();
@@ -1166,30 +1165,26 @@ void UEditorEngine::StartPlayInEditorSession()
 
 	if (PlayWorld)
 	{
-		// 1. 씬에 배치된 ACameraActor가 있으면 해당 카메라를 메인 카메라로 지정
-		ACameraActor* PlacedCamera = nullptr;
+		// 1. 카메라 컴포넌트가 있는 첫 배치 액터를 시점 대상으로 선택합니다.
+		bool bFoundCamera = false;
 		if (PlayWorld->GetPersistentLevel())
 		{
 			for (AActor* Actor : PlayWorld->GetPersistentLevel()->GetActors())
 			{
-				if (ACameraActor* CamActor = Cast<ACameraActor>(Actor))
+				if (Actor && PlayWorld->SetViewTarget(Actor))
 				{
-					PlacedCamera = CamActor;
+					bFoundCamera = true;
 					break;
 				}
 			}
 		}
 
-		if (PlacedCamera)
-		{
-			PlayWorld->SetMainCamera(PlacedCamera);
-		}
-		else if (PlayWorld->GetMainCamera())
+		if (!bFoundCamera)
 		{
 			// 2. 배치된 카메라가 없으면 현재 활성 에디터 뷰포트 시점에서 시작
 			const int32 SourceViewIndex = ViewportsPanel->GetEditorViewIndex();
 			const FEditorCameraState& EditorCam = ViewportsPanel->GetEditorClient(SourceViewIndex)->GetCamera();
-			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera()->GetCameraComponent())
+			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera())
 			{
 				GameCam->SetRelativeLocation(EditorCam.Location);
 				GameCam->SetRelativeRotation(EditorCam.Rotation.ToFRotator());

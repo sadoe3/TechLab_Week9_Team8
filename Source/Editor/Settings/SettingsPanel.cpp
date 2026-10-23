@@ -1,7 +1,6 @@
 #include "EnginePCH.h"
 #include "Editor/Settings/SettingsPanel.h"
 #include "Editor/Viewports/ViewportsPanel.h"
-#include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 
 #include "Engine/World.h"
@@ -84,7 +83,7 @@ void FSettingsPanel::OnRender()
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
 	ImGui::SeparatorText("Camera");
 
-	UCameraComponent* CamCom = World->GetMainCamera()->GetCameraComponent();
+	UCameraComponent* CamCom = World->GetMainCamera();
 
 	ImGui::SliderFloat("Move Speed", &Settings.CameraSpeed, 0.1f, 10.0f, "%.2f");
 	CamCom->SetMoveSpeed(Settings.CameraSpeed);

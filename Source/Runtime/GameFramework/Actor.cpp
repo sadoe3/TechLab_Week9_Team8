@@ -338,6 +338,10 @@ void AActor::DestroyComponent(UActorComponent* Component)
         }
     }
 
+    // 현재 시점에 사용하는 카메라 컴포넌트를 삭제하면 내장 카메라로 복귀합니다.
+    if (World && World->GetMainCamera() == Component)
+        World->SetViewTarget(nullptr);
+
     Component->UnregisterComponent();
     RemoveOwnedComponent(Component);
     delete Component;

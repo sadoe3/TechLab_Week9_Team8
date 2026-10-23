@@ -1,15 +1,14 @@
 #include "EnginePCH.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
-#include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include <cassert>
 #include <cmath>
 
 UCameraComponent* FGameViewportClient::GetCamera() const
 {
-	const ACameraActor* Actor = World->GetMainCamera();
-	return Actor ? Actor->GetCameraComponent() : nullptr;
+	// 선택된 액터에서 해석한 카메라 컴포넌트를 사용합니다.
+	return World->GetMainCamera();
 }
 
 void FGameViewportClient::SetInputEnabled(const bool bEnabled)
