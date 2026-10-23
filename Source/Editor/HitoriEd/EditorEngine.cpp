@@ -1253,7 +1253,7 @@ void UEditorEngine::EndPlayMap()
 	DestroyPIEWindow();
 	PlayWorld->EndPlay();
 	ReleaseWorldShadowResources(PlayWorld);
-	PlayWorld->ClearWorld();
+	PlayWorld->Shutdown();
 	DestroyWorldContext(PlayWorld);
 	delete PlayWorld;
 	PlayWorld = nullptr;

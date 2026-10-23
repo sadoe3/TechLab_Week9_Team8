@@ -37,7 +37,7 @@ DECLARE_CYCLE_STAT("Gather - Submit", STAT_GatherSubmit);
 
 UWorld::~UWorld()
 {
-
+	Shutdown();
 }
 
 bool UWorld::Init()
@@ -64,6 +64,7 @@ bool UWorld::Init()
 
 AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transform)
 {
+	if (!AcceptsChanges()){ return nullptr; }
 	if (!Class) return nullptr;
 	if (!Class->IsChildOf(AActor::StaticClass())) return nullptr;
 
@@ -104,6 +105,10 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 
 void UWorld::Tick(float DeltaTime)
 {
+	if (!AcceptsChanges())
+	{
+		return;
+	}
 	if (HasBegunPlay())
 	{
 		StartPendingObjects();
@@ -127,25 +132,69 @@ void UWorld::Tick(float DeltaTime)
 
 void UWorld::ClearWorld()
 {
+	// 중복 정리와 종료 중 진입 차단
+	if (bClearingWorld || bShutdown || PlayState == EWorldPlayState::Ending)
+	{
+		return;
+	}
+
+	bClearingWorld = true;
+	BeginPlayList.Reset();
 	// Level 액터를 삭제하기 전에 시점을 내장 카메라로 돌립니다.
 	SetViewTarget(nullptr);
 
-	// BeginPlay 대기 중인 Actor 제거
-	BeginPlayList.Reset();
+	TArray<AActor*> ClearingActors;
 
-	// 액터를 지우기 전에 렌더 프록시와 틱 등록부터 푼다. ClearActors는 액터를 delete만 하므로,
-	// 그대로 두면 지워진 컴포넌트를 가리키는 프록시가 FScene에 남아 다음 프레임에 터진다.
+	for (ULevel* Level : Levels)
+	{
+		if (!Level)
+		{
+			continue;
+		}
+
+		for (AActor* Actor : Level->GetActors())
+		{
+			if (Actor)
+			{
+				ClearingActors.Add(Actor);
+			}
+		}
+	}
+
+	// Level 액터 종료와 초기화 해제
+	for (AActor* Actor : ClearingActors)
+	{
+		Actor->DispatchEndPlay();
+	}
+
+	for (AActor* Actor : ClearingActors)
+	{
+		Actor->UninitializeComponents();
+	}
+
+	// 렌더 등록 일괄 제거
 	Scene.RemoveAllPrimitives();
 	Scene.RemoveAllFogInfo();
 	Scene.RemoveAllLights();
+
 	for (ULevel* Level : Levels)
 	{
-		for (AActor* Actor : Level->Actors)
-			if (Actor)
-				Actor->RegisterAllActorTickFunctions(false);
-		Level->ClearActors();
+		if (Level)
+		{
+			Level->ClearActors();
+		}
 	}
-	HTR_LOG(Info, "{} : ", PersistentLevel->GetActorNum());
+
+	bClearingWorld = false;
+
+	// Fallback Tick 복구
+	if (FallbackCamera)
+	{
+		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+	}
+
+	HTR_LOG(Info, "{} : ", GetActorNum());
+
 }
 
 void UWorld::GatherRenderPackets(FRenderQueue& RenderQueue, const FLODViewContext* LODView, const FFrustumPlanes* Frustum, FRenderer* Renderer)
@@ -494,6 +543,10 @@ UCameraComponent* UWorld::FindCameraComponent(AActor* Actor) const
 
 bool UWorld::SetViewTarget(AActor* Actor)
 {
+	if (Actor && !AcceptsChanges())
+	{
+		return false;
+	}
 	// nullptr은 내장 카메라로 복귀하는 명시적인 요청입니다.
 	AActor* NewViewTarget = Actor ? Actor : FallbackCamera;
 
@@ -527,38 +580,32 @@ UCameraComponent* UWorld::GetMainCamera() const
 
 int32 UWorld::GetActorNum()
 {
-	return PersistentLevel->GetActorNum();
+	return PersistentLevel ? PersistentLevel->GetActorNum() : 0;
 }
 
 bool UWorld::DestroyActor(AActor* Actor)
 {
-	if (!Actor)
+	if (!AcceptsChanges() || !Actor || Actor->GetWorld() != this || Actor->bStopping)
+	{
 		return false;
+	}
 
 	ULevel* Level = Actor->GetLevel();
 
 	if (!Level)
+	{
 		return false;
+	}
 
-	// 선택된 액터를 삭제하기 전에 시점 참조를 복구합니다.
+	// 삭제 전 종료·초기화 해제
+	Actor->DispatchEndPlay();
+	Actor->UninitializeComponents();
+
+	// 삭제 전 시점 복구
 	if (MainViewTarget == Actor)
+	{
 		SetViewTarget(nullptr);
-
-	// 1. BeginPlay 대기열에서 제거
-	//TQueue<AActor*> NewBeginPlayList;
-	//
-	//while (!BeginPlayList.IsEmpty())
-	//{
-	//	AActor* PendingActor = BeginPlayList.Peek();
-	//	BeginPlayList.Dequeue();
-	//
-	//	if (PendingActor != Actor)
-	//	{
-	//		NewBeginPlayList.Enqueue(PendingActor);
-	//	}
-	//}
-	//
-	//BeginPlayList = std::move(NewBeginPlayList);
+	}
 
 	// 2. Level의 Actors에서 제거
 	for (int32 i = Level->Actors.Num() - 1; i >= 0; --i)
@@ -685,7 +732,7 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 
 void UWorld::BeginPlay()
 {
-	if (!IsGameWorld() || PlayState != EWorldPlayState::NotStarted)
+	if (!AcceptsChanges() || !IsGameWorld() || PlayState != EWorldPlayState::NotStarted)
 	{
 		return;
 	}
@@ -712,6 +759,51 @@ void UWorld::BeginPlay()
 
 void UWorld::EndPlay()
 {
+	// 중복 종료와 재진입 차단
+	if (bClearingWorld || PlayState == EWorldPlayState::NotStarted || PlayState == EWorldPlayState::Ending)
+	{
+		return;
+	}
+
+	PlayState = EWorldPlayState::Ending;
+	BeginPlayList.Reset();
+
+	TArray<AActor*> EndingActors;
+
+	// Level 외부 카메라 포함
+	if (FallbackCamera)
+	{
+		EndingActors.Add(FallbackCamera);
+	}
+
+	for (ULevel* Level : Levels)
+	{
+		if (!Level)
+		{
+			continue;
+		}
+
+		for (AActor* Actor : Level->GetActors())
+		{
+			if (Actor)
+			{
+				EndingActors.Add(Actor);
+			}
+		}
+	}
+
+	// 전체 종료 후 초기화 해제
+	for (AActor* Actor : EndingActors)
+	{
+		Actor->DispatchEndPlay();
+	}
+
+	for (AActor* Actor : EndingActors)
+	{
+		Actor->UninitializeComponents();
+	}
+
+	PlayState = EWorldPlayState::NotStarted;
 }
 
 UWorld* UWorld::CreateWorld(const EWorldType InWorldType, bool bInformEngineOfWorld, FName WorldName)
@@ -792,7 +884,7 @@ void UWorld::Serialize(FStructuredArchive::FRecord Record)
 
 void UWorld::QueueActorForBeginPlay(AActor* Actor)
 {
-	if (!IsRunningPlay() || !Actor || Actor->GetWorld() != this || Actor->HasBegunPlay())
+	if (!Actor || Actor->GetWorld() != this || Actor->HasBegunPlay() || !Actor->CanRunGameplay())
 	{
 		return;
 	}
@@ -802,13 +894,12 @@ void UWorld::QueueActorForBeginPlay(AActor* Actor)
 
 void UWorld::QueueComponentForBeginPlay(UActorComponent* Component)
 {
-	if (!IsRunningPlay() || !Component || !Component->IsRegistered() || Component->HasBegunPlay())
+	if (!Component || Component->HasBegunPlay()	|| !Component->CanRunGameplay())
 	{
 		return;
 	}
 
-	AActor* Owner = Component->GetOwner();
-	if (!Owner || Owner->GetWorld() != this)
+	if (Component->GetOwner()->GetWorld() != this)
 	{
 		return;
 	}
@@ -818,7 +909,7 @@ void UWorld::QueueComponentForBeginPlay(UActorComponent* Component)
 
 void UWorld::StartPendingObjects()
 {
-	if (!IsRunningPlay())
+	if (!AcceptsChanges()||!IsRunningPlay())
 	{
 		return;
 	}
@@ -894,4 +985,37 @@ void UWorld::StartPendingObjects()
 	{
 		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
 	}
+}
+
+void UWorld::Shutdown()
+{
+	// 중복 Shutdown과 정리 중 진입 차단
+	if (bShutdown || bShuttingDown || bClearingWorld || PlayState == EWorldPlayState::Ending)
+	{
+		return;
+	}
+
+	bShuttingDown = true;
+
+	EndPlay();
+	ClearWorld();
+
+	MainViewTarget = nullptr;
+
+	// 내장 카메라 해제
+	delete FallbackCamera;
+	FallbackCamera = nullptr;
+
+	// 소유 Level 해제
+	for (ULevel* Level : Levels)
+	{
+		delete Level;
+	}
+
+	Levels.Reset();
+	PersistentLevel = nullptr;
+	CurrentLevel = nullptr;
+
+	bShutdown = true;
+	bShuttingDown = false;
 }

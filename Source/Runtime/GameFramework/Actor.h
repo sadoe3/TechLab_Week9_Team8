@@ -31,7 +31,9 @@ public:
 	void TickActor(float DeltaTime)
 	{
 		if (bHasBegunPlay && CanRunGameplay())
+		{
 			Tick(DeltaTime);
+		}
 	}
 	bool HasBegunPlay() const { return bHasBegunPlay; }
 
@@ -78,8 +80,12 @@ protected:
 	UWorld* World = nullptr;
 	ULevel* Level = nullptr;
 private:
-	// World가 호출하는 공통 시작 진입점
+	// World가 호출하는 공통 진입점
 	void DispatchBeginPlay();
+	void DispatchEndPlay();
+	void UninitializeComponents();
+
 	bool bBeginningPlay = false;
 	bool bHasBegunPlay = false;
+	bool bStopping = false;
 };

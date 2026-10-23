@@ -189,10 +189,7 @@ void FEngineLoop::Exit()
 	// 대량 Proxy를 먼저 일괄 제거
 	for (TObjectIterator<UWorld> It; It; ++It)
 	{
-		FScene& Scene = It->GetScene();
-		Scene.RemoveAllPrimitives();
-		Scene.RemoveAllFogInfo();
-		Scene.RemoveAllLights();
+		It->Shutdown();
 	}
 
 	// Owner와 World가 살아 있는 동안 등록 상태와 개별 자원을 정리

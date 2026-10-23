@@ -90,3 +90,34 @@ void UActorComponent::DispatchBeginPlay()
 		PrimaryComponentTick.RegisterTickFunction(Owner->GetWorld()->GetTickTaskManager());
 	}
 }
+
+void UActorComponent::DispatchEndPlay()
+{
+	// 시작하지 않았더라도 남은 Tick 등록은 해제
+	PrimaryComponentTick.UnRegisterTickFunction();
+
+	if (!bHasBegunPlay || bStopping)
+	{
+		return;
+	}
+
+	// 훅 내부 재호출이 같은 종료를 반복하지 않도록 먼저 상태를 변경
+	bStopping = true;
+	bHasBegunPlay = false;
+	EndPlay();
+	bStopping = false;
+}
+
+void UActorComponent::DispatchUninitializeComponent()
+{
+	// 시작 종료와 초기화가 반환된 뒤에만 초기화 자원을 해제
+	if (!bInitialized || bHasBegunPlay || bStopping || bInitializing || bBeginningPlay)
+	{
+		return;
+	}
+
+	bStopping = true;
+	bInitialized = false;
+	UninitializeComponent();
+	bStopping = false;
+}

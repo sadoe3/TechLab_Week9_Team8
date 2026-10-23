@@ -37,7 +37,8 @@ enum class EWorldPlayState : uint8
 {
 	NotStarted,
 	Starting,
-	Playing
+	Playing,
+	Ending
 };
 
 class UWorld : public UObject
@@ -55,7 +56,7 @@ public:
 	template <class T>
 	T* SpawnActor(FName InName = NAME_None, const FTransform* Transform = nullptr)
 	{
-		return CastChecked<T>(SpawnActor(T::StaticClass(), InName, Transform));
+		return Cast<T>(SpawnActor(T::StaticClass(), InName, Transform));
 	}
 
 	void Tick(float DeltaTime);
@@ -92,6 +93,14 @@ public:
 
 	void BeginPlay();
 	void EndPlay();
+
+	void Shutdown();
+
+	bool AcceptsChanges()const
+	{
+		return !bClearingWorld && !bShuttingDown && !bShutdown
+			&& PlayState != EWorldPlayState::Ending;
+	}
 
 	// 게임월드 여부 판정. 플레이 시작에 사용
 	bool IsGameWorld()const
@@ -186,4 +195,9 @@ private:
 	void StartPendingObjects();
 
 	EWorldPlayState PlayState = EWorldPlayState::NotStarted;
+
+	// 중복 정리 막는 변수
+	bool bClearingWorld = false;
+	bool bShuttingDown = false;
+	bool bShutdown = false;
 };

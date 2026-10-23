@@ -18,6 +18,10 @@ AActor::AActor()
 
 AActor::~AActor()
 {
+    // 소멸 중 실행 차단
+    bStopping = true;
+    RegisterAllActorTickFunctions(false);
+
     TArray<UActorComponent*> ToDelete = Components;
 
     for (UActorComponent* Component : ToDelete)
@@ -41,7 +45,8 @@ void AActor::BeginPlay()
 
 bool AActor::CanRunGameplay() const
 {
-    return World && World->IsRunningPlay();
+    return !bStopping && World && World->IsRunningPlay() && World->AcceptsChanges();
+
 }
 
 void AActor::DispatchBeginPlay()
@@ -54,9 +59,6 @@ void AActor::DispatchBeginPlay()
 
     bBeginningPlay = true;
 
-    // 콜백에서 AddComponent()가 호출돼도 순회 배열이 재할당되지 않게 복사
-    const TArray<UActorComponent*> StartingComponents = Components;
-
     // 컴포넌트 준비 후 액터 호출
     BeginPlay();
     bHasBegunPlay = true;
@@ -65,6 +67,56 @@ void AActor::DispatchBeginPlay()
     // 시작 후 틱함수 등록
     RegisterAllActorTickFunctions(true);
 }
+
+void AActor::DispatchEndPlay()
+{
+    if (bStopping)
+    {
+        return;
+    }
+
+    bStopping = true;
+    RegisterAllActorTickFunctions(false);
+
+    if (bHasBegunPlay)
+    {
+        // 중복 종료 방지
+        bHasBegunPlay = false;
+        EndPlay();
+    }
+
+    for (UActorComponent* Component : Components)
+    {
+        if (Component)
+        {
+            Component->DispatchEndPlay();
+        }
+    }
+
+    bStopping = false;
+}
+
+void AActor::UninitializeComponents()
+{
+    if (bStopping)
+    {
+        return;
+    }
+
+    // 해제 중 소유 구성 변경 차단
+    bStopping = true;
+
+    for (UActorComponent* Component : Components)
+    {
+        if (Component)
+        {
+            Component->DispatchUninitializeComponent();
+        }
+    }
+
+    bStopping = false;
+}
+
 void AActor::RegisterAllActorTickFunctions(bool bRegister)
 {
 	if (bRegister && (!bHasBegunPlay || !CanRunGameplay()))
@@ -290,7 +342,8 @@ bool AActor::Destroy()
 
 UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 {
-    if (!ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
+    if (bStopping || (World && !World->AcceptsChanges()) ||
+        !ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
     {
         return nullptr;
     }
@@ -326,8 +379,11 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 
 void AActor::DestroyComponent(UActorComponent* Component)
 {
-    if (!Component)
+    if (!Component || Component->GetOwner() != this || bStopping || Component->IsPendingDestroy()
+        || (World && !World->AcceptsChanges()))
+    {
         return;
+    }
 
     if (Component == RootComponent)
     {
@@ -335,26 +391,39 @@ void AActor::DestroyComponent(UActorComponent* Component)
         return;
     }
 
+    // 종료 중 중첩 변경 차단
+    bStopping = true;
+    Component->bPendingDestroy = true;
+
+    Component->DispatchEndPlay();
+    Component->DispatchUninitializeComponent();
+
     if (USceneComponent* Parent = Cast<USceneComponent>(Component))
     {
         TArray<USceneComponent*> Children = Parent->GetAttachChildren();
         for (USceneComponent* Candidate : Children)
         {
-            if (!Candidate) { continue; }
+            if (!Candidate)
+            {
+                continue;
+            }
 
             Candidate->DetachFromParent(EAttachmentRule::KeepWorld);
             Candidate->SetupAttachment(Parent->GetAttachParent(), EAttachmentRule::KeepWorld);
         }
     }
 
-    // 현재 시점에 사용하는 카메라 컴포넌트를 삭제하면 내장 카메라로 복귀합니다.
+    // 삭제 전 시점 복구
     if (World && World->GetMainCamera() == Component)
+    {
         World->SetViewTarget(nullptr);
+    }
 
     Component->UnregisterComponent();
     RemoveOwnedComponent(Component);
     delete Component;
-    return;
+
+    bStopping = false;
 }
 
 void AActor::OnDefaultSubobjectCreated(UObject* Subobject)
