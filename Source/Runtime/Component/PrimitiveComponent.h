@@ -47,6 +47,10 @@ public:
 	FComponentEndOverlapSignature OnComponentEndOverlap;
 	FComponentHitSignature OnComponentHit;
 
+	void NotifyBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp);
+	void NotifyEndOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp);
+	void NotifyHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
+
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue);

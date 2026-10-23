@@ -48,6 +48,24 @@ void UPrimitiveComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
+void UPrimitiveComponent::NotifyBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp)
+{
+	if (bGenerateOverlapEvents == false) return;
+	OnComponentBeginOverlap.Broadcast(this, OtherActor, OtherComp);
+}
+
+void UPrimitiveComponent::NotifyEndOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp)
+{
+	if (bGenerateOverlapEvents == false) return;
+	OnComponentEndOverlap.Broadcast(this, OtherActor, OtherComp);
+}
+
+void UPrimitiveComponent::NotifyHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit)
+{
+	if (bBlockComponent == false) return;
+	OnComponentHit.Broadcast(this, OtherActor, OtherComp, Hit);
+}
+
 
 void UPrimitiveComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue)
 {
