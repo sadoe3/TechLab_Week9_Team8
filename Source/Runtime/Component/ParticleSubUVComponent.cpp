@@ -31,32 +31,10 @@ UParticleSubUVComponent::UParticleSubUVComponent()
 	Material = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
 }
 
-// 파티클 에셋과 배열을 준비하고 초기 상태를 채운다.
+
 void UParticleSubUVComponent::BeginPlay()
 {
-	if (!Material)
-	{
-		Material = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
-	}
 	Super::BeginPlay();
-
-	Particles.Reserve(ParticleCount);
-	for (int32 i = 0; i < ParticleCount; ++i)
-	{
-		FParticle Particle;
-		RespawnParticle(Particle);
-
-		Particle.Age = GetRandomNumberBetween(0.0f, Particle.LifeTime);
-		Particle.Location.Z += Particle.Velocity.Z * Particle.Age;
-
-		const float LifeRatio = Particle.Age / Particle.LifeTime;
-		Particle.Scale = Lerp(StartScale, EndScale, LifeRatio);
-
-		const float ElapsedFrames = Particle.Age * FrameRate;
-		Particle.SubUVFrame = static_cast<uint32>(ElapsedFrames) % (ColSize * RowSize);
-
-		Particles.Add(Particle);
-	}
 }
 
 // 열·행 개수가 양수인지 검사해 SubUV 분할 수를 설정한다.
@@ -118,6 +96,38 @@ void UParticleSubUVComponent::TickComponent(float DeltaTime)
 		}
 	}
 }
+
+// 파티클 에셋과 배열을 준비하고 초기 상태를 채운다.
+void UParticleSubUVComponent::OnRegister()
+{
+	if (!Material)
+	{
+		Material = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
+	}
+	Super::OnRegister();
+
+	// 재등록시 중첩을 막기위한 리셋
+	Particles.Reset();
+	Particles.Reserve(ParticleCount);
+	for (int32 i = 0; i < ParticleCount; ++i)
+	{
+		FParticle Particle;
+		RespawnParticle(Particle);
+
+		Particle.Age = GetRandomNumberBetween(0.0f, Particle.LifeTime);
+		Particle.Location.Z += Particle.Velocity.Z * Particle.Age;
+
+		const float LifeRatio = Particle.Age / Particle.LifeTime;
+		Particle.Scale = Lerp(StartScale, EndScale, LifeRatio);
+
+		const float ElapsedFrames = Particle.Age * FrameRate;
+		Particle.SubUVFrame = static_cast<uint32>(ElapsedFrames) % (ColSize * RowSize);
+
+		Particles.Add(Particle);
+	}
+}
+
+
 
 // 기본 카메라 기준으로 파티클 상수와 렌더 패킷을 구성한다.
 void UParticleSubUVComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue)

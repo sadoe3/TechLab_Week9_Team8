@@ -46,7 +46,7 @@ public:
 	
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime) override;
-
+	virtual void OnRegister() override;
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue) override;
 	// SceneRenderer가 View별 거리 정렬 입력을 만들 수 있도록 현재 파티클 배열을 읽기 전용으로 제공한다.
 	const TArray<FParticle>& GetParticlesForView() const { return Particles; }

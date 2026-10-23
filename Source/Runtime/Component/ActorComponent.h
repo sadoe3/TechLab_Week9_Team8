@@ -22,7 +22,9 @@ public:
 	bool IsRegistered() const { return bRegistered; }
 
 	virtual void InitializeComponent() {};
+	virtual void UninitializeComponent() {};
 	virtual void BeginPlay() {};
+	virtual void EndPlay() {};
 	virtual void TickComponent(float DeltaTime) 
 	{
 		//HTR_LOG(Info, "TickComponent");
@@ -48,6 +50,9 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record);
 
+	bool IsPendingDestroy() const { return bPendingDestroy; }
+	bool CanRunGameplay() const;
+
 protected:
 	// 씬 연결시 등록 자원 준비
 	virtual void OnRegister() {}
@@ -58,9 +63,24 @@ protected:
 	virtual void CreateRenderState() {}
 	virtual void DestroyRenderState() {}
 private:
+	friend class AActor;
+	friend class UWorld;
+
 	AActor* Owner = nullptr;
 	bool bHiddenInDetails = false;
 	bool bHiddenInGame = false;
 	bool bIsActive = true;
 	bool bRegistered = false;
+	
+
+	// 엔진은 비가상 진입점, 내부는 가상 훅을 호출
+	void DispatchInitializeComponent();
+	void DispatchBeginPlay();
+	void DispatchEndPlay();
+	void DispatchUninitializeComponent();
+
+	bool bInitialized = false;
+	bool bHasBegunPlay = false;
+	bool bStopping = false;
+	bool bPendingDestroy = false;
 };
