@@ -52,6 +52,16 @@ public:
 		return handle.ID;
 	}
 
+	template <typename T>
+	FDelegateHandle AddRaw(T* Instance, void (T::*Func)(Args...)) {
+		FHandlerEntry handle;
+		handle.ID = FDelegateHandle::Generate();
+		handle.func = [Instance, Func](Args... args) {(Instance->*Func)(arg...);};
+		handle.Owner = Instance;
+		Handlers.Push(handle);
+		return handle.ID;
+	}
+
 	void Remove(FDelegateHandle inHandler) {
 		for (int32 i = Handlers.Num() - 1; i >= 0; i--) {
 			if (Handlers[i].ID == inHandler) {
