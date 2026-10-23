@@ -50,6 +50,19 @@ void AActor::BeginPlay()
 	RegisterAllActorTickFunctions(true);
 }
 
+void AActor::EndPlay()
+{
+    // 종료하는 액터와 컴포넌트의 Tick 등록을 해제한다.
+    RegisterAllActorTickFunctions(false);
+
+    for (UActorComponent* Component : Components)
+    {
+        assert(Component != nullptr);
+     
+        Component->EndPlay();
+    }
+}
+
 void AActor::RegisterAllActorTickFunctions(bool bRegister)
 {
 	if (bRegister && !World)
@@ -324,6 +337,8 @@ void AActor::DestroyComponent(UActorComponent* Component)
         HTR_LOG(Warning, "DefaultSceneRoot cannot be deleted.");
         return;
     }
+
+    Component->EndPlay();
 
     if (USceneComponent* Parent = Cast<USceneComponent>(Component))
     {

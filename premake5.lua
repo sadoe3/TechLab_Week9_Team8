@@ -161,6 +161,7 @@ project "HitoriEngine"
 		"Source/Runtime/**.h",
 		"Source/Runtime/**.hpp",
 		"Source/Runtime/**.cpp",
+		"Source/Runtime/**.lua",
 	}
 
 	includedirs

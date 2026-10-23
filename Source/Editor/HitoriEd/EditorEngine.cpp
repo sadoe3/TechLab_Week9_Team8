@@ -1208,6 +1208,10 @@ void UEditorEngine::StartPlayInEditorSession()
 		DestroyPIEWindow();
 		return;
 	}
+
+	// Todo: Temp lua
+	PlayWorld->BeginPlay(); 
+
     if (IsPIEInWindow())
         PIEViewport = PIEPanel->GetViewport(0);
     else

@@ -522,6 +522,8 @@ bool UWorld::DestroyActor(AActor* Actor)
 
 	BeginPlayList = std::move(NewBeginPlayList);
 
+	Actor->EndPlay();
+
 	// 2. Level의 Actors에서 제거
 	for (int32 i = Level->Actors.Num() - 1; i >= 0; --i)
 	{
@@ -552,7 +554,7 @@ bool UWorld::DestroyActor(AActor* Actor)
 		}
 	}
 
-	Actor->RegisterAllActorTickFunctions(false);
+	//Actor->RegisterAllActorTickFunctions(false);
 
 	// 4. Actor 삭제
 	delete Actor;
@@ -663,10 +665,33 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 
 void UWorld::BeginPlay()
 {
+	// Todo: Temp Lua
+	TempLuaRuntime = MakeUnique<FTempLuaRuntime>();
 }
 
 void UWorld::EndPlay()
 {
+	// VM이 살아 있는 동안 모든 레벨의 액터를 종료한다.
+	for (ULevel* Level : Levels)
+	{
+		assert(Level != nullptr);
+
+		for (AActor* Actor : Level->GetActors())
+		{
+			assert(Actor != nullptr);
+
+			Actor->EndPlay();
+		}
+	}
+	
+	// 메인 카메라는 레벨에 속하지 않으므로 별도로 종료한다.
+	if (MainCamera)
+	{
+		MainCamera->EndPlay();
+	}
+
+	// 컴포넌트의 Lua 참조를 정리한 뒤 VM을 해제한다.
+	TempLuaRuntime.reset();
 }
 
 UWorld* UWorld::CreateWorld(const EWorldType InWorldType, bool bInformEngineOfWorld, FName WorldName)

@@ -14,6 +14,7 @@
 #include "Camera/CameraActor.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
+#include "TempLuaRuntime.h"
 
 //class ACameraActor;
 class ULevel;
@@ -97,8 +98,16 @@ public:
 
 	static UWorld* GetDuplicatedWorldForPIE(UWorld* InWorld);
 
-	virtual void PostDuplicate(bool bDuplicateForPIE) override;
+	// Todo: Temp Lua
+	FTempLuaRuntime* GetLuaRuntime() const
+	{
+		return TempLuaRuntime.get();
+	}
 
+	TUniquePtr<FTempLuaRuntime> TempLuaRuntime;
+	//
+
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;
 
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;

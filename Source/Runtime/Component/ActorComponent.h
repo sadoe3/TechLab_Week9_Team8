@@ -23,6 +23,7 @@ public:
 	{
 		//HTR_LOG(Info, "TickComponent");
 	};
+	virtual void EndPlay() {};
 
 	void SetOwner(AActor* InOwner) { Owner = InOwner; }
     AActor* GetOwner() const { return Owner; }

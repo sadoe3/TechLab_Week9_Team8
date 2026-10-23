@@ -23,6 +23,8 @@
 #include "UObject/UObjectIterator.h"
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
+#include "Component/ScriptComponent.h"
+
 #include <algorithm>
 
 
@@ -989,6 +991,15 @@ namespace
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
+
+			if (ImGui::MenuItem("Script Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UScriptComponent::StaticClass(), FString(ComponentNameInputBuf)); 
+
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+
 			ImGui::EndPopup();
 		}
 	}
