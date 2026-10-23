@@ -56,7 +56,7 @@ public:
 	FDelegateHandle AddRaw(T* Instance, void (T::*Func)(Args...)) {
 		FHandlerEntry handle;
 		handle.ID = FDelegateHandle::Generate();
-		handle.func = [Instance, Func](Args... args) {(Instance->*Func)(arg...);};
+		handle.func = [Instance, Func](Args... args) {(Instance->*Func)(args...);};
 		handle.Owner = Instance;
 		Handlers.Push(handle);
 		return handle.ID;
@@ -102,3 +102,5 @@ private:
 	TArray <FHandlerEntry> Handlers;
 
 };
+
+#define DECLARE_DELEGATE(Name, ...) using Name = TMulticastDelegate<__VA_ARGS__>

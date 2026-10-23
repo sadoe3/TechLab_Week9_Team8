@@ -6,8 +6,10 @@
 #include "Render/RenderPacket.h"
 #include "Render/GeometryGenerator.h"
 #include "Collision/HitResult.h"
+#include "Core/Misc/Delegate.h"
 
 class FPrimitiveSceneProxy;
+class UPrimitiveComponent;
 
 enum class EPrimitiveType
 {
@@ -19,6 +21,10 @@ enum class EPrimitiveType
 	Particle,
 	ParticleQuad
 };
+
+DECLARE_DELEGATE(FComponentBeginOverlapSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*);
+DECLARE_DELEGATE(FComponentEndOverlapSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*);
+DECLARE_DELEGATE(FComponentHitSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*, const FHitResult&);
 
 class UPrimitiveComponent :public USceneComponent
 {
@@ -36,6 +42,10 @@ public:
 	virtual ~UPrimitiveComponent();
 
 	virtual void BeginPlay() override;
+
+	FComponentBeginOverlapSignature OnComponentBeginOverlap;
+	FComponentEndOverlapSignature OnComponentEndOverlap;
+	FComponentHitSignature OnComponentHit;
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -67,6 +77,12 @@ public:
 		MarkRenderStateDirty();
 	}
 
+	bool IsGenerateOverlapEvents() const { return bGenerateOverlapEvents; }
+	void SetGenerateOverlapEvents(bool bInOverlap) { bGenerateOverlapEvents = bInOverlap; }
+	bool IsBlock() const { return bBlockComponent; }
+	void SetBlock(bool bInBlock) { bBlockComponent = bInBlock; }
+
+
 	virtual bool LineTraceComponent(const FRay& WorldRay, FHitResult& OutHit);
 	virtual bool LineTraceComponentLocal(const FRay& LocalRay, float& OutT);
 	virtual FBox CalcLocalBounds() const override
@@ -89,6 +105,8 @@ protected:
 	bool bVisible = true;
 	bool bCastShadow = true;
 	bool bReceiveShadow = true;
+	bool bGenerateOverlapEvents = false;
+	bool bBlockComponent = false;	// Hit 대상인지
 
 private:
 	friend class FScene;
