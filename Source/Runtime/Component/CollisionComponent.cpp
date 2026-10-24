@@ -22,5 +22,5 @@ void UCollisionComponent::OnBeginOverlap(UCollisionComponent* OtherComponent)
     }
 
     // 기존 Actor → ScriptComponent → Lua 경로로 전달한다.
-    OwnerActor->NotifyActorBeginOverlap(OtherActor);
+    //OwnerActor->NotifyActorBeginOverlap(OtherActor);
 }
