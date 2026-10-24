@@ -23,6 +23,12 @@ public:
     void OnBeginOverlap(AActor* otherActor);
 
 private:
+    // 환경 내부의 선택적 이벤트 조회
+    bool CacheFunction(const char* EventName, sol::protected_function& OutFunction);
+
+    // 컴포넌트의 Lua 참조 해제
+    void ResetScript();
+
     FString ScriptPath;
     sol::environment ScriptEnvironment;
 
@@ -30,7 +36,7 @@ private:
     sol::protected_function TickFunction;
     sol::protected_function EndPlayFunction;
     sol::protected_function BeginOverlapFunction;
-
+    sol::protected_function EndOverlapFunction;
     bool bScriptReady = false;
 };
 

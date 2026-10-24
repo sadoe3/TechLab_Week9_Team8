@@ -9,7 +9,8 @@ public:
 	static bool SaveScene(UWorld* World);
 	static bool SaveSceneAs(UWorld* World);
 	static bool LoadScene(UWorld* World);
-
+	// 현재 씬 이름 조회
+	static FString GetCurrentSceneName();
 	// 적용 완료 후 저장 경로 갱신
 	static void SetCurrentScenePath(const FString& ScenePath)
 	{

@@ -100,6 +100,15 @@ bool FEditorFileUtils::LoadScene(UWorld* World)
 	return GEngine->RequestSceneChange(World, FilePath);
 }
 
+FString FEditorFileUtils::GetCurrentSceneName()
+{
+	if (CurrentScenePath.empty())
+	{
+		return "Untitled";
+	}
+	return fs::path(CurrentScenePath).stem().string();
+}
+
 FString FEditorFileUtils::OpenSaveSceneDialog()
 {
 	char FilePath[MAX_PATH] = {};

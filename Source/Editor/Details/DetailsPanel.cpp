@@ -24,6 +24,9 @@
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
 #include "UObject/UObjectHash.h"
+#include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
+#include "Component/ScriptComponent.h"
 #include <algorithm>
 
 
@@ -828,6 +831,29 @@ namespace
 			{
 				*Value = Buffer;
 			}
+			// 스크립트 경로의 생성·편집 버튼
+			UScriptComponent* ScriptComponent = Cast<UScriptComponent>(Object);
+			if (ScriptComponent && Property.Name == "ScriptPath")
+			{
+				if (ImGui::Button("Create"))
+				{
+					AActor* OwnerActor = ScriptComponent->GetOwner();
+					if (OwnerActor)
+					{
+						const FString SceneName = FEditorFileUtils::GetCurrentSceneName();
+
+						bChanged |= FLuaScriptEditorUtils::CreateLuaScript(SceneName, OwnerActor->GetName(), *Value);
+					}
+				}
+
+				ImGui::SameLine();
+				ImGui::BeginDisabled(Value->empty());
+				if (ImGui::Button("Edit"))
+				{
+					FLuaScriptEditorUtils::EditLuaScript(*Value);
+				}
+				ImGui::EndDisabled();
+			}
 			if (CustomFont) ImGui::PopFont();
 			break;
 		}
@@ -987,6 +1013,12 @@ namespace
 			if (ImGui::MenuItem("Projectile Movement Component"))
 			{
 				OutSelectedComponent = Actor->AddComponent(UProjectileMovementComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Script Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UScriptComponent::StaticClass(), FString(ComponentNameInputBuf));
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
