@@ -41,14 +41,14 @@ void UScriptComponent::BeginPlay()
         return;
     }
 
-    // 이 Environment의 OnBeginOverlap 값을 가져온다.
+    // 이 Environment의 Lua OnOverlap 함수를 찾는다.
     {
-        sol::object BeginOverlapObject = ScriptEnvironment.raw_get<sol::object>("OnBeginOverlap");
+        sol::object OverlapObject = ScriptEnvironment.raw_get<sol::object>("OnOverlap");
         
         // 함수가 정의돼 있을 때만 참조를 보관한다.
-        if (BeginOverlapObject.is<sol::protected_function>())
+        if (OverlapObject.is<sol::protected_function>())
         {
-            BeginOverlapFunction = BeginOverlapObject.as<sol::protected_function>();
+            BeginOverlapFunction = OverlapObject.as<sol::protected_function>();
         }
     }
 
@@ -164,14 +164,14 @@ void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
         return;
     }
 
-    // Lua의 OnBeginOverlap(OtherActor)을 호출한다.
+    // C++ 겹침 시작 알림을 Lua OnOverlap(OtherActor)으로 전달한다.
     sol::protected_function_result Result = BeginOverlapFunction(OtherActor);
 
     // Lua 오류를 엔진 로그에 기록한다.
     if (Result.valid() == false)
     {
         sol::error Error = Result;
-        HTR_LOG(Error, "Lua OnBeginOverlap failed ({}): {}", ScriptPath, Error.what());
+        HTR_LOG(Error, "Lua OnOverlap failed ({}): {}", ScriptPath, Error.what());
     }
 }
 

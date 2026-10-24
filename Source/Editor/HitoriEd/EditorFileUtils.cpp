@@ -7,6 +7,18 @@
  
 FString FEditorFileUtils::CurrentScenePath = "";
 
+FString FEditorFileUtils::GetCurrentSceneName()
+{
+	// 새 씬이거나 아직 저장하지 않았다면 기본 이름을 사용한다.
+	if (CurrentScenePath.empty())
+	{
+		return "Untitled";
+	}
+
+	// 예: Scene/Main.scene -> Main
+	return fs::path(CurrentScenePath).stem().string();
+}
+
 bool FEditorFileUtils::NewScene(UWorld* World)
 {
 	if (!World)

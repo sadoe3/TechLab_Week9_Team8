@@ -20,6 +20,6 @@ function EndPlay()
     print("Lua EndPlay", ElapsedTime)
 end
 
-function OnBeginOverlap(OtherActor)
-    print("Lua OnBeginOverlap", OtherActor ~= nil)
+function OnOverlap(OtherActor)
+    print("Lua OnOverlap", OtherActor ~= nil)
 end

@@ -345,7 +345,7 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 	return NewComponent;
 }
 
-void AActor::DestroyComponent(ent* Component)
+void AActor::DestroyComponent(UActorComponent* Component)
 {
     if (!Component)
         return;
