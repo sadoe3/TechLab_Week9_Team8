@@ -1,6 +1,7 @@
 #pragma once
 #include "ActorComponent.h"
 #include "SceneComponent.h"
+#include "UObject/WeakObjectPtr.h"
 
 class UMovementComponent : public UActorComponent
 {
@@ -9,7 +10,7 @@ class UMovementComponent : public UActorComponent
 		REFLECT_END()
 
 protected:
-	USceneComponent* UpdatedComponent;
+	TWeakObjectPtr<USceneComponent> UpdatedComponent;
 
 public:
 	FVector Velocity;

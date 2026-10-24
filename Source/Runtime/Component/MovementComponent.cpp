@@ -29,11 +29,6 @@ void UMovementComponent::TickComponent(float DeltaTime)
 
 void UMovementComponent::SetUpdatedComponent(USceneComponent* NewComponent)
 {
-	if (NewComponent == nullptr)
-	{
-		return;
-	}
-
 	UpdatedComponent = NewComponent;
 }
 

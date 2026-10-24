@@ -52,7 +52,7 @@ public:
 	// Homing
 	bool bIsHomingProjectile;
 	float HomingAccelerationMagnitude;
-	USceneComponent* HomingTargetComponent = nullptr;
+	TWeakObjectPtr<USceneComponent> HomingTargetComponent = nullptr;
 
 	// Interpolation
 
