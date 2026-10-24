@@ -3,6 +3,7 @@
 #include "Core/EngineString.h"
 #include <sol/sol.hpp>
 #include <utility>
+#include "Containers/Map.h"
 
 // Envirment 소유 액터
 class AActor;
@@ -43,6 +44,10 @@ public:
 		return CheckResult(Result, ScriptPath, EventName);
 	}
 
+	// 코루틴 생성 함수
+	uint32 CreateCoroutine(const sol::protected_function& Function, const FString& ScriptPath);
+	// 코루틴 실행 재개
+	sol::call_status ResumeCoroutine(uint32 CoroutineID);
 private:
 	bool CheckResult(const sol::protected_function_result& Result,
 		const FString& ScriptPath, const char* EventName) const;
@@ -51,5 +56,18 @@ private:
 	void LogError(const FString& ScriptPath,
 		const char* EventName, const char* Message) const;
 
+	// Coroutine 실행 상태
+	struct FLuaCoroutine
+	{
+		sol::thread Thread;
+		sol::coroutine Function;
+		FString ScriptPath;
+	};
+
+	// 실행 상태보다 늦게 해제할 VM
 	sol::state Lua;
+
+	// ID별 실행 상태
+	TMap<uint32, FLuaCoroutine> Coroutines;
+	uint32 NextCoroutineID = 1;
 };

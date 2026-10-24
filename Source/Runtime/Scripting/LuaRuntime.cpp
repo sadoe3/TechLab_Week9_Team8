@@ -40,6 +40,54 @@ bool FLuaRuntime::LoadScript(
 	return CheckResult(Result, ScriptPath, "Load");
 }
 
+uint32 FLuaRuntime::CreateCoroutine(const sol::protected_function& Function, const FString& ScriptPath)
+{
+	// 실행 함수 검증
+	if (!Function.valid())
+	{
+		LogError(ScriptPath, "CreateCoroutine", "Invalid Lua function");
+		return 0;
+	}
+
+	// 별도 실행 스택과 함수 연결
+	FLuaCoroutine Entry;
+	Entry.Thread = sol::thread::create(Lua.lua_state());
+	Entry.Function = sol::coroutine(Entry.Thread.thread_state(), Function);
+	Entry.ScriptPath = ScriptPath;
+
+	// 실행 상태 등록
+	const uint32 CoroutineID = NextCoroutineID++;
+	Coroutines.Add(CoroutineID, Entry);
+	return CoroutineID;
+}
+
+sol::call_status FLuaRuntime::ResumeCoroutine(uint32 CoroutineID)
+{
+	// 실행 상태 조회
+	FLuaCoroutine* Entry = Coroutines.Find(CoroutineID);
+	if (!Entry)
+	{
+		LogError("<unknown>", "ResumeCoroutine", "Unknown or finished coroutine");
+		return sol::call_status::runtime;
+	}
+
+	sol::call_status Status;
+	{
+		// 결과 정리 범위
+		sol::protected_function_result Result = Entry->Function();
+		Status = Result.status();
+		CheckResult(Result, Entry->ScriptPath, "ResumeCoroutine");
+	}
+
+	// 실행 중단된 상태가 아니라면->함수 완료/실행 실패 둘중 하나인 경우, 작업 제거
+	if (Status != sol::call_status::yielded)
+	{
+		Coroutines.Remove(CoroutineID);
+	}
+
+	return Status;
+}
+
 // 실패 결과가 확인된 경우에만 Lua 오류로 변환합니다.
 bool FLuaRuntime::CheckResult(
 	const sol::protected_function_result& Result,
