@@ -6,6 +6,7 @@
 #include "Render/RenderPacket.h"
 #include "Render/GeometryGenerator.h"
 #include "Collision/HitResult.h"
+#include "Collision/BodyInstance.h"
 
 class FPrimitiveSceneProxy;
 
@@ -30,12 +31,36 @@ class UPrimitiveComponent :public USceneComponent
 		PROPERTY(bVisible)
 		PROPERTY(bCastShadow)
 		PROPERTY(bReceiveShadow)
+		PROPERTY(bGenerateOverlapEvents)
+		PROPERTY(CollisionEnabled)
+		PROPERTY(ObjectType)
+		PROPERTY(CollisionResponses.WorldStatic)
+		PROPERTY(CollisionResponses.WorldDynamic)
+		PROPERTY(CollisionResponses.Pawn)
 	REFLECT_END()
 public:
 	UPrimitiveComponent();
 	virtual ~UPrimitiveComponent();
 
 	virtual void BeginPlay() override;
+	virtual FCollisionLocalShape GetCollisionShape() const { return {}; }
+	const FBodyInstance& GetBodyInstance() const;
+	void CreatePhysicsState();
+	void DestroyPhysicsState();
+	ECollisionEnabled GetCollisionEnabled() const { return CollisionEnabled == static_cast<int32>(ECollisionEnabled::QueryOnly) ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision; }
+	ECollisionChannel GetCollisionObjectType() const { return static_cast<ECollisionChannel>(ObjectType); }
+	const FCollisionResponseContainer& GetCollisionResponses() const { return CollisionResponses; }
+	void SetCollisionEnabled(ECollisionEnabled NewEnabled);
+	void SetCollisionObjectType(ECollisionChannel NewType);
+	void SetCollisionResponseToChannel(ECollisionChannel Channel, ECollisionResponse Response);
+	void SetCollisionResponseToAllChannels(ECollisionResponse Response);
+	bool GetGenerateOverlapEvents() const { return bGenerateOverlapEvents; }
+	void SetGenerateOverlapEvents(bool bNewValue);
+	const TArray<UPrimitiveComponent*>& GetOverlappingComponents() const { return OverlappingComponents; }
+	bool IsOverlappingComponent(const UPrimitiveComponent* Other) const;
+	bool IsOverlappingActor(const AActor* Other) const;
+	virtual void UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps = {}) override;
+	void ClearOverlaps(bool bNotify = true);
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -81,9 +106,16 @@ public:
 
 	virtual void OnTransformDirty() override;
 
+	// Delta/NewRotation은 world 기준. 질의 실패 시 false와 위치 유지, 막힘 여부는 Hit로 반환한다.
 	virtual bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit = nullptr) override;
 
 protected:
+	virtual void OnRegister() override;
+	virtual void OnUnregister() override;
+	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void NotifyEndOverlap(UPrimitiveComponent* Other);
+	virtual void NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
+	bool bGenerateOverlapEvents = true;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;
@@ -92,7 +124,21 @@ protected:
 	// 등록 책임을 프리미티브로 옮김
 	virtual void CreateRenderState() override;
 	virtual void DestroyRenderState() override;
+	// Reflection 저장형은 int32, 호출부는 ECollisionEnabled/ECollisionChannel을 사용한다.
+	int32 CollisionEnabled = static_cast<int32>(ECollisionEnabled::NoCollision);
+	int32 ObjectType = static_cast<int32>(ECollisionChannel::WorldDynamic);
+	FCollisionResponseContainer CollisionResponses;
+
 private:
+	void DispatchBlockingHit(const FHitResult& Hit);
+	bool CanGenerateOverlap(const UPrimitiveComponent* Other) const;
+	void BeginComponentOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
+	void EndComponentOverlap(UPrimitiveComponent* Other, bool bNotify);
+	TArray<UPrimitiveComponent*> OverlappingComponents;
+	bool bUpdatingOverlaps = false;
+	bool bOverlapUpdatePending = false;
+	bool bDestroyingPhysicsState = false;
 	friend class FScene;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;
+	mutable FBodyInstance BodyInstance;
 };

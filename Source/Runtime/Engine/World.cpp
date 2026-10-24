@@ -4,6 +4,7 @@
 
 #include "Core/EngineStatics.h"
 #include "GameFramework/Actor/StaticMeshActor.h"
+#include "GameFramework/Character.h"
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -37,6 +38,38 @@ DECLARE_CYCLE_STAT("Gather - LOD", STAT_GatherLOD);
 DECLARE_CYCLE_STAT("Gather - Submit", STAT_GatherSubmit);
 
 UWorld::UWorld() = default;
+
+ECollisionQueryStatus UWorld::QueryComponentOverlapMulti(const UPrimitiveComponent& Component, const FVector& Location, const FRotator& Rotation, TArray<FOverlapResult>& OutOverlaps, bool bIgnoreBlocks)
+{
+	OutOverlaps.Reset();
+	if (Component.IsPendingDestroy() || (Component.GetOwner() && Component.GetOwner()->IsPendingDestroy()) || Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
+
+	FCollisionWorldShape Shape = Component.GetBodyInstance().GetWorldShape();
+	Shape.Center = Location;
+	Shape.Rotation = Rotation.Quaternion();
+	FCollisionQueryParams Params;
+	Params.IgnoredOwner = Component.GetOwner();
+	Params.Channel = Component.GetCollisionObjectType();
+	Params.Responses = Component.GetCollisionResponses();
+	Params.bIgnoreBlocks = bIgnoreBlocks;
+	return PhysicsScene.QueryOverlapMulti(Shape, Params, OutOverlaps);
+}
+
+ECollisionQueryStatus UWorld::QueryComponentSweepMulti(const UPrimitiveComponent& Component, const FVector& Start, const FVector& Delta, const FRotator& Rotation, TArray<FHitResult>& OutHits, bool bIgnoreInitialBlockingHitsWhenMovingOut)
+{
+	OutHits.Reset();
+	if (Component.IsPendingDestroy() || (Component.GetOwner() && Component.GetOwner()->IsPendingDestroy()) || Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
+
+	FCollisionWorldShape Shape = Component.GetBodyInstance().GetWorldShape();
+	Shape.Center = Start;
+	Shape.Rotation = Rotation.Quaternion();
+	FCollisionQueryParams Params;
+	Params.IgnoredOwner = Component.GetOwner();
+	Params.Channel = Component.GetCollisionObjectType();
+	Params.Responses = Component.GetCollisionResponses();
+	Params.bIgnoreInitialBlockingHitsWhenMovingOut = bIgnoreInitialBlockingHitsWhenMovingOut;
+	return PhysicsScene.QuerySweepMulti(Shape, Delta, Params, OutHits);
+}
 
 UWorld::~UWorld()
 {
@@ -188,6 +221,7 @@ bool UWorld::ClearWorld()
 
 	// 렌더 등록 일괄 제거
 	Scene.RemoveAllPrimitives();
+	PhysicsScene.RemoveAllBodies();
 	Scene.RemoveAllFogInfo();
 	Scene.RemoveAllLights();
 

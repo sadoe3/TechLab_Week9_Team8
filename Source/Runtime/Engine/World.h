@@ -11,6 +11,7 @@
 #include "Math/Frustum.h"
 #include "Math/BVH.h"
 #include "Engine/Scene.h"
+#include "Collision/PhysicsScene.h"
 #include "Camera/CameraActor.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
@@ -136,7 +137,13 @@ public:
 	// 엔진 프레임 종료 전용 처리
 	void FlushPendingDestruction(uint32 RequestCount);
 
+	// 위치·회전은 world 기준이며 배율과 충돌 설정은 Component에서 가져온다.
+	ECollisionQueryStatus QueryComponentOverlapMulti(const UPrimitiveComponent& Component, const FVector& Location, const FRotator& Rotation, TArray<FOverlapResult>& OutOverlaps, bool bIgnoreBlocks = false);
+	ECollisionQueryStatus QueryComponentSweepMulti(const UPrimitiveComponent& Component, const FVector& Start, const FVector& Delta, const FRotator& Rotation, TArray<FHitResult>& OutHits, bool bIgnoreInitialBlockingHitsWhenMovingOut = false);
+
 	FScene& GetScene() { return Scene; }
+	FPhysicsScene& GetPhysicsScene() { return PhysicsScene; }
+	const FPhysicsScene& GetPhysicsScene() const { return PhysicsScene; }
 	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
 	FLuaRuntime* GetLuaRuntime() const { return LuaRuntime.get(); }
 	const FRenderStats& GetRenderStats() const { return RenderStats; }
@@ -201,6 +208,7 @@ private:
 	TArray<ULevel*> Levels;
 
 	FScene Scene;
+	FPhysicsScene PhysicsScene;
 
 	// GatherRenderPackets가 매 프레임 채우는 컬링 결과. 용량을 재사용한다.
 	TArray<FPrimitiveSceneProxy*> VisibleProxies;

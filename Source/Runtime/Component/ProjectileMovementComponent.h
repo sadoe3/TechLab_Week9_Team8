@@ -17,7 +17,6 @@ class UProjectileMovementComponent : public UMovementComponent
 			PROPERTY(bSweepCollision)
 			PROPERTY(bIsHomingProjectile)
 			PROPERTY(HomingAccelerationMagnitude)
-			PROPERTY(Velocity)
 			PROPERTY(Gravity)
 			PROPERTY(bConstrainToPlane)
 		REFLECT_END()

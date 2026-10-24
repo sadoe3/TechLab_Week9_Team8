@@ -119,6 +119,62 @@ void FLineBatcher::AddOrientedBox(const FBox& LocalBox, const FMatrix& WorldMatr
 	}
 
 }
+void FLineBatcher::AddSphere(const FVector& Center, float Radius, const FVector4& Color)
+{
+	constexpr int32 Segments = 32;
+	const FVector Axes[] = { FVector(1, 0, 0), FVector(0, 1, 0), FVector(0, 0, 1) };
+	for (int32 Plane = 0; Plane < 3; ++Plane)
+	{
+		FVector Previous = Center + Axes[Plane] * Radius;
+		for (int32 Index = 1; Index <= Segments; ++Index)
+		{
+			const float Angle = 2.0f * PI * Index / Segments;
+			const FVector Point = Center + (Axes[Plane] * std::cos(Angle) + Axes[(Plane + 1) % 3] * std::sin(Angle)) * Radius;
+			AddLine(Previous, Point, Color);
+			Previous = Point;
+		}
+	}
+}
+
+void FLineBatcher::AddCapsule(const FVector& Center, float Radius, float HalfHeight, const FQuat& Rotation, const FVector4& Color)
+{
+	constexpr int32 Segments = 32;
+	const FVector X = Rotation.RotateVector(FVector(1, 0, 0));
+	const FVector Y = Rotation.RotateVector(FVector(0, 1, 0));
+	const FVector Z = Rotation.RotateVector(FVector(0, 0, 1));
+	const FVector Offset = Z * (HalfHeight - Radius);
+
+	for (int32 Sign = -1; Sign <= 1; Sign += 2)
+	{
+		const FVector CapCenter = Center + Offset * static_cast<float>(Sign);
+		FVector Previous = CapCenter + X * Radius;
+		for (int32 Index = 1; Index <= Segments; ++Index)
+		{
+			const float Angle = 2.0f * PI * Index / Segments;
+			const FVector Point = CapCenter + (X * std::cos(Angle) + Y * std::sin(Angle)) * Radius;
+			AddLine(Previous, Point, Color);
+			Previous = Point;
+		}
+
+		const FVector RadialAxes[] = { X, Y };
+		for (const FVector& Radial : RadialAxes)
+		{
+			Previous = CapCenter + Radial * Radius;
+			for (int32 Index = 1; Index <= Segments / 2; ++Index)
+			{
+				const float Angle = 2.0f * PI * Index / Segments;
+				const FVector Point = CapCenter + (Radial * std::cos(Angle) + Z * (Sign * std::sin(Angle))) * Radius;
+				AddLine(Previous, Point, Color);
+				Previous = Point;
+			}
+		}
+	}
+
+	const FVector Sides[] = { X, -X, Y, -Y };
+	for (const FVector& Side : Sides)
+		AddLine(Center - Offset + Side * Radius, Center + Offset + Side * Radius, Color);
+}
+
 void FLineBatcher::AddPath(const TArray<FVector>& Points, const FVector4& Color)
 {
 	if (Points.IsEmpty())
