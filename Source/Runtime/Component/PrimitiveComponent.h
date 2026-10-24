@@ -6,6 +6,7 @@
 #include "Render/RenderPacket.h"
 #include "Render/GeometryGenerator.h"
 #include "Collision/HitResult.h"
+#include "Collision/BodyInstance.h"
 
 class FPrimitiveSceneProxy;
 
@@ -36,6 +37,8 @@ public:
 	virtual ~UPrimitiveComponent();
 
 	virtual void BeginPlay() override;
+	virtual FCollisionLocalShape GetCollisionShape() const { return {}; }
+	const FBodyInstance& GetBodyInstance() const;
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -95,4 +98,5 @@ protected:
 private:
 	friend class FScene;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;
+	mutable FBodyInstance BodyInstance;
 };

@@ -8,6 +8,14 @@ void UBoxComponent::SetBoxExtent(const FVector& InExtent)
 	MarkTransformDirty();
 }
 
+FCollisionLocalShape UBoxComponent::GetCollisionShape() const
+{
+	FCollisionLocalShape Shape;
+	Shape.Type = ECollisionShapeType::Box;
+	Shape.BoxExtent = BoxExtent;
+	return Shape;
+}
+
 FBox UBoxComponent::CalcLocalBounds() const
 {
 	return FBox{ -BoxExtent, BoxExtent };
@@ -16,7 +24,8 @@ FBox UBoxComponent::CalcLocalBounds() const
 void UBoxComponent::DrawDebug(FLineBatcher* LineBatcher) const
 {
 	const FLinearColor Color = ShapeColor.ReinterpretAsLinear();
-	LineBatcher->AddOrientedBox(CalcLocalBounds(), GetWorldMatrix(), FVector4(Color.R, Color.G, Color.B, Color.A));
+	const FCollisionWorldShape& Shape = GetBodyInstance().GetWorldShape();
+	LineBatcher->AddOrientedBox(FBox{ -Shape.BoxExtent, Shape.BoxExtent }, FTransform(Shape.Rotation.ToFRotator(), Shape.Center).GetLocalMatrix(), FVector4(Color.R, Color.G, Color.B, Color.A));
 }
 
 void UBoxComponent::PostEditChangeProperty(const FProperty& Property)

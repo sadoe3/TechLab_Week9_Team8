@@ -8,29 +8,25 @@ void USphereComponent::SetSphereRadius(float InRadius)
 	MarkTransformDirty();
 }
 
-float USphereComponent::GetScaledSphereRadius() const
-{
-	const FVector Scale = GetWorldScale3D();
-	return SphereRadius * std::min({ std::abs(Scale.X), std::abs(Scale.Y), std::abs(Scale.Z) });
-}
-
 FBox USphereComponent::CalcLocalBounds() const
 {
 	const FVector Extent(SphereRadius);
 	return FBox{ -Extent, Extent };
 }
 
-FBox USphereComponent::CalcBounds() const
+FCollisionLocalShape USphereComponent::GetCollisionShape() const
 {
-	const FVector Center = GetWorldLocation();
-	const FVector Extent(GetScaledSphereRadius());
-	return FBox{ Center - Extent, Center + Extent };
+	FCollisionLocalShape Shape;
+	Shape.Type = ECollisionShapeType::Sphere;
+	Shape.Radius = SphereRadius;
+	return Shape;
 }
 
 void USphereComponent::DrawDebug(FLineBatcher* LineBatcher) const
 {
 	const FLinearColor Color = ShapeColor.ReinterpretAsLinear();
-	LineBatcher->AddSphere(GetWorldLocation(), GetScaledSphereRadius(), FVector4(Color.R, Color.G, Color.B, Color.A));
+	const FCollisionWorldShape& Shape = GetBodyInstance().GetWorldShape();
+	LineBatcher->AddSphere(Shape.Center, Shape.Radius, FVector4(Color.R, Color.G, Color.B, Color.A));
 }
 
 void USphereComponent::PostEditChangeProperty(const FProperty& Property)

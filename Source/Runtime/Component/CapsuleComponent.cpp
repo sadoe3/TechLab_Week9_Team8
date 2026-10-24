@@ -9,36 +9,26 @@ void UCapsuleComponent::SetCapsuleSize(float InRadius, float InHalfHeight)
 	MarkTransformDirty();
 }
 
-void UCapsuleComponent::GetScaledCapsuleSize(float& OutRadius, float& OutHalfHeight) const
-{
-	const FVector Scale = GetWorldScale3D();
-	OutHalfHeight = CapsuleHalfHeight * std::abs(Scale.Z);
-	OutRadius = std::min(CapsuleRadius * std::max(std::abs(Scale.X), std::abs(Scale.Y)), OutHalfHeight);
-}
-
 FBox UCapsuleComponent::CalcLocalBounds() const
 {
 	const FVector Extent(CapsuleRadius, CapsuleRadius, CapsuleHalfHeight);
 	return FBox{ -Extent, Extent };
 }
 
-FBox UCapsuleComponent::CalcBounds() const
+FCollisionLocalShape UCapsuleComponent::GetCollisionShape() const
 {
-	float Radius, HalfHeight;
-	GetScaledCapsuleSize(Radius, HalfHeight);
-	const FVector Axis = GetWorldRotation().Quaternion().RotateVector(FVector(0, 0, 1));
-	const FVector Segment = Axis * (HalfHeight - Radius);
-	const FVector Extent = FVector(std::abs(Segment.X), std::abs(Segment.Y), std::abs(Segment.Z)) + FVector(Radius);
-	const FVector Center = GetWorldLocation();
-	return FBox{ Center - Extent, Center + Extent };
+	FCollisionLocalShape Shape;
+	Shape.Type = ECollisionShapeType::Capsule;
+	Shape.Radius = CapsuleRadius;
+	Shape.HalfHeight = CapsuleHalfHeight;
+	return Shape;
 }
 
 void UCapsuleComponent::DrawDebug(FLineBatcher* LineBatcher) const
 {
-	float Radius, HalfHeight;
-	GetScaledCapsuleSize(Radius, HalfHeight);
+	const FCollisionWorldShape& Shape = GetBodyInstance().GetWorldShape();
 	const FLinearColor Color = ShapeColor.ReinterpretAsLinear();
-	LineBatcher->AddCapsule(GetWorldLocation(), Radius, HalfHeight, GetWorldRotation().Quaternion(), FVector4(Color.R, Color.G, Color.B, Color.A));
+	LineBatcher->AddCapsule(Shape.Center, Shape.Radius, Shape.HalfHeight, Shape.Rotation, FVector4(Color.R, Color.G, Color.B, Color.A));
 }
 
 void UCapsuleComponent::PostEditChangeProperty(const FProperty& Property)

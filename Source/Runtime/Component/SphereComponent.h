@@ -11,10 +11,9 @@ class USphereComponent : public UShapeComponent
 
 public:
 	float GetSphereRadius() const { return SphereRadius; }
-	float GetScaledSphereRadius() const;
 	void SetSphereRadius(float InRadius);
+	virtual FCollisionLocalShape GetCollisionShape() const override;
 	virtual FBox CalcLocalBounds() const override;
-	virtual FBox CalcBounds() const override;
 	virtual void DrawDebug(FLineBatcher* LineBatcher) const override;
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
 

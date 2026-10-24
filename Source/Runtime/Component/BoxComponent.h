@@ -12,6 +12,7 @@ class UBoxComponent : public UShapeComponent
 public:
 	const FVector& GetBoxExtent() const { return BoxExtent; }
 	void SetBoxExtent(const FVector& InExtent);
+	virtual FCollisionLocalShape GetCollisionShape() const override;
 	virtual FBox CalcLocalBounds() const override;
 	virtual void DrawDebug(FLineBatcher* LineBatcher) const override;
 	virtual void PostEditChangeProperty(const FProperty& Property) override;

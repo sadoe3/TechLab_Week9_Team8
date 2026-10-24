@@ -24,6 +24,7 @@ public:
 	bool ShouldDrawOnlyIfSelected() const { return bDrawOnlyIfSelected; }
 	void SetDrawOnlyIfSelected(bool bValue) { bDrawOnlyIfSelected = bValue; }
 	virtual void DrawDebug(FLineBatcher* LineBatcher) const = 0;
+	virtual FBox CalcBounds() const override { return GetBodyInstance().GetBounds(); }
 
 protected:
 	FColor ShapeColor = FColor(0, 255, 0);

@@ -42,7 +42,14 @@ UPrimitiveComponent::UPrimitiveComponent()
 
 UPrimitiveComponent::~UPrimitiveComponent()
 {
+	BodyInstance.TerminateBody();
+}
 
+const FBodyInstance& UPrimitiveComponent::GetBodyInstance() const
+{
+	if (!BodyInstance.GetOwnerComponent())
+		BodyInstance.InitBody(this);
+	return BodyInstance;
 }
 
 void UPrimitiveComponent::BeginPlay()
@@ -94,6 +101,8 @@ bool UPrimitiveComponent::LineTraceComponentLocal(const FRay& LocalRay, float& O
 
 void UPrimitiveComponent::OnTransformDirty()
 {
+	if (BodyInstance.GetOwnerComponent())
+		BodyInstance.UpdateTransform();
 	if (SceneProxy)
 		SceneProxy->GetScene()->MarkDirty(SceneProxy);
 }
