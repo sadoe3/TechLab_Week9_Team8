@@ -5,102 +5,97 @@
 
 USceneComponent::~USceneComponent()
 {
-	TArray<USceneComponent*> Children = AttachChildren;
-	DetachFromParent();
-	for (USceneComponent* Child : Children)
+	if (AttachParent)
 	{
-		Child->AttachParent = nullptr;
+		const int32 ChildIndex = AttachParent->AttachChildren.Find(this);
+		if (ChildIndex < AttachParent->AttachChildren.Num()) AttachParent->AttachChildren.RemoveAt(ChildIndex);
 	}
-	AttachChildren.Reset();
+	for (USceneComponent* CurrentChild : AttachChildren)
+		CurrentChild->AttachParent = nullptr;
+}
 
-	DetachFromParent();
+void USceneComponent::SetRelativeLocation(const FVector& InLocation)
+{
+	SetRelativeLocationAndRotation(InLocation, Transform.Rotation);
+}
+
+void USceneComponent::SetRelativeRotation(const FRotator& InRotation)
+{
+	SetRelativeLocationAndRotation(Transform.Location, InRotation);
 }
 
 void USceneComponent::SetRelativeLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation)
 {
-	Transform.Location = NewLocation;
-	Transform.Rotation = NewRotation;
+	const FVector WorldLocation = AttachParent ? AttachParent->GetWorldMatrix().TransformPosition(NewLocation) : NewLocation;
+	const FRotator WorldRotation = AttachParent ? (AttachParent->GetWorldRotation().Quaternion() * NewRotation.Quaternion()).ToFRotator() : NewRotation;
+	MoveComponent(WorldLocation - GetWorldLocation(), WorldRotation, false);
+}
+
+void USceneComponent::SetRelativeScale3D(const FVector& InScale)
+{
+	Transform.Scale = InScale;
 	MarkTransformDirty();
+	UpdateOverlaps();
+}
+
+void USceneComponent::SetTransform(const FTransform& InTransform)
+{
+	const FTransform NewTransform = InTransform;
+	Transform.Scale = NewTransform.Scale;
+	SetRelativeLocationAndRotation(NewTransform.Location, NewTransform.Rotation);
 }
 
 void USceneComponent::PostEditChangeProperty(const FProperty& Property)
 {
 	Super::PostEditChangeProperty(Property);
-	if (Property.Name == "Transform") 
+	if (Property.Name == "Transform")
+	{
 		MarkTransformDirty();
+		UpdateOverlaps();
+	}
 }
 
 void USceneComponent::SetupAttachment(USceneComponent* InParent, EAttachmentRule Rule)
 {
 	if (InParent == this || AttachParent == InParent) return;
+	for (USceneComponent* CurrentParent = InParent; CurrentParent; CurrentParent = CurrentParent->AttachParent)
+		if (CurrentParent == this) return;
 
-	// 순환 체크
-	for (USceneComponent* Parent = InParent; Parent != nullptr; Parent = Parent->AttachParent)
-		if (Parent == this) return;
+	const FMatrix PreviousWorldMatrix = GetWorldMatrix();
+	if (AttachParent)
+	{
+		const int32 ChildIndex = AttachParent->AttachChildren.Find(this);
+		if (ChildIndex < AttachParent->AttachChildren.Num()) AttachParent->AttachChildren.RemoveAt(ChildIndex);
+	}
+	AttachParent = InParent;
+	if (AttachParent) AttachParent->AttachChildren.Add(this);
 
 	if (Rule == EAttachmentRule::KeepWorld)
-	{
-		FMatrix WorldMatrix = GetWorldMatrix();
-		DetachFromParent(Rule);
-		AttachParent = InParent;
-		if (AttachParent)
-		{
-			AttachParent->AttachChildren.Add(this);
-		}
-		SetWorldTransform(WorldMatrix, false);
-	}
+		SetWorldTransform(PreviousWorldMatrix, false);
+	else if (Rule == EAttachmentRule::SnapToTarget)
+		SetTransform(FTransform::Identity);
 	else
 	{
-		DetachFromParent(Rule);
-		AttachParent = InParent;
-		if (AttachParent)
-		{
-			AttachParent->AttachChildren.Add(this);
-		}
+		MarkTransformDirty();
+		UpdateOverlaps();
 	}
-
-	if (Rule == EAttachmentRule::SnapToTarget)
-	{
-		SetTransform(FTransform::Identity);
-	}
-
-	MarkTransformDirty();
 }
 
 void USceneComponent::DetachFromParent(EAttachmentRule Rule)
 {
 	if (!AttachParent) return;
+	const FMatrix PreviousWorldMatrix = GetWorldMatrix();
+	const int32 ChildIndex = AttachParent->AttachChildren.Find(this);
+	if (ChildIndex < AttachParent->AttachChildren.Num()) AttachParent->AttachChildren.RemoveAt(ChildIndex);
+	AttachParent = nullptr;
 
 	if (Rule == EAttachmentRule::KeepWorld)
-	{
-		FMatrix WorldMatrix = GetWorldMatrix();
-		TArray<USceneComponent*>& Siblings = AttachParent->AttachChildren;
-		for (uint32 i = 0;i < Siblings.Num(); ++i)
-		{
-			if (Siblings[i] == this)
-			{
-				Siblings.RemoveAt(i, 1);
-				break;
-			}
-		}
-		AttachParent = nullptr;
-		SetWorldTransform(WorldMatrix, false);
-	}
+		SetWorldTransform(PreviousWorldMatrix, false);
 	else
 	{
-		TArray<USceneComponent*>& Siblings = AttachParent->AttachChildren;
-		for (uint32 i = 0;i < Siblings.Num(); ++i)
-		{
-			if (Siblings[i] == this)
-			{
-				Siblings.RemoveAt(i, 1);
-				break;
-			}
-		}
-		AttachParent = nullptr;
+		MarkTransformDirty();
+		UpdateOverlaps();
 	}
-	
-	MarkTransformDirty();
 }
 
 FRotator USceneComponent::GetWorldRotation() const
@@ -167,7 +162,7 @@ void USceneComponent::SetWorldTransform(const FMatrix& InWorldMatrix, bool bSwee
 		LocalMatrix = InWorldMatrix * ParentWorldMatrix.Inverse();
 	}
 
-	Transform.Location = FVector(LocalMatrix[3][0], LocalMatrix[3][1], LocalMatrix[3][2]);
+	const FVector NewRelativeLocation(LocalMatrix[3][0], LocalMatrix[3][1], LocalMatrix[3][2]);
 
 	FVector XAxis(LocalMatrix[0][0], LocalMatrix[0][1], LocalMatrix[0][2]);
 	FVector YAxis(LocalMatrix[1][0], LocalMatrix[1][1], LocalMatrix[1][2]);
@@ -177,6 +172,7 @@ void USceneComponent::SetWorldTransform(const FMatrix& InWorldMatrix, bool bSwee
 	const float YAxisSize = YAxis.Size();
 	const float ZAxisSize = ZAxis.Size();
 
+	const FVector PreviousScale = Transform.Scale;
 	Transform.Scale = FVector(XAxisSize, YAxisSize, ZAxisSize);
 
 	XAxis = XAxis.Normalized();
@@ -188,61 +184,74 @@ void USceneComponent::SetWorldTransform(const FMatrix& InWorldMatrix, bool bSwee
 	RotationMatrix.SetAxis(1, YAxis);
 	RotationMatrix.SetAxis(2, ZAxis);
 
-	Transform.Rotation = MatrixToRotator(RotationMatrix);
+	const FRotator NewRelativeRotation = MatrixToRotator(RotationMatrix);
 		
+	// Sweep에는 새 배율의 Body가 필요하다. 이 단계에서는 Overlap 알림을 보내지 않는다.
 	MarkTransformDirty();
+	const FVector NewLocation = AttachParent ? AttachParent->GetWorldMatrix().TransformPosition(NewRelativeLocation) : NewRelativeLocation;
+	const FRotator NewRotation = AttachParent ? (AttachParent->GetWorldRotation().Quaternion() * NewRelativeRotation.Quaternion()).ToFRotator() : NewRelativeRotation;
+	if (!MoveComponent(NewLocation - GetWorldLocation(), NewRotation, bSweep))
+	{
+		Transform.Scale = PreviousScale;
+		MarkTransformDirty();
+	}
 }
 
 void USceneComponent::SetWorldLocation(FVector NewLocation, bool bSweep)
 {
-	FVector NewRelLocation = NewLocation;
-
-	if (GetAttachParent() != nullptr)
-	{		
-		NewRelLocation = GetAttachParent()->GetWorldMatrix().Inverse().TransformPosition(NewRelLocation);
-	}
-
-	SetRelativeLocation(NewRelLocation);
+	MoveComponent(NewLocation - GetWorldLocation(), GetWorldRotation(), bSweep);
 }
 
 void USceneComponent::SetWorldRotation(FRotator NewRotation, bool bSweep)
 {
-	FRotator NewRelRotation = NewRotation;
-
-	if (GetAttachParent() != nullptr)
-	{
-		FQuat NewRelQuat = GetAttachParent()->GetWorldRotation().Quaternion().Inverse() * NewRelRotation.Quaternion();
-		NewRelRotation = NewRelQuat.ToFRotator();
-	}
-
-	SetRelativeRotation(NewRelRotation);
+	MoveComponent(FVector::ZeroVector, NewRotation, bSweep);
 }
 
 void USceneComponent::SetWorldLocationAndRotation(FVector NewLocation, FRotator NewRotation, bool bSweep)
 {
-	FVector NewRelLocation = NewLocation;
-	FRotator NewRelRotation = NewRotation;
+	MoveComponent(NewLocation - GetWorldLocation(), NewRotation, bSweep);
+}
 
-	if (GetAttachParent() != nullptr)
-	{
-		NewRelLocation = GetAttachParent()->GetWorldMatrix().Inverse().TransformPosition(NewRelLocation);
-
-		FQuat NewRelQuat = GetAttachParent()->GetWorldRotation().Quaternion().Inverse() * NewRelRotation.Quaternion();
-		NewRelRotation = NewRelQuat.ToFRotator();
-	}
-
-	SetRelativeLocationAndRotation(NewRelLocation, NewRelRotation);
+void USceneComponent::InternalSetWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation)
+{
+	Transform.Location = AttachParent ? AttachParent->GetWorldMatrix().Inverse().TransformPosition(NewLocation) : NewLocation;
+	Transform.Rotation = AttachParent ? (AttachParent->GetWorldRotation().Quaternion().Inverse() * NewRotation.Quaternion()).ToFRotator() : NewRotation;
+	MarkTransformDirty();
 }
 
 void USceneComponent::SetWorldScale3D(FVector NewScale)
 {
+	FVector RelativeScale = NewScale;
+	if (AttachParent)
+	{
+		const FVector ParentScale = AttachParent->GetWorldScale3D();
+		for (int32 CurrentAxis = 0; CurrentAxis < 3; ++CurrentAxis)
+			RelativeScale[CurrentAxis] = ParentScale[CurrentAxis] != 0.0f ? NewScale[CurrentAxis] / ParentScale[CurrentAxis] : 0.0f;
+	}
+	SetRelativeScale3D(RelativeScale);
 }
 
 bool USceneComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
-{		
-	SetWorldLocationAndRotation(Transform.Location + Delta, NewRotation, bSweep);
-
+{
+	const FVector Start = GetWorldLocation();
+	InternalSetWorldLocationAndRotation(Start + Delta, NewRotation);
+	UpdateOverlaps();
+	if (Hit)
+	{
+		*Hit = FHitResult();
+		Hit->TraceStart = Start;
+		Hit->TraceEnd = Hit->Location = GetWorldLocation();
+		Hit->Distance = (Hit->Location - Start).Size();
+	}
 	return true;
+}
+
+void USceneComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps)
+{
+	// 자식은 부모와 함께 이동한 최종 위치만 검사한다. 부모의 Sweep 결과는 전달하지 않는다.
+	const TArray<USceneComponent*> Children = AttachChildren;
+	for (USceneComponent* CurrentChild : Children)
+		if (CurrentChild->GetAttachParent() == this) CurrentChild->UpdateOverlaps();
 }
 
 void USceneComponent::MarkTransformDirty()

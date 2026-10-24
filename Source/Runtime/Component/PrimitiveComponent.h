@@ -31,6 +31,7 @@ class UPrimitiveComponent :public USceneComponent
 		PROPERTY(bVisible)
 		PROPERTY(bCastShadow)
 		PROPERTY(bReceiveShadow)
+		PROPERTY(bGenerateOverlapEvents)
 		PROPERTY(CollisionEnabled)
 		PROPERTY(ObjectType)
 		PROPERTY(CollisionResponses.WorldStatic)
@@ -53,6 +54,13 @@ public:
 	void SetCollisionObjectType(ECollisionChannel NewType);
 	void SetCollisionResponseToChannel(ECollisionChannel Channel, ECollisionResponse Response);
 	void SetCollisionResponseToAllChannels(ECollisionResponse Response);
+	bool GetGenerateOverlapEvents() const { return bGenerateOverlapEvents; }
+	void SetGenerateOverlapEvents(bool bNewValue);
+	const TArray<UPrimitiveComponent*>& GetOverlappingComponents() const { return OverlappingComponents; }
+	bool IsOverlappingComponent(const UPrimitiveComponent* Other) const;
+	bool IsOverlappingActor(const AActor* Other) const;
+	virtual void UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps = {}) override;
+	void ClearOverlaps(bool bNotify = true);
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -104,6 +112,9 @@ public:
 protected:
 	virtual void OnRegister() override;
 	virtual void OnUnregister() override;
+	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void NotifyEndOverlap(UPrimitiveComponent* Other);
+	bool bGenerateOverlapEvents = true;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;
@@ -118,6 +129,13 @@ protected:
 	FCollisionResponseContainer CollisionResponses;
 
 private:
+	bool CanGenerateOverlap(const UPrimitiveComponent* Other) const;
+	void BeginComponentOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
+	void EndComponentOverlap(UPrimitiveComponent* Other, bool bNotify);
+	TArray<UPrimitiveComponent*> OverlappingComponents;
+	bool bUpdatingOverlaps = false;
+	bool bOverlapUpdatePending = false;
+	bool bDestroyingPhysicsState = false;
 	friend class FScene;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;
 	mutable FBodyInstance BodyInstance;

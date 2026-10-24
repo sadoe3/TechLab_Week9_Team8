@@ -6,6 +6,7 @@ void UBoxComponent::SetBoxExtent(const FVector& InExtent)
 {
 	BoxExtent = FVector(std::max(0.0f, InExtent.X), std::max(0.0f, InExtent.Y), std::max(0.0f, InExtent.Z));
 	MarkTransformDirty();
+	UpdateOverlaps();
 }
 
 FCollisionLocalShape UBoxComponent::GetCollisionShape() const

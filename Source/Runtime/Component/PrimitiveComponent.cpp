@@ -42,6 +42,7 @@ UPrimitiveComponent::UPrimitiveComponent()
 
 UPrimitiveComponent::~UPrimitiveComponent()
 {
+	ClearOverlaps(false);
 	BodyInstance.TerminateBody();
 }
 
@@ -54,6 +55,7 @@ const FBodyInstance& UPrimitiveComponent::GetBodyInstance() const
 
 void UPrimitiveComponent::CreatePhysicsState()
 {
+	if (bDestroyingPhysicsState) return;
 	if (GetCollisionEnabled() == ECollisionEnabled::NoCollision)
 	{
 		DestroyPhysicsState();
@@ -63,11 +65,16 @@ void UPrimitiveComponent::CreatePhysicsState()
 
 	BodyInstance.InitBody(this);
 	GetOwner()->GetWorld()->GetPhysicsScene().AddBody(&BodyInstance);
+	UpdateOverlaps();
 }
 
 void UPrimitiveComponent::DestroyPhysicsState()
 {
+	if (bDestroyingPhysicsState) return;
+	bDestroyingPhysicsState = true;
 	BodyInstance.TerminateBody();
+	ClearOverlaps();
+	bDestroyingPhysicsState = false;
 }
 
 void UPrimitiveComponent::OnRegister()
@@ -92,18 +99,21 @@ void UPrimitiveComponent::SetCollisionObjectType(ECollisionChannel NewType)
 {
 	ObjectType = static_cast<int32>(NewType);
 	BodyInstance.UpdateFilter();
+	UpdateOverlaps();
 }
 
 void UPrimitiveComponent::SetCollisionResponseToChannel(ECollisionChannel Channel, ECollisionResponse Response)
 {
 	CollisionResponses.SetResponse(Channel, Response);
 	BodyInstance.UpdateFilter();
+	UpdateOverlaps();
 }
 
 void UPrimitiveComponent::SetCollisionResponseToAllChannels(ECollisionResponse Response)
 {
 	CollisionResponses.SetAllResponses(Response);
 	BodyInstance.UpdateFilter();
+	UpdateOverlaps();
 }
 
 void UPrimitiveComponent::BeginPlay()
@@ -143,6 +153,8 @@ void UPrimitiveComponent::PostEditChangeProperty(const FProperty& Property)
 		CreatePhysicsState();
 	else if (Property.Name == "ObjectType" || Property.Name.starts_with("CollisionResponses."))
 		BodyInstance.UpdateFilter();
+	if (Property.Name == "ObjectType" || Property.Name.starts_with("CollisionResponses.") || Property.Name == "bGenerateOverlapEvents")
+		UpdateOverlaps();
 }
 
 void UPrimitiveComponent::MarkRenderStateDirty()
@@ -167,6 +179,7 @@ void UPrimitiveComponent::OnTransformDirty()
 
 bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
 {
+	TArray<FHitResult> PendingOverlaps;
 	const FVector Start = GetWorldLocation();
 	FHitResult MoveHit;
 	MoveHit.TraceStart = Start;
@@ -184,16 +197,21 @@ bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& Ne
 
 		for (const FHitResult& CurrentHit : Hits)
 		{
-			if (!CurrentHit.bBlockingHit) continue;
+			if (!CurrentHit.bBlockingHit)
+			{
+				PendingOverlaps.Add(CurrentHit);
+				continue;
+			}
 			MoveHit = CurrentHit;
 			break;
 		}
 	}
 
 	const FVector NewLocation = Start + Delta * MoveHit.Time;
-	SetWorldLocationAndRotation(NewLocation, NewRotation, false);
+	InternalSetWorldLocationAndRotation(NewLocation, NewRotation);
 	MoveHit.Location = GetWorldLocation();
 	MoveHit.Distance = (MoveHit.Location - Start).Size();
+	UpdateOverlaps(PendingOverlaps);
 	if (Hit) *Hit = MoveHit;
 	return true;
 }
@@ -236,4 +254,148 @@ void UPrimitiveComponent::DestroyRenderState()
 {
 	GetOwner()->GetWorld()->GetScene().RemovePrimitive(this);
 	Super::DestroyRenderState();
+}
+
+void UPrimitiveComponent::SetGenerateOverlapEvents(bool bNewValue)
+{
+	bGenerateOverlapEvents = bNewValue;
+	UpdateOverlaps();
+}
+
+bool UPrimitiveComponent::IsOverlappingComponent(const UPrimitiveComponent* Other) const
+{
+	for (const UPrimitiveComponent* CurrentComponent : OverlappingComponents)
+		if (CurrentComponent == Other) return true;
+	return false;
+}
+
+bool UPrimitiveComponent::IsOverlappingActor(const AActor* Other) const
+{
+	for (const UPrimitiveComponent* CurrentComponent : OverlappingComponents)
+		if (CurrentComponent->GetOwner() == Other) return true;
+	return false;
+}
+
+bool UPrimitiveComponent::CanGenerateOverlap(const UPrimitiveComponent* Other) const
+{
+	return Other && Other != this
+		&& !bDestroyingPhysicsState && !Other->bDestroyingPhysicsState
+		&& bGenerateOverlapEvents && Other->bGenerateOverlapEvents
+		&& BodyInstance.GetPhysicsScene() && BodyInstance.GetPhysicsScene() == Other->BodyInstance.GetPhysicsScene()
+		&& BodyInstance.IsQueryEnabled() && Other->BodyInstance.IsQueryEnabled()
+		&& GetOwner() != Other->GetOwner()
+		&& BodyInstance.GetFilterData().GetResponseTo(Other->BodyInstance.GetFilterData()) == ECollisionResponse::Overlap;
+}
+
+void UPrimitiveComponent::BeginComponentOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!CanGenerateOverlap(Other) || IsOverlappingComponent(Other)) return;
+	OverlappingComponents.Add(Other);
+	Other->OverlappingComponents.Add(this);
+	NotifyBeginOverlap(Other, bFromSweep, SweepResult);
+	// 첫 알림에서 이동·설정 변경으로 관계가 끝났으면 상대 Begin을 보내지 않는다.
+	if (!CanGenerateOverlap(Other) || !IsOverlappingComponent(Other)) return;
+	FHitResult OtherSweepResult = SweepResult;
+	if (bFromSweep)
+	{
+		OtherSweepResult.HitComponent = this;
+		OtherSweepResult.Normal = -SweepResult.Normal;
+		OtherSweepResult.ImpactNormal = -SweepResult.ImpactNormal;
+	}
+	Other->NotifyBeginOverlap(this, bFromSweep, OtherSweepResult);
+}
+
+void UPrimitiveComponent::EndComponentOverlap(UPrimitiveComponent* Other, bool bNotify)
+{
+	const int32 CurrentIndex = OverlappingComponents.Find(Other);
+	if (CurrentIndex == OverlappingComponents.Num()) return;
+	OverlappingComponents.RemoveAt(CurrentIndex);
+	const int32 OtherIndex = Other->OverlappingComponents.Find(this);
+	if (OtherIndex < Other->OverlappingComponents.Num()) Other->OverlappingComponents.RemoveAt(OtherIndex);
+	if (!bNotify) return;
+	NotifyEndOverlap(Other);
+	if (!IsOverlappingComponent(Other)) Other->NotifyEndOverlap(this);
+}
+
+void UPrimitiveComponent::ClearOverlaps(bool bNotify)
+{
+	const TArray<UPrimitiveComponent*> PreviousOverlaps = OverlappingComponents;
+	for (UPrimitiveComponent* CurrentComponent : PreviousOverlaps)
+		EndComponentOverlap(CurrentComponent, bNotify);
+}
+
+void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps)
+{
+	if (bUpdatingOverlaps)
+	{
+		bOverlapUpdatePending = true;
+		return;
+	}
+
+	bUpdatingOverlaps = true;
+	bool bProcessPendingOverlaps = true;
+	do
+	{
+		bOverlapUpdatePending = false;
+		if (bDestroyingPhysicsState || !bGenerateOverlapEvents || !BodyInstance.GetPhysicsScene() || !BodyInstance.IsQueryEnabled())
+		{
+			ClearOverlaps();
+			continue;
+		}
+
+		UWorld* World = GetOwner()->GetWorld();
+		TArray<FOverlapResult> FinalOverlaps;
+		// 판정 실패를 이탈로 처리하지 않는다. 기존 목록을 유지한다.
+		if (World->QueryComponentOverlapMulti(*this, GetWorldLocation(), GetWorldRotation(), FinalOverlaps, true) != ECollisionQueryStatus::Success)
+			break;
+
+		if (bProcessPendingOverlaps)
+		{
+			bProcessPendingOverlaps = false;
+			for (const FHitResult& CurrentHit : PendingOverlaps)
+			{
+				if (!CurrentHit.bBlockingHit) BeginComponentOverlap(CurrentHit.HitComponent, true, CurrentHit);
+			}
+			// 경로 Begin 콜백이 위치나 설정을 바꿨을 수 있으므로 최종 위치를 다시 확인한다.
+			if (!PendingOverlaps.IsEmpty()) bOverlapUpdatePending = true;
+			if (bOverlapUpdatePending) continue;
+		}
+
+		TArray<UPrimitiveComponent*> FinalComponents;
+		for (const FOverlapResult& CurrentOverlap : FinalOverlaps)
+			if (CanGenerateOverlap(CurrentOverlap.Component)) FinalComponents.Add(CurrentOverlap.Component);
+
+		const TArray<UPrimitiveComponent*> PreviousOverlaps = OverlappingComponents;
+		for (UPrimitiveComponent* CurrentComponent : PreviousOverlaps)
+		{
+			if (FinalComponents.Find(CurrentComponent) == FinalComponents.Num())
+			{
+				EndComponentOverlap(CurrentComponent, true);
+				bOverlapUpdatePending = true;
+				break;
+			}
+		}
+		if (bOverlapUpdatePending) continue;
+
+		for (UPrimitiveComponent* CurrentComponent : FinalComponents)
+		{
+			if (IsOverlappingComponent(CurrentComponent)) continue;
+			BeginComponentOverlap(CurrentComponent, false, FHitResult());
+			// 알림에서 다른 Component도 이동하거나 설정이 바뀔 수 있다. 다음 관계 처리 전 다시 질의한다.
+			bOverlapUpdatePending = true;
+			break;
+		}
+	} while (bOverlapUpdatePending);
+	bUpdatingOverlaps = false;
+	Super::UpdateOverlaps();
+}
+
+void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// TODO: Delegate 연결 시 OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
+}
+
+void UPrimitiveComponent::NotifyEndOverlap(UPrimitiveComponent* Other)
+{
+	// TODO: Delegate 연결 시 OnComponentEndOverlap.Broadcast(this, Other);
 }

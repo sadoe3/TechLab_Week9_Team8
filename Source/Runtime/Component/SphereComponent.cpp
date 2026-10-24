@@ -6,6 +6,7 @@ void USphereComponent::SetSphereRadius(float InRadius)
 {
 	SphereRadius = std::max(0.0f, InRadius);
 	MarkTransformDirty();
+	UpdateOverlaps();
 }
 
 FBox USphereComponent::CalcLocalBounds() const

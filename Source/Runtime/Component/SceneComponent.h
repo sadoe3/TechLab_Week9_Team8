@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../Math/Transform.h"
 #include "ActorComponent.h"
@@ -28,36 +28,20 @@ public:
 
 	// Get & Set
 	const FVector& GetRelativeLocation() const { return Transform.Location; }
-	void SetRelativeLocation(const FVector& InLocation) 
-	{
-		Transform.Location = InLocation;
-		MarkTransformDirty();
-	}
+	void SetRelativeLocation(const FVector& InLocation);
 
 
 	const FRotator& GetRelativeRotation() const { return Transform.Rotation; }
-	void SetRelativeRotation(const FRotator& InRotation) 
-	{
-		Transform.Rotation = InRotation; 
-		MarkTransformDirty();
-	}
+	void SetRelativeRotation(const FRotator& InRotation);
 	void SetRelativeLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
 	const FVector& GetRelativeScale3D() const { return Transform.Scale; }
-	void SetRelativeScale3D(const FVector& InScale) 
-	{
-		Transform.Scale = InScale;
-		MarkTransformDirty();
-	}
+	void SetRelativeScale3D(const FVector& InScale);
 
 	// 쿼터니언 적용된 회전행렬
 	FQuat GetRelativeRotationQuat() const { return Transform.GetOrientation(); }
 
 	const FTransform& GetTransform() const { return Transform; }
-	void SetTransform(const FTransform& InTransform) 
-	{
-		Transform = InTransform;
-		MarkTransformDirty();
-	}
+	void SetTransform(const FTransform& InTransform);
 
 	// Attatch-To
 	USceneComponent* GetAttachParent() const { return AttachParent; }
@@ -83,6 +67,7 @@ public:
 
 	void MarkTransformDirty();
 	virtual void OnTransformDirty() {};
+	virtual void UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps = {});
 
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
@@ -90,6 +75,7 @@ public:
 	FVector ComponentVelocity;
 
 protected:
+	void InternalSetWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
 	bool bTransformDirty;
 	FTransform Transform;
 

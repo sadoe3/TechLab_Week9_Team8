@@ -7,6 +7,7 @@ void UCapsuleComponent::SetCapsuleSize(float InRadius, float InHalfHeight)
 	CapsuleRadius = std::max(0.0f, InRadius);
 	CapsuleHalfHeight = std::max(CapsuleRadius, InHalfHeight);
 	MarkTransformDirty();
+	UpdateOverlaps();
 }
 
 FBox UCapsuleComponent::CalcLocalBounds() const
