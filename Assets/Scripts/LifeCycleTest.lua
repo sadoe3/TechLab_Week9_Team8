@@ -24,6 +24,6 @@ function OnBeginOverlap(OtherActor)
     print("Lua OnOverlap", OtherActor ~= nil)
 end
 
-function OnEndOverla(OtherActor)
+function OnEndOverlap(OtherActor)
     print("Lua OnEndOverlap", OtherActor~=nil)
 end
