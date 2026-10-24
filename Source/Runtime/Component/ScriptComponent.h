@@ -23,6 +23,13 @@ public:
 
     void OnBeginOverlap(AActor* otherActor);
     void OnEndOverlap(AActor* OtherActor);
+
+    // 후보 파일 실행 여부
+    bool IsLoadingScript() const
+    {
+        return bLoadingScript;
+    }
+
 private:
     // 컴포넌트의 Lua 참조 해제
     void ResetScript();
@@ -56,5 +63,8 @@ private:
 
     // 최초 로드에 실패해도 수정 후 재시도할 수 있도록 유지한다.
     bool bCheckScriptChanges = false;
+
+    // 후보 파일 실행 중 코루틴 생성 차단
+    bool bLoadingScript = false;
 };
 

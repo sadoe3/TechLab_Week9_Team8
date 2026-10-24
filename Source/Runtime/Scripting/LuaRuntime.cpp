@@ -55,6 +55,24 @@ bool FLuaRuntime::LoadScript(
 	return CheckResult(Result, ScriptPath, "Load");
 }
 
+void FLuaRuntime::BindCoroutineFunctions(sol::environment& Environment, UScriptComponent* Owner, const FString& ScriptPath)
+{
+	// 소유 컴포넌트의 비소유 참조
+	const TWeakObjectPtr<UScriptComponent> WeakOwner(Owner);
+
+	Environment.set_function("start_coroutine",
+		[this, WeakOwner, ScriptPath](sol::protected_function Function) -> uint32
+		{
+			UScriptComponent* OwnerComponent = WeakOwner.Get();
+			if (OwnerComponent && OwnerComponent->IsLoadingScript())
+			{
+				throw sol::error("start_coroutine is unavailable while loading script");
+			}
+
+			return CreateCoroutine(OwnerComponent, Function, ScriptPath);
+		});
+}
+
 uint32 FLuaRuntime::CreateCoroutine(UScriptComponent* Owner, const sol::protected_function& Function, const FString& ScriptPath)
 {
 	// 실행 함수 검증

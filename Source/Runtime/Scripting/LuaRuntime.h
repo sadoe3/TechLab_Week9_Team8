@@ -28,6 +28,9 @@ public:
 	// 파일을 지정 환경에서 실행하고 성공 여부를 반환합니다.
 	bool LoadScript(const FString& ScriptPath, sol::environment& Environment);
 
+	// Environment별 코루틴 시작 함수 연결
+	void BindCoroutineFunctions(sol::environment& Environment, UScriptComponent* Owner, const FString& ScriptPath);
+
 	// 선택적 이벤트의 존재 여부는 호출자가 판단합니다.
 	template<typename... TArgs>
 	bool Call(const sol::protected_function& Function,

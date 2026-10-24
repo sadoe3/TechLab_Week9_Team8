@@ -43,7 +43,7 @@ void UScriptComponent::TickComponent(float DeltaTime)
 
 	// 스크립트 변경 확인
 	CheckScriptChanges(DeltaTime);
-	if (!bScriptReady)
+	if (!bScriptReady||!CanRunGameplay())
 	{
 		return;
 	}
@@ -123,9 +123,16 @@ bool UScriptComponent::TryLoadScript()
     
     // 기존 실행 환경을 수정하지 않고 교체 후보를 만든다.
     sol::environment NewEnvironment = Runtime->CreateEnvironment(OwnerActor);
+    Runtime->BindCoroutineFunctions(NewEnvironment, this, ScriptPath);
+
+
+    // 후보 파일 실행 중 코루틴 생성 차단
+    bLoadingScript = true;
+    const bool bLoaded = Runtime->LoadScript(ScriptPath, NewEnvironment);
+    bLoadingScript = false;
 
     // 로드 실패 시 지역 변수만 해제되고 기존 실행은 유지된다.
-    if (Runtime->LoadScript(ScriptPath, NewEnvironment) == false)
+    if (!bLoaded)
     {
         return false;
     }
@@ -145,8 +152,23 @@ bool UScriptComponent::TryLoadScript()
         {
             sol::error Error = Result;
             HTR_LOG(Error, "Lua BeginPlay failed ({}): {}", ScriptPath, Error.what());
+            // 실패한 시작에서 생성한 작업 취소
+            Runtime->CancelCoroutines(this);
             return false;
         }
+    }
+
+    // 후보 콜백의 종료·삭제 요청 반영
+    if (!CanRunGameplay())
+    {
+        Runtime->CancelCoroutines(this);
+        return false;
+    }
+
+    // 교체 전 스크립트 작업 취소
+    if (bScriptReady)
+    {
+        Runtime->CancelCoroutines(this);
     }
 
     // 준비가 끝난 뒤 환경과 모든 콜백을 교체한다.
