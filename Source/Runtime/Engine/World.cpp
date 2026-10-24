@@ -4,6 +4,7 @@
 
 #include "Core/EngineStatics.h"
 #include "GameFramework/Actor/StaticMeshActor.h"
+#include "GameFramework/Character.h"
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
