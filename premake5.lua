@@ -173,12 +173,9 @@ project "HitoriEngine"
 		"%{IncludeDir.sol2}",
 	}
 
+	-- Lua 라이브러리 연결
 	links
 	{
-		"d3d11.lib",
-		"dxgi.lib",
-		"dxguid.lib",
-		"d3dcompiler.lib",
 		"Lua",
 	}
 
@@ -269,3 +266,9 @@ project "HitoriGame"
 		"dxguid.lib",
 		"d3dcompiler.lib",
 	}
+
+	-- 엔진 클래스 자동 등록 코드 포함
+	filter "system:windows"
+		linkoptions { "/WHOLEARCHIVE:HitoriEngine.lib" }
+
+	filter {}
