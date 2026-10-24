@@ -1,6 +1,8 @@
 #include "EnginePCH.h"
 #include "Scripting/LuaBindings.h"
 #include "Math/Vector.h"
+#include "GameFramework/Actor.h"
+#include "UObject/WeakObjectPtr.h"
 #include <format>
 
 namespace LuaBindings
@@ -9,6 +11,7 @@ namespace LuaBindings
 	// TODO : 다른 공통 타입들도 바인딩해야함.
 	void Register(sol::state_view Lua)
 	{
+		// FVector 바인딩
 		Lua.new_usertype<FVector>("Vector",
 			sol::call_constructor,
 			sol::constructors<FVector(), FVector(float, float, float)>(),
@@ -33,7 +36,25 @@ namespace LuaBindings
 			"Normalized", &FVector::Normalized	// 열거형에 없는 함수는 string,함수 포인터로 바인딩할수있음.
 		);
 
+		// AActor 바인딩
+		Lua.new_usertype<TWeakObjectPtr<AActor>>("Actor",
+			sol::no_constructor,
+			"UUID", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> uint32
+				{
+					AActor* Actor = Reference.Get();
+					if (!Actor)
+					{
+						throw sol::error("Actor has been destroyed");
+					}
+
+					return Actor->GetUUID();
+				}));
+
+		// Tostring 바인딩
 		const sol::protected_function ToString = Lua["tostring"];
+
+		// Print 뱌인딩
 		Lua.set_function("print", [ToString](sol::variadic_args Args)
 			{
 				FString Message;

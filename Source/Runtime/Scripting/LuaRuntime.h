@@ -4,6 +4,9 @@
 #include <sol/sol.hpp>
 #include <utility>
 
+// Envirment 소유 액터
+class AActor;
+
 // Lua VM을 소유하고 환경 생성과 보호된 실행을 제공합니다.
 class FLuaRuntime
 {
@@ -16,7 +19,7 @@ public:
 	FLuaRuntime& operator=(const FLuaRuntime&) = delete;
 
 	// 공통 라이브러리를 조회할 수 있는 새 환경을 생성합니다.
-	sol::environment CreateEnvironment();
+	sol::environment CreateEnvironment(AActor* OwnerActor);
 
 	// 파일을 지정 환경에서 실행하고 성공 여부를 반환합니다.
 	bool LoadScript(

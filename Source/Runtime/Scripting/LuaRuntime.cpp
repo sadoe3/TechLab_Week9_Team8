@@ -1,6 +1,8 @@
 #include "EnginePCH.h"
 #include "Scripting/LuaRuntime.h"
 #include "Scripting/LuaBindings.h"
+#include "GameFramework/Actor.h"
+#include "UObject/WeakObjectPtr.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -19,10 +21,11 @@ FLuaRuntime::FLuaRuntime()
 FLuaRuntime::~FLuaRuntime() = default;
 
 // 일반 전역 변수와 _G 쓰기를 각 환경에 보관합니다.
-sol::environment FLuaRuntime::CreateEnvironment()
+sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 {
 	sol::environment Environment(Lua, sol::create, Lua.globals());
 	Environment["_G"] = Environment;
+	Environment["obj"] = TWeakObjectPtr<AActor>(OwnerActor);
 	return Environment;
 }
 
