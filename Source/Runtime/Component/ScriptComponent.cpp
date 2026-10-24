@@ -9,7 +9,7 @@
 #include "Core/EngineLog.h"
 
 UScriptComponent::UScriptComponent()
-    : ScriptPath("") // Assets/Script/LifeCycleTest.lua
+    : ScriptPath("Assets/Scripts/HotReloadTest.lua") // Assets/Script/LifeCycleTest.lua
 {
     PrimaryComponentTick.bCanEverTick = true;
 }
@@ -24,89 +24,27 @@ void UScriptComponent::BeginPlay()
     UWorld* OwnerWorld = OwnerActor->GetWorld();
     assert(OwnerWorld != nullptr);
 
-    // 편집 중에는 Lua 환경 생성과 파일 실행을 건너뛴다.
+    // 편집 중에는 Lua 실행과 파일 변경 검사를 시작하지 않는다.
     if (OwnerWorld->GetWorldType() == EWorldType::Editor)
     {
         return;
     }
 
-    FTempLuaRuntime* Runtime = OwnerWorld->GetLuaRuntime();
-    assert(Runtime != nullptr);
-    
-    ScriptEnvironment = Runtime->CreateEnvironment(OwnerActor);
+    // 최초 검사에서는 수정 시각 비교 없이 로드를 시도한다.
+    bHasAttemptedWriteTime = false;
+    bCheckScriptChanges = true;
 
-    // 컴포넌트 전용 환경에서 Lua 파일을 실행한다.
-    if (Runtime->LoadScript(ScriptPath, ScriptEnvironment) == false)
-    {
-        return;
-    }
-
-    // 이 Environment의 Lua OnOverlap 함수를 찾는다.
-    {
-        sol::object OverlapObject = ScriptEnvironment.raw_get<sol::object>("OnOverlap");
-        
-        // 함수가 정의돼 있을 때만 참조를 보관한다.
-        if (OverlapObject.is<sol::protected_function>())
-        {
-            BeginOverlapFunction = OverlapObject.as<sol::protected_function>();
-        }
-    }
-
-    // 이 Environment의 BeginPlay 값을 가져온다.
-    {
-        sol::object BeginPlayObject = ScriptEnvironment.raw_get<sol::object>("BeginPlay");
-        //assert(BeginPlayObject.is<sol::protected_function>());
-
-        if (BeginPlayObject.is<sol::protected_function>())
-        {
-            BeginPlayFunction = BeginPlayObject.as<sol::protected_function>();
-        }
-    }
-    
-    // 이 Environment에서 매 프레임 호출할 Tick 함수를 찾는다.
-    {
-        sol::object TickObject = ScriptEnvironment.raw_get<sol::object>("Tick");
-        //assert(TickObject.is<sol::protected_function>());
-
-        if (TickObject.is<sol::protected_function>())
-        {
-            TickFunction = TickObject.as<sol::protected_function>();
-        }
-    }
-    
-    // 이 Environment에서 종료 시, 호출할 EndPlay 함수를 찾는다.
-    {
-        sol::object EndPlayObject = ScriptEnvironment.raw_get<sol::object>("EndPlay");
-        //assert(EndPlayObject.is<sol::protected_function>());
-
-        if (EndPlayObject.is<sol::protected_function>())
-        {
-            EndPlayFunction = EndPlayObject.as<sol::protected_function>();
-        }
-    }
-
-    // Lua 파일에 BeginPlay 함수가 있을 때만 호출한다.
-    if (BeginPlayFunction.valid())
-    {
-        // protected_function은 Lua 오류를 결과로 반환한다.
-        sol::protected_function_result Result = BeginPlayFunction();
-
-        if (Result.valid() == false)
-        {
-            sol::error Error = Result;
-            HTR_LOG(Error, "Lua BeginPlay failed ({}): {}", ScriptPath, Error.what());
-
-            return;
-        }
-    }
-
-    // BeginPlay가 없거나 정상 실행되었으면 갱신을 허용한다.
-    bScriptReady = true;
+    // 검사 간격을 미리 채워 첫 로드를 즉시 수행한다.
+    TimeSinceLastScriptCheck = 0.5f;
+    CheckScriptChanges(0.0f);
 }
 
 void UScriptComponent::TickComponent(float DeltaTime)
 {
     Super::TickComponent(DeltaTime);
+
+    // 최초 로드에 실패했거나 Tick 함수가 없어도 변경을 확인한다.
+    CheckScriptChanges(DeltaTime);
 
     if (bScriptReady == false || TickFunction.valid() == false)
     {
@@ -125,12 +63,10 @@ void UScriptComponent::TickComponent(float DeltaTime)
 void UScriptComponent::EndPlay()
 {
     // 시작 준비가 완료된 스크립트만 종료 콜백을 호출한다.
-    //assert(bScriptReady);
-    //assert(EndPlayFunction.valid());
-
     const bool bCallEndPlay = bScriptReady && EndPlayFunction.valid();
 
-    // 종료 상태로 전환하여 중복 종료 콜백 호출을 막는다.
+    // 종료 중 재로드나 다른 Lua 콜백이 실행되지 않도록 막는다.
+    bCheckScriptChanges = false;
     bScriptReady = false;
     PrimaryComponentTick.UnRegisterTickFunction();
 
@@ -149,10 +85,118 @@ void UScriptComponent::EndPlay()
     BeginPlayFunction = sol::protected_function();
     TickFunction = sol::protected_function();
     EndPlayFunction = sol::protected_function();
-    ScriptEnvironment = sol::environment();
     BeginOverlapFunction = sol::protected_function();
+    ScriptEnvironment = sol::environment();
+
+    // 다음 플레이에서는 파일 변경 검사도 처음부터 시작한다.
+    bHasAttemptedWriteTime = false;
+    TimeSinceLastScriptCheck = 0.0f;
 
     Super::EndPlay();
+}
+
+sol::protected_function UScriptComponent::FindScriptFunction(
+    const sol::environment& Environment,
+    const char* FunctionName)
+{
+    // 전역 환경을 조회하지 않고, 이 환경의 값만 가져온다.
+    sol::object FunctionObject = Environment.raw_get<sol::object>(FunctionName);
+
+    if (FunctionObject.is<sol::protected_function>())
+    {
+        return FunctionObject.as<sol::protected_function>();
+    }
+
+    // 삭제되었거나 정의되지 않은 콜백은 빈 참조로 처리한다.
+    return sol::protected_function();
+}
+
+bool UScriptComponent::TryLoadScript()
+{
+    AActor* OwnerActor = GetOwner();
+    assert(OwnerActor != nullptr);
+
+    UWorld* OwnerWorld = OwnerActor->GetWorld();
+    assert(OwnerWorld != nullptr);
+
+    FTempLuaRuntime* Runtime = OwnerWorld->GetLuaRuntime();
+    assert(Runtime != nullptr);
+
+    // 기존 실행 환경을 수정하지 않고 교체 후보를 만든다.
+    sol::environment NewEnvironment = Runtime->CreateEnvironment(OwnerActor);
+
+    // 로드 실패 시 지역 변수만 해제되고 기존 실행은 유지된다.
+    if (Runtime->LoadScript(ScriptPath, NewEnvironment) == false)
+    {
+        return false;
+    }
+
+    // 없는 콜백도 빈 참조로 준비하여 삭제한 이전 함수가 남지 않게 한다.
+    sol::protected_function NewBeginPlayFunction = FindScriptFunction(NewEnvironment, "BeginPlay");
+    sol::protected_function NewTickFunction = FindScriptFunction(NewEnvironment, "Tick");
+    sol::protected_function NewEndPlayFunction = FindScriptFunction(NewEnvironment, "EndPlay");
+    sol::protected_function NewBeginOverlapFunction = FindScriptFunction(NewEnvironment, "OnOverlap");
+
+    // 최초 시작에만 호출하며, 최초 로드 실패 후 재시도도 포함한다.
+    if (bScriptReady == false && NewBeginPlayFunction.valid())
+    {
+        sol::protected_function_result Result = NewBeginPlayFunction();
+        if (Result.valid() == false)
+        {
+            sol::error Error = Result;
+            HTR_LOG(Error, "Lua BeginPlay failed ({}): {}", ScriptPath, Error.what());
+            return false;
+        }
+    }
+
+    // 준비가 끝난 뒤 환경과 모든 콜백을 교체한다.
+    ScriptEnvironment = NewEnvironment;
+    BeginPlayFunction = NewBeginPlayFunction;
+    TickFunction = NewTickFunction;
+    EndPlayFunction = NewEndPlayFunction;
+    BeginOverlapFunction = NewBeginOverlapFunction;
+    bScriptReady = true;
+
+    return true;
+}
+
+void UScriptComponent::CheckScriptChanges(float DeltaTime)
+{
+    // 플레이 중이며 스크립트 경로가 있을 때만 검사한다.
+    if (bCheckScriptChanges == false || ScriptPath.empty())
+    {
+        return;
+    }
+
+    // 매 프레임 파일을 조회하지 않고 0.5초 간격으로 확인한다.
+    TimeSinceLastScriptCheck += DeltaTime;
+    if (TimeSinceLastScriptCheck < 0.5f)
+    {
+        return;
+    }
+
+    TimeSinceLastScriptCheck = 0.0f;
+
+    // 예외 대신 Error로 파일 조회 실패를 확인한다.
+    std::error_code Error;
+    const auto CurrentWriteTime = std::filesystem::last_write_time(ScriptPath, Error);
+    if (Error)
+    {
+        // 기존 실행은 유지하고, 파일이 다시 나타나면 재로드한다.
+        bHasAttemptedWriteTime = false;
+        return;
+    }
+
+    if (bHasAttemptedWriteTime && CurrentWriteTime == LastAttemptedWriteTime)
+    {
+        return;
+    }
+
+    // 실패한 수정본도 기록하여 반복 실행과 로그 누적을 막는다.
+    LastAttemptedWriteTime = CurrentWriteTime;
+    bHasAttemptedWriteTime = true;
+
+    TryLoadScript();
 }
 
 void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
