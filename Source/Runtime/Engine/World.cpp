@@ -68,6 +68,11 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 	if (!Class) return nullptr;
 	if (!Class->IsChildOf(AActor::StaticClass())) return nullptr;
 
+	// 0. 중복 이름 처리
+	if (!InName.IsNone() && StaticFindObjectFast(nullptr, PersistentLevel, InName))
+	{
+		InName = MakeUniqueObjectName(PersistentLevel, Class, InName);
+	}
 	// 1. ObjectFactory로 Actor 생성
 	AActor* NewActor = NewObject<AActor>(PersistentLevel, Class, InName);
 
