@@ -302,8 +302,6 @@ void UBenchmarkEngine::PreTick(float DeltaTime)
 
 void UBenchmarkEngine::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
 	const uint32 Width = GetEngineLoop().GetViewportWidth();
 	const uint32 Height = GetEngineLoop().GetViewportHeight();
 	if (Width == 0 || Height == 0)

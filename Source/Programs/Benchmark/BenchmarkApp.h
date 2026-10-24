@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/GameEngine.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 
 #include "Editor/EditorUI/EditorUI.h"
@@ -20,9 +20,9 @@ class FEditorControlsPanel;
 class FOutputLogPanel;
 class UPrimitiveComponent;
 
-class UBenchmarkEngine : public UGameEngine
+class UBenchmarkEngine : public UEngine
 {
-	DECLARE_CLASS(UBenchmarkEngine, UGameEngine)
+	DECLARE_CLASS(UBenchmarkEngine, UEngine)
 
 public:
 	FEngineConfig GetConfig() const override;

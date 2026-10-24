@@ -234,3 +234,38 @@ project "HitoriEditor"
 		targetname "Benchmark_Debug"
 
 	filter {}
+
+-- 게임 실행 프로젝트
+project "HitoriGame"
+	location "Source/Game"
+	kind "WindowedApp"
+	CommonSettings()
+
+	-- 게임 프로젝트 PCH
+	pchheader "EnginePCH.h"
+	pchsource "Source/Game/GamePCH.cpp"
+
+	files
+	{
+		"Source/Game/**.h",
+		"Source/Game/**.cpp",
+	}
+
+	includedirs
+	{
+		"Source/Runtime",
+		"%{IncludeDir.stb}",
+		"%{IncludeDir.json}",
+		"%{IncludeDir.Lua}",
+		"%{IncludeDir.sol2}",
+	}
+
+	links
+	{
+		"HitoriEngine",
+		"Lua",
+		"d3d11.lib",
+		"dxgi.lib",
+		"dxguid.lib",
+		"d3dcompiler.lib",
+	}
