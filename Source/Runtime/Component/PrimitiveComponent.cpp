@@ -52,6 +52,31 @@ const FBodyInstance& UPrimitiveComponent::GetBodyInstance() const
 	return BodyInstance;
 }
 
+void UPrimitiveComponent::CreatePhysicsState()
+{
+	if (!GetOwner() || !GetOwner()->GetWorld()) return;
+
+	BodyInstance.InitBody(this);
+	GetOwner()->GetWorld()->GetPhysicsScene().AddBody(&BodyInstance);
+}
+
+void UPrimitiveComponent::DestroyPhysicsState()
+{
+	BodyInstance.TerminateBody();
+}
+
+void UPrimitiveComponent::OnRegister()
+{
+	Super::OnRegister();
+	CreatePhysicsState();
+}
+
+void UPrimitiveComponent::OnUnregister()
+{
+	DestroyPhysicsState();
+	Super::OnUnregister();
+}
+
 void UPrimitiveComponent::BeginPlay()
 {
 	Super::BeginPlay();

@@ -39,6 +39,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual FCollisionLocalShape GetCollisionShape() const { return {}; }
 	const FBodyInstance& GetBodyInstance() const;
+	void CreatePhysicsState();
+	void DestroyPhysicsState();
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -87,6 +89,8 @@ public:
 	virtual bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit = nullptr) override;
 
 protected:
+	virtual void OnRegister() override;
+	virtual void OnUnregister() override;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;

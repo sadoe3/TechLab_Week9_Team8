@@ -11,6 +11,7 @@
 #include "Math/Frustum.h"
 #include "Math/BVH.h"
 #include "Engine/Scene.h"
+#include "Collision/PhysicsScene.h"
 #include "Camera/CameraActor.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
@@ -137,6 +138,8 @@ public:
 	void FlushPendingDestruction(uint32 RequestCount);
 
 	FScene& GetScene() { return Scene; }
+	FPhysicsScene& GetPhysicsScene() { return PhysicsScene; }
+	const FPhysicsScene& GetPhysicsScene() const { return PhysicsScene; }
 	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
 	FLuaRuntime* GetLuaRuntime() const { return LuaRuntime.get(); }
 	const FRenderStats& GetRenderStats() const { return RenderStats; }
@@ -201,6 +204,7 @@ private:
 	TArray<ULevel*> Levels;
 
 	FScene Scene;
+	FPhysicsScene PhysicsScene;
 
 	// GatherRenderPackets가 매 프레임 채우는 컬링 결과. 용량을 재사용한다.
 	TArray<FPrimitiveSceneProxy*> VisibleProxies;

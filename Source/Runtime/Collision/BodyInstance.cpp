@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "BodyInstance.h"
+#include "PhysicsScene.h"
 #include "Component/PrimitiveComponent.h"
 
 void FBodyInstance::InitBody(const UPrimitiveComponent* InOwner)
@@ -24,6 +25,8 @@ void FBodyInstance::UpdateTransform()
 
 void FBodyInstance::TerminateBody()
 {
+	if (PhysicsScene)
+		PhysicsScene->RemoveBody(this);
 	OwnerComponent = nullptr;
 	WorldShape = FCollisionWorldShape{};
 	Bounds = FBox{};

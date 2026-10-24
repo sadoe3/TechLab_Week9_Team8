@@ -188,6 +188,7 @@ bool UWorld::ClearWorld()
 
 	// 렌더 등록 일괄 제거
 	Scene.RemoveAllPrimitives();
+	PhysicsScene.RemoveAllBodies();
 	Scene.RemoveAllFogInfo();
 	Scene.RemoveAllLights();
 

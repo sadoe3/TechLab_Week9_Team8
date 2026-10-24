@@ -84,7 +84,10 @@ bool FJsonArchive::LoadWorldFromBytes(UWorld* World, const TArray<uint8>& Bytes)
 	{
 		for (UActorComponent* Component : Actor->GetComponents())
 			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+			{
 				Primitive->OnTransformDirty();
+				Primitive->CreatePhysicsState();
+			}
 	}
 
 	World->GetScene().BuildBVH();
