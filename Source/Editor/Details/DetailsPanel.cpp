@@ -6,6 +6,9 @@
 #include "Component/LightComponent.h"
 #include "Component/DirectionalLightComponent.h"
 #include "Component/PointLightComponent.h"
+#include "Component/BoxComponent.h"
+#include "Component/SphereComponent.h"
+#include "Component/CapsuleComponent.h"
 #include <d3dcompiler.h>
 #include "imgui_internal.h"
 #include "Editor/HitoriEd/EditorDragDrop.h"
@@ -726,6 +729,18 @@ namespace
 			break;
 		case EPropertyType::Int:
 		{
+			if (Cast<UPrimitiveComponent>(Object))
+			{
+				const char* Items = nullptr;
+				if (Property.Name == "CollisionEnabled") Items = "NoCollision\0QueryOnly\0";
+				else if (Property.Name == "ObjectType") Items = "WorldStatic\0WorldDynamic\0Pawn\0";
+				else if (Property.Name.starts_with("CollisionResponses.")) Items = "Ignore\0Overlap\0Block\0";
+				if (Items)
+				{
+					bChanged = ImGui::Combo(Label.c_str(), static_cast<int*>(ValuePtr), Items);
+					break;
+				}
+			}
 			const auto* Directional = Cast<UDirectionalLightComponent>(Object);
 			if (Directional && Property.Name == "CascadeCount")
 			{
@@ -994,6 +1009,24 @@ namespace
 			if (ImGui::MenuItem("StaticMesh Component"))
 			{
 				OutSelectedComponent = Actor->AddComponent(UStaticMeshComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Box Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UBoxComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Sphere Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(USphereComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Capsule Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UCapsuleComponent::StaticClass(), FString(ComponentNameInputBuf));
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}

@@ -79,6 +79,17 @@ bool FJsonArchive::LoadWorldFromBytes(UWorld* World, const TArray<uint8>& Bytes)
 	World->Serialize(Root.EnterRecord("World"));
 	Ar.Close();
 
+	// 모든 속성과 부착 관계를 읽은 뒤 월드 도형과 렌더 경계를 갱신한다.
+	for (AActor* Actor : World->GetPersistentLevel()->GetActors())
+	{
+		for (UActorComponent* Component : Actor->GetComponents())
+			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+			{
+				Primitive->OnTransformDirty();
+				Primitive->CreatePhysicsState();
+			}
+	}
+
 	World->GetScene().BuildBVH();
 	return !Reader.IsError();
 }

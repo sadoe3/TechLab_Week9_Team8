@@ -31,8 +31,7 @@ void FPrimitiveSceneProxy::UpdateTransform()
     LocalToWorld = Component->GetWorldMatrix();
     WorldToLocal = LocalToWorld.Inverse();
     NormalMatrix = MakeNormalMatrix(LocalToWorld);
-    const FBox LocalBounds = Mesh ? Mesh->GetRenderBounds() : Component->CalcLocalBounds();
-    Bounds = MakeWorldBounds(LocalBounds.GetWorldAABB(LocalToWorld));
+    Bounds = MakeWorldBounds(Mesh ? Mesh->GetRenderBounds().GetWorldAABB(LocalToWorld) : Component->CalcBounds());
     LODSphere = Mesh ? Mesh->GetLocalLODSphere().Transform(LocalToWorld) : FLODSphere{};
 }
 
