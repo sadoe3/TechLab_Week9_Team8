@@ -114,6 +114,7 @@ protected:
 	virtual void OnUnregister() override;
 	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
 	virtual void NotifyEndOverlap(UPrimitiveComponent* Other);
+	virtual void NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
 	bool bGenerateOverlapEvents = true;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
@@ -129,6 +130,7 @@ protected:
 	FCollisionResponseContainer CollisionResponses;
 
 private:
+	void DispatchBlockingHit(const FHitResult& Hit);
 	bool CanGenerateOverlap(const UPrimitiveComponent* Other) const;
 	void BeginComponentOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
 	void EndComponentOverlap(UPrimitiveComponent* Other, bool bNotify);

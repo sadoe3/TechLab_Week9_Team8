@@ -217,6 +217,7 @@ bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& Ne
 	MoveHit.Location = GetWorldLocation();
 	MoveHit.Distance = (MoveHit.Location - Start).Size();
 	UpdateOverlaps(PendingOverlaps);
+	DispatchBlockingHit(MoveHit);
 	if (MoveHit.HitComponent && (MoveHit.HitComponent->IsPendingDestroy() || (MoveHit.HitComponent->GetOwner() && MoveHit.HitComponent->GetOwner()->IsPendingDestroy()))) MoveHit.HitComponent = nullptr;
 	if (Hit) *Hit = MoveHit;
 	return true;
@@ -395,6 +396,28 @@ void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverla
 	} while (bOverlapUpdatePending && !(IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())));
 	bUpdatingOverlaps = false;
 	Super::UpdateOverlaps();
+}
+
+void UPrimitiveComponent::DispatchBlockingHit(const FHitResult& Hit)
+{
+	UPrimitiveComponent* OtherComponent = Hit.HitComponent;
+	if (!Hit.bBlockingHit || IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()) || !OtherComponent || OtherComponent->IsPendingDestroy() || (OtherComponent->GetOwner() && OtherComponent->GetOwner()->IsPendingDestroy())) return;
+
+	NotifyHit(OtherComponent, Hit);
+	// 첫 알림에서 어느 한쪽이 삭제 요청되었으면 상대 알림을 보내지 않는다.
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()) || OtherComponent->IsPendingDestroy() || (OtherComponent->GetOwner() && OtherComponent->GetOwner()->IsPendingDestroy())) return;
+
+	FHitResult OtherHit = Hit;
+	OtherHit.HitComponent = this;
+	OtherHit.Normal = -Hit.Normal;
+	OtherHit.ImpactNormal = -Hit.ImpactNormal;
+	// 이동 정보는 원래 Sweep의 기록을 유지하고 상대와 법선만 수신자 기준으로 바꾼다.
+	OtherComponent->NotifyHit(this, OtherHit);
+}
+
+void UPrimitiveComponent::NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
+{
+	// TODO: Delegate 연결 시 OnComponentHit.Broadcast(this, OtherComponent, Hit);
 }
 
 void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
