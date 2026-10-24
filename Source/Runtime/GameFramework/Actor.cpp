@@ -347,9 +347,9 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
     }
 
 
-    if (FName(Name) == FName("None"))
+    if (Name.IsNone() || StaticFindObjectFast(nullptr, this, Name))
     {
-        Name = MakeUniqueObjectName(this, ComponentClass);
+        Name = MakeUniqueObjectName(this, ComponentClass, Name);
     }
 
     UActorComponent* NewComponent = NewObject<UActorComponent>(this, ComponentClass, Name);

@@ -73,14 +73,9 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 	{
 		InName = MakeUniqueObjectName(PersistentLevel, Class, InName);
 	}
+
 	// 1. ObjectFactory로 Actor 생성
 	AActor* NewActor = NewObject<AActor>(PersistentLevel, Class, InName);
-
-	if (!NewActor)
-	{
-		HTR_LOG(Error, "SpawnActor : Failed to create Actor");
-		return nullptr;
-	}
 
 	// 2. Actor에 World/Level 연결
 	NewActor->World = this;
