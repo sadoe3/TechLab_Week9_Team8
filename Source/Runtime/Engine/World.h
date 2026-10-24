@@ -21,7 +21,7 @@ class ULevel;
 class UBillboardComponent;
 class UEngine;
 class FJsonArchive;
-
+class FLuaRuntime;
 struct FLODViewContext;
 
 struct FRenderStats
@@ -49,7 +49,7 @@ class UWorld : public UObject
 	DECLARE_CLASS(UWorld, UObject)
 
 public:
-	UWorld() = default;
+	UWorld();
 	virtual ~UWorld();
 
 	bool Init();
@@ -138,7 +138,7 @@ public:
 
 	FScene& GetScene() { return Scene; }
 	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
-
+	FLuaRuntime* GetLuaRuntime() const { return LuaRuntime.get(); }
 	const FRenderStats& GetRenderStats() const { return RenderStats; }
 
 	void SetWorldType(EWorldType InType) { WorldType = InType; }
@@ -232,4 +232,7 @@ private:
 
 	// 삭제 배치 재진입 방지
 	bool bFlushingPendingDestroy = false;
+
+	// World 전용 Lua VM 소유
+	TUniquePtr<FLuaRuntime> LuaRuntime;
 };

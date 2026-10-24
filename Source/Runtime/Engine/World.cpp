@@ -26,6 +26,7 @@
 #include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectHash.h"
 #include "Engine/Engine.h"
+#include "Scripting/LuaRuntime.h"
 
 DECLARE_CYCLE_STAT("Actor Tick", STAT_ActorTick); // Actor 틱 측정
 DECLARE_CYCLE_STAT("Update All Transforms", STAT_UpdateAllTransforms); // 각 Transform의 Update 시간 측정
@@ -34,6 +35,8 @@ DECLARE_CYCLE_STAT("Frustum Cull", STAT_FrustumCull);
 DECLARE_CYCLE_STAT("Gather Elements", STAT_GatherElements);
 DECLARE_CYCLE_STAT("Gather - LOD", STAT_GatherLOD);
 DECLARE_CYCLE_STAT("Gather - Submit", STAT_GatherSubmit);
+
+UWorld::UWorld() = default;
 
 UWorld::~UWorld()
 {
@@ -810,6 +813,12 @@ void UWorld::BeginPlay()
 		return;
 	}
 
+	// 최초 게임 시작의 Lua VM 생성
+	if (!LuaRuntime)
+	{
+		LuaRuntime = MakeUnique<FLuaRuntime>();
+	}
+
 	PlayState = EWorldPlayState::Starting;
 
 	QueueActorForBeginPlay(FallbackCamera);
@@ -1100,6 +1109,9 @@ void UWorld::Shutdown()
 	Levels.Reset();
 	PersistentLevel = nullptr;
 	CurrentLevel = nullptr;
+
+	// 소유 객체 소멸 후 Lua VM 해제
+	LuaRuntime.reset();
 
 	bShutdown = true;
 	bShuttingDown = false;
