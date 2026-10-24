@@ -678,6 +678,13 @@ void UWorld::FlushPendingDestruction(uint32 RequestCount)
 		}
 	}
 
+	// 삭제 배치의 공간 인덱스 변경 반영
+	if (Scene.bElementListChanged)
+	{
+		Scene.BuildBVH();
+		Scene.bElementListChanged = false;
+	}
+
 	bFlushingPendingDestroy = false;
 }
 
@@ -777,13 +784,22 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 			return true;
 		};
 
-	const FPreparedRay PreparedRay(WorldRay);
+	if (Scene.bElementListChanged)
+	{
+		for (FPrimitiveSceneProxy* Proxy : Scene.Proxies)
+		{
+			TraceComponent(Proxy, NearestT);
+		}
+	}
+	else
+	{
+		const FPreparedRay PreparedRay(WorldRay);
 
-	Scene.BVH.TraceClosest(
-		[&](const FBox& Bounds, float& OutEnterT) { return RayIntersectsAABB(PreparedRay, Bounds.Min, Bounds.Max, OutEnterT); },
-		[&](FPrimitiveSceneProxy* Proxy, float& OutNearestT) { return TraceComponent(Proxy, OutNearestT); },
-		NearestT);
-
+		Scene.BVH.TraceClosest(
+			[&](const FBox& Bounds, float& OutEnterT) { return RayIntersectsAABB(PreparedRay, Bounds.Min, Bounds.Max, OutEnterT); },
+			[&](FPrimitiveSceneProxy* Proxy, float& OutNearestT) { return TraceComponent(Proxy, OutNearestT); },
+			NearestT);
+	}
 	return OutHit.HitComponent != nullptr;
 }
 

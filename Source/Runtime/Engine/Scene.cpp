@@ -63,10 +63,12 @@ void FScene::RemovePrimitive(UPrimitiveComponent* Component)
 
 	// 사라진 Caster의 그림자가 캐시에 남지 않게 한다.
 	AddShadowInvalidation(Proxy->GetBounds());
+	// 프록시 해제전 BVH참조 제거
+	BVH.Clear();
+	bElementListChanged = true;
+
 	Component->SceneProxy = nullptr;
 	delete Proxy;
-
-	bElementListChanged = true;
 }
 
 void FScene::RemoveAllPrimitives()
