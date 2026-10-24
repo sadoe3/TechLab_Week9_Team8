@@ -418,14 +418,17 @@ void UPrimitiveComponent::DispatchBlockingHit(const FHitResult& Hit)
 void UPrimitiveComponent::NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
 	// TODO: Delegate 연결 시 OnComponentHit.Broadcast(this, OtherComponent, Hit);
+	HTR_LOG(Info, "OnComponentHit: {} [{}] -> {} [{}], Time={}, StartPenetrating={}", GetName(), GetUUID(), OtherComponent->GetName(), OtherComponent->GetUUID(), Hit.Time, Hit.bStartPenetrating);
 }
 
 void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// TODO: Delegate 연결 시 OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
+	HTR_LOG(Info, "OnComponentBeginOverlap: {} [{}] -> {} [{}], FromSweep={}", GetName(), GetUUID(), Other->GetName(), Other->GetUUID(), bFromSweep);
 }
 
 void UPrimitiveComponent::NotifyEndOverlap(UPrimitiveComponent* Other)
 {
 	// TODO: Delegate 연결 시 OnComponentEndOverlap.Broadcast(this, Other);
+	HTR_LOG(Info, "OnComponentEndOverlap: {} [{}] -> {} [{}]", GetName(), GetUUID(), Other->GetName(), Other->GetUUID());
 }
