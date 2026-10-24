@@ -17,6 +17,7 @@ public:
 	{
 		bCastShadow = false;
 		bReceiveShadow = false;
+		CollisionEnabled = static_cast<int32>(ECollisionEnabled::QueryOnly);
 	}
 
 	const FColor& GetShapeColor() const { return ShapeColor; }

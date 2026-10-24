@@ -729,6 +729,18 @@ namespace
 			break;
 		case EPropertyType::Int:
 		{
+			if (Cast<UPrimitiveComponent>(Object))
+			{
+				const char* Items = nullptr;
+				if (Property.Name == "CollisionEnabled") Items = "NoCollision\0QueryOnly\0";
+				else if (Property.Name == "ObjectType") Items = "WorldStatic\0WorldDynamic\0Pawn\0";
+				else if (Property.Name.starts_with("CollisionResponses.")) Items = "Ignore\0Overlap\0Block\0";
+				if (Items)
+				{
+					bChanged = ImGui::Combo(Label.c_str(), static_cast<int*>(ValuePtr), Items);
+					break;
+				}
+			}
 			const auto* Directional = Cast<UDirectionalLightComponent>(Object);
 			if (Directional && Property.Name == "CascadeCount")
 			{

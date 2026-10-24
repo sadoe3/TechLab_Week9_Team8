@@ -54,7 +54,12 @@ const FBodyInstance& UPrimitiveComponent::GetBodyInstance() const
 
 void UPrimitiveComponent::CreatePhysicsState()
 {
-	if (!GetOwner() || !GetOwner()->GetWorld()) return;
+	if (GetCollisionEnabled() == ECollisionEnabled::NoCollision)
+	{
+		DestroyPhysicsState();
+		return;
+	}
+	if (!IsRegistered() || !GetOwner() || !GetOwner()->GetWorld()) return;
 
 	BodyInstance.InitBody(this);
 	GetOwner()->GetWorld()->GetPhysicsScene().AddBody(&BodyInstance);
@@ -75,6 +80,30 @@ void UPrimitiveComponent::OnUnregister()
 {
 	DestroyPhysicsState();
 	Super::OnUnregister();
+}
+
+void UPrimitiveComponent::SetCollisionEnabled(ECollisionEnabled NewEnabled)
+{
+	CollisionEnabled = static_cast<int32>(NewEnabled);
+	CreatePhysicsState();
+}
+
+void UPrimitiveComponent::SetCollisionObjectType(ECollisionChannel NewType)
+{
+	ObjectType = static_cast<int32>(NewType);
+	BodyInstance.UpdateFilter();
+}
+
+void UPrimitiveComponent::SetCollisionResponseToChannel(ECollisionChannel Channel, ECollisionResponse Response)
+{
+	CollisionResponses.SetResponse(Channel, Response);
+	BodyInstance.UpdateFilter();
+}
+
+void UPrimitiveComponent::SetCollisionResponseToAllChannels(ECollisionResponse Response)
+{
+	CollisionResponses.SetAllResponses(Response);
+	BodyInstance.UpdateFilter();
 }
 
 void UPrimitiveComponent::BeginPlay()
@@ -110,6 +139,10 @@ void UPrimitiveComponent::PostEditChangeProperty(const FProperty& Property)
 	Super::PostEditChangeProperty(Property);
 	if (Property.Name == "bVisible" || Property.Name == "bCastShadow" || Property.Name == "bReceiveShadow")
 		MarkRenderStateDirty();
+	if (Property.Name == "CollisionEnabled")
+		CreatePhysicsState();
+	else if (Property.Name == "ObjectType" || Property.Name.starts_with("CollisionResponses."))
+		BodyInstance.UpdateFilter();
 }
 
 void UPrimitiveComponent::MarkRenderStateDirty()

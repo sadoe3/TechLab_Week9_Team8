@@ -31,6 +31,11 @@ class UPrimitiveComponent :public USceneComponent
 		PROPERTY(bVisible)
 		PROPERTY(bCastShadow)
 		PROPERTY(bReceiveShadow)
+		PROPERTY(CollisionEnabled)
+		PROPERTY(ObjectType)
+		PROPERTY(CollisionResponses.WorldStatic)
+		PROPERTY(CollisionResponses.WorldDynamic)
+		PROPERTY(CollisionResponses.Pawn)
 	REFLECT_END()
 public:
 	UPrimitiveComponent();
@@ -41,6 +46,13 @@ public:
 	const FBodyInstance& GetBodyInstance() const;
 	void CreatePhysicsState();
 	void DestroyPhysicsState();
+	ECollisionEnabled GetCollisionEnabled() const { return CollisionEnabled == static_cast<int32>(ECollisionEnabled::QueryOnly) ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision; }
+	ECollisionChannel GetCollisionObjectType() const { return static_cast<ECollisionChannel>(ObjectType); }
+	const FCollisionResponseContainer& GetCollisionResponses() const { return CollisionResponses; }
+	void SetCollisionEnabled(ECollisionEnabled NewEnabled);
+	void SetCollisionObjectType(ECollisionChannel NewType);
+	void SetCollisionResponseToChannel(ECollisionChannel Channel, ECollisionResponse Response);
+	void SetCollisionResponseToAllChannels(ECollisionResponse Response);
 
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
@@ -99,6 +111,11 @@ protected:
 	// 등록 책임을 프리미티브로 옮김
 	virtual void CreateRenderState() override;
 	virtual void DestroyRenderState() override;
+	// Reflection 저장형은 int32, 호출부는 ECollisionEnabled/ECollisionChannel을 사용한다.
+	int32 CollisionEnabled = static_cast<int32>(ECollisionEnabled::NoCollision);
+	int32 ObjectType = static_cast<int32>(ECollisionChannel::WorldDynamic);
+	FCollisionResponseContainer CollisionResponses;
+
 private:
 	friend class FScene;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;

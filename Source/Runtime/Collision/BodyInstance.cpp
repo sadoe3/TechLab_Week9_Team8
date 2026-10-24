@@ -6,7 +6,18 @@
 void FBodyInstance::InitBody(const UPrimitiveComponent* InOwner)
 {
 	OwnerComponent = InOwner;
+	UpdateFilter();
 	UpdateTransform();
+}
+
+void FBodyInstance::UpdateFilter()
+{
+	FilterData = {};
+	bQueryEnabled = false;
+	if (!OwnerComponent) return;
+
+	FilterData = FCollisionFilterData::FromSettings(OwnerComponent->GetCollisionObjectType(), OwnerComponent->GetCollisionResponses(), OwnerComponent->GetOwner());
+	bQueryEnabled = OwnerComponent->GetCollisionEnabled() == ECollisionEnabled::QueryOnly;
 }
 
 void FBodyInstance::UpdateTransform()
@@ -21,6 +32,8 @@ void FBodyInstance::UpdateTransform()
 	const FTransform WorldTransform(OwnerComponent->GetWorldRotation(), OwnerComponent->GetWorldLocation(), OwnerComponent->GetWorldScale3D());
 	WorldShape = FCollisionWorldShape::FromLocal(LocalShape, WorldTransform);
 	Bounds = WorldShape.CalcBounds();
+	if (PhysicsScene)
+		PhysicsScene->UpdateBody(this);
 }
 
 void FBodyInstance::TerminateBody()
@@ -30,4 +43,6 @@ void FBodyInstance::TerminateBody()
 	OwnerComponent = nullptr;
 	WorldShape = FCollisionWorldShape{};
 	Bounds = FBox{};
+	FilterData = {};
+	bQueryEnabled = false;
 }
