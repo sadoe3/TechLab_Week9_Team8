@@ -70,7 +70,12 @@ bool FJsonArchive::LoadWorldFromBytes(UWorld* World, const TArray<uint8>& Bytes)
 		return false;                               
 	}
 
-	World->ClearWorld();
+	// 정리 실패 시 로드 중단
+	if (!World->ClearWorld())
+	{
+		return false;
+	}
+
 	World->Serialize(Root.EnterRecord("World"));
 	Ar.Close();
 

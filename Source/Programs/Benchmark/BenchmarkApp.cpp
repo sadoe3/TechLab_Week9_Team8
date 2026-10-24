@@ -52,6 +52,8 @@ bool UBenchmarkEngine::Init()
 		return false;
 
 	World = UWorld::CreateWorld(EWorldType::Game, true);
+	// Benchmark World의 명시적 등록
+	CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
 
 	ImGuiRenderer = MakeUnique<FImGuiRenderer>();
 	if (!ImGuiRenderer->Init(GetEngineLoop().GetMainWindow()->GetHandle(), GetEngineLoop().GetRenderDevice()->GetDevice(), GetEngineLoop().GetRenderDevice()->GetContext()))
@@ -276,6 +278,28 @@ void UBenchmarkEngine::UpdateGizmoAndPicking()
 	}
 }
 
+void UBenchmarkEngine::PreTick(float DeltaTime)
+{
+	// 대상 World 검증
+	if (!World)
+	{
+		return;
+	}
+
+	// 이번 프레임 요청 확정
+	FString ScenePath;
+	if (!ConsumeSceneChangeRequest(World, ScenePath))
+	{
+		return;
+	}
+
+	// 적용 완료 후 저장 경로 갱신
+	if (ApplySceneChange(World, ScenePath))
+	{
+		FEditorFileUtils::SetCurrentScenePath(ScenePath);
+	}
+}
+
 void UBenchmarkEngine::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -441,6 +465,13 @@ void UBenchmarkEngine::PostTick(float DeltaTime)
 void UBenchmarkEngine::PreExit()
 {
 	Super::PreExit();
+
+	// UI 종료 전 World·컨텍스트 정리
+	if (World)
+	{
+		World->Shutdown();
+		DestroyWorldContext(World);
+	}
 
 	if (ImGuiRenderer)
 	{

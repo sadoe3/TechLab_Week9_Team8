@@ -28,6 +28,8 @@ public:
 	FEngineConfig GetConfig() const override;
 
 	bool Init() override;
+	// 프레임 시작 씬 전환
+	void PreTick(float DeltaTime) override;
 	void Tick(float DeltaTime) override;
 	void PreExit() override;
 	// World 비소유 참조 정리

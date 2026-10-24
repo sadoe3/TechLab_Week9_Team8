@@ -372,30 +372,54 @@ bool UEditorEngine::Init()
 
 void UEditorEngine::PreTick(float DeltaTime)
 {
-	// 종료요청 수집
+	// PIE 창 종료 요청 수집
 	if (PIEWindow && PIEWindow->ConsumeCloseRequest())
 	{
 		RequestEndPlayMap();
 	}
 
-	// PIE 창의 닫기 버튼은 앱이 아니라 PIE 세션만 끝낸다.
-
-	// 이번 프레임 요청 확정
+	// PIE 요청 선확정
 	const bool bStopRequested = bRequestEndPlayMapQueued;
 	const bool bStartRequested = bPlaySessionRequested;
 	bRequestEndPlayMapQueued = false;
 	bPlaySessionRequested = false;
 
+	// 모든 World의 씬 요청 선확정
+	FString EditorScenePath;
+	FString PlayScenePath;
+	const bool bEditorSceneRequested =
+		EditorWorld && ConsumeSceneChangeRequest(EditorWorld, EditorScenePath);
+	const bool bPlaySceneRequested =
+		PlayWorld && ConsumeSceneChangeRequest(PlayWorld, PlayScenePath);
+
+	// 기존 PIE 종료 우선
 	if (bStopRequested)
 	{
 		EndPlayMap();
 	}
 
+	// 편집 World 전환
+	if (bEditorSceneRequested && EditorWorld)
+	{
+		ReleaseWorldShadowResources(EditorWorld);
+		if (ApplySceneChange(EditorWorld, EditorScenePath))
+		{
+			FEditorFileUtils::SetCurrentScenePath(EditorScenePath);
+		}
+	}
+
+	// 종료되지 않은 기존 PIE 전환
+	if (!bStopRequested && bPlaySceneRequested && PlayWorld)
+	{
+		ReleaseWorldShadowResources(PlayWorld);
+		ApplySceneChange(PlayWorld, PlayScenePath);
+	}
+
+	// 편집 World 전환 후 PIE 생성
 	if (bStartRequested && !PlayWorld)
 	{
 		StartPlayInEditorSession();
 	}
-
 }
 
 // 프레임 시작·View 상태·월드 갱신 후 View별 오프스크린 렌더와 UI 합성을 진행한다.
@@ -1437,38 +1461,30 @@ void UEditorEngine::ResetSceneSelection()
 
 }
 
-// 새 씬 생성이 성공하면 에디터 선택 상태를 초기화한다.
+// 새 씬 생성 예약
 void UEditorEngine::CreateNewScene()
 {
+	// PIE 중 편집 씬 변경 차단
 	if (IsPlaying())
 	{
 		HTR_LOG(Warning, "Cannot create a new scene during PIE. Stop the play session first.");
 		return;
 	}
-	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
-		ViewportsPanel->GetViewport(Index)->ClearSceneData();
-	ReleaseWorldShadowResources(EditorWorld);
-	if (!FEditorFileUtils::NewScene(EditorWorld))
-		return;
 
-	ResetSceneSelection();
+	FEditorFileUtils::NewScene(EditorWorld);
 }
 
-// 씬 불러오기가 성공하면 에디터 선택 상태를 초기화한다.
+// 씬 불러오기 예약
 void UEditorEngine::OpenScene()
 {
+	// PIE 중 편집 씬 변경 차단
 	if (IsPlaying())
 	{
 		HTR_LOG(Warning, "Cannot open a scene during PIE. Stop the play session first.");
 		return;
 	}
-	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
-		ViewportsPanel->GetViewport(Index)->ClearSceneData();
-	ReleaseWorldShadowResources(EditorWorld);
-	if (!FEditorFileUtils::LoadScene(EditorWorld))
-		return;
 
-	ResetSceneSelection();
+	FEditorFileUtils::LoadScene(EditorWorld);
 }
 
 // 공통 파일 유틸리티로 현재 씬을 저장한다.

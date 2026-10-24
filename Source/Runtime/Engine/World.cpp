@@ -130,12 +130,12 @@ void UWorld::Tick(float DeltaTime)
 	}
 }
 
-void UWorld::ClearWorld()
+bool UWorld::ClearWorld()
 {
-	// 삭제 배치/정리/종료 중 재진입 차단
+	// 삭제 배치·정리·종료 중 재진입 차단
 	if (bFlushingPendingDestroy || bClearingWorld || bShutdown || PlayState == EWorldPlayState::Ending)
 	{
-		return;
+		return false;
 	}
 
 	bClearingWorld = true;
@@ -196,7 +196,7 @@ void UWorld::ClearWorld()
 	}
 
 	HTR_LOG(Info, "{} : ", GetActorNum());
-
+	return true;
 }
 
 void UWorld::GatherRenderPackets(FRenderQueue& RenderQueue, const FLODViewContext* LODView, const FFrustumPlanes* Frustum, FRenderer* Renderer)
@@ -1055,6 +1055,16 @@ void UWorld::Shutdown()
 	}
 
 	bShuttingDown = true;
+
+	// 종료 World의 예약 폐기
+	if (GEngine)
+	{
+		if (FWorldContext* Context = GEngine->GetWorldContextFromWorld(this))
+		{
+			Context->bSceneChangeRequested = false;
+			Context->PendingScenePath.clear();
+		}
+	}
 
 	EndPlay();
 	ClearWorld();

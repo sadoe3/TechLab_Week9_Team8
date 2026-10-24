@@ -19,6 +19,8 @@
 //class ACameraActor;
 class ULevel;
 class UBillboardComponent;
+class UEngine;
+class FJsonArchive;
 
 struct FLODViewContext;
 
@@ -61,8 +63,6 @@ public:
 	}
 
 	void Tick(float DeltaTime);
-
-	void ClearWorld();
 
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
@@ -157,6 +157,12 @@ public:
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 private:
 	friend class AActor;
+	friend class UEngine;
+	friend class FJsonArchive;
+
+	// 초기 로드·프레임 경계·종료 전용 정리
+	bool ClearWorld();
+
 	// World가 생성하는 최종 복귀용 카메라를 준비합니다.
 	void CreateFallbackCamera();
 
