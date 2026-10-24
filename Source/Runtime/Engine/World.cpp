@@ -882,6 +882,10 @@ void UWorld::EndPlay()
 		Actor->DispatchEndPlay();
 	}
 
+	if (LuaRuntime)
+	{
+		LuaRuntime->CancelAllCoroutines();
+	}
 	for (AActor* Actor : EndingActors)
 	{
 		Actor->UninitializeComponents();

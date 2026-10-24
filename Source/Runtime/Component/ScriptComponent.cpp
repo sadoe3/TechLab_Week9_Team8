@@ -66,13 +66,17 @@ void UScriptComponent::EndPlay()
     bScriptReady = false;
     PrimaryComponentTick.UnRegisterTickFunction();
 
+    // 소유 Coroutine 취소
+    FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
+    if (Runtime)
+    {
+        Runtime->CancelCoroutines(this);
+    }
+
     // 참조를 해제하기 전에 Lua EndPlay()를 실행한다.
     if (bCallEndPlay)
     {
-        // 참조 해제 전 종료 콜백 실행
-        FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
         assert(Runtime != nullptr);
-
         Runtime->Call(EndPlayFunction, ScriptPath, "EndPlay");
     }
 

@@ -4,9 +4,12 @@
 #include <sol/sol.hpp>
 #include <utility>
 #include "Containers/Map.h"
+#include "UObject/WeakObjectPtr.h"
 
 // Envirment 소유 액터
 class AActor;
+class UScriptComponent;
+
 
 // Lua VM을 소유하고 환경 생성과 보호된 실행을 제공합니다.
 class FLuaRuntime
@@ -23,8 +26,7 @@ public:
 	sol::environment CreateEnvironment(AActor* OwnerActor);
 
 	// 파일을 지정 환경에서 실행하고 성공 여부를 반환합니다.
-	bool LoadScript(
-		const FString& ScriptPath, sol::environment& Environment);
+	bool LoadScript(const FString& ScriptPath, sol::environment& Environment);
 
 	// 선택적 이벤트의 존재 여부는 호출자가 판단합니다.
 	template<typename... TArgs>
@@ -45,23 +47,30 @@ public:
 	}
 
 	// 코루틴 생성 함수
-	uint32 CreateCoroutine(const sol::protected_function& Function, const FString& ScriptPath);
+	uint32 CreateCoroutine(UScriptComponent* Owner, const sol::protected_function& Function, const FString& ScriptPath);
 	// 코루틴 실행 재개
 	sol::call_status ResumeCoroutine(uint32 CoroutineID);
+	// 소유 컴포넌트 작업 취소
+	void CancelCoroutines(UScriptComponent* Owner);
+	// 전체 작업 취소
+	void CancelAllCoroutines();
 private:
 	bool CheckResult(const sol::protected_function_result& Result,
 		const FString& ScriptPath, const char* EventName) const;
 
 	// 파일명과 이벤트명을 포함한 오류 형식을 한곳에서 관리합니다.
-	void LogError(const FString& ScriptPath,
-		const char* EventName, const char* Message) const;
+	void LogError(const FString& ScriptPath, const char* EventName, const char* Message) const;
 
+	// 실행 상태에 따른 개별 취소
+	void CancelCoroutine(uint32 CoroutineID);
 	// Coroutine 실행 상태
 	struct FLuaCoroutine
 	{
 		sol::thread Thread;
 		sol::coroutine Function;
+		TWeakObjectPtr<UScriptComponent>Owner;
 		FString ScriptPath;
+		bool bCancelled = false;
 	};
 
 	// 실행 상태보다 늦게 해제할 VM
@@ -70,4 +79,6 @@ private:
 	// ID별 실행 상태
 	TMap<uint32, FLuaCoroutine> Coroutines;
 	uint32 NextCoroutineID = 1;
+	// 현재 재개중인 작업
+	uint32 CurrentCoroutineID = 0;
 };

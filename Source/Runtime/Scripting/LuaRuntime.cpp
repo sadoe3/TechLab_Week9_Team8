@@ -2,7 +2,9 @@
 #include "Scripting/LuaRuntime.h"
 #include "Scripting/LuaBindings.h"
 #include "GameFramework/Actor.h"
-#include "UObject/WeakObjectPtr.h"
+#include "Component/ScriptComponent.h"
+#include "Containers/Array.h"
+#include "Engine/World.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -40,7 +42,7 @@ bool FLuaRuntime::LoadScript(
 	return CheckResult(Result, ScriptPath, "Load");
 }
 
-uint32 FLuaRuntime::CreateCoroutine(const sol::protected_function& Function, const FString& ScriptPath)
+uint32 FLuaRuntime::CreateCoroutine(UScriptComponent* Owner, const sol::protected_function& Function, const FString& ScriptPath)
 {
 	// 실행 함수 검증
 	if (!Function.valid())
@@ -49,10 +51,18 @@ uint32 FLuaRuntime::CreateCoroutine(const sol::protected_function& Function, con
 		return 0;
 	}
 
+	// 소유 컴포넌트 검증
+	if (!Owner || !Owner->CanRunGameplay() || Owner->GetOwner()->GetWorld()->GetLuaRuntime() != this)
+	{
+		LogError(ScriptPath, "CreateCoroutine", "Invalid coroutine owner");
+		return 0;
+	}
+
 	// 별도 실행 스택과 함수 연결
 	FLuaCoroutine Entry;
 	Entry.Thread = sol::thread::create(Lua.lua_state());
 	Entry.Function = sol::coroutine(Entry.Thread.thread_state(), Function);
+	Entry.Owner = Owner;
 	Entry.ScriptPath = ScriptPath;
 
 	// 실행 상태 등록
@@ -70,6 +80,19 @@ sol::call_status FLuaRuntime::ResumeCoroutine(uint32 CoroutineID)
 		LogError("<unknown>", "ResumeCoroutine", "Unknown or finished coroutine");
 		return sol::call_status::runtime;
 	}
+	// 중첩 재개 차단
+	if (CurrentCoroutineID != 0)
+	{
+		LogError(Entry->ScriptPath, "ResumeCoroutine", "Nested coroutine resume is not supported");
+		return sol::call_status::runtime;
+	}
+	// 실행 불가능한 소유 작업 제거
+	UScriptComponent* Owner = Entry->Owner.Get();
+	if (!Owner || !Owner->HasBegunPlay() || !Owner->CanRunGameplay())
+	{
+		Coroutines.Remove(CoroutineID);
+		return sol::call_status::runtime;
+	}
 
 	sol::call_status Status;
 	{
@@ -79,13 +102,57 @@ sol::call_status FLuaRuntime::ResumeCoroutine(uint32 CoroutineID)
 		CheckResult(Result, Entry->ScriptPath, "ResumeCoroutine");
 	}
 
+	CurrentCoroutineID = 0;
+
 	// 실행 중단된 상태가 아니라면->함수 완료/실행 실패 둘중 하나인 경우, 작업 제거
-	if (Status != sol::call_status::yielded)
+	if (Entry->bCancelled || Status != sol::call_status::yielded)
 	{
 		Coroutines.Remove(CoroutineID);
 	}
 
 	return Status;
+}
+
+void FLuaRuntime::CancelCoroutines(UScriptComponent* Owner)
+{
+	// 빈 소유자 제외
+	if (!Owner)
+	{
+		return;
+	}
+
+	// 취소 대상 수집
+	TArray<uint32> CoroutineIDs;
+	for (const auto& [CoroutineID, Entry] : Coroutines)
+	{
+		if (Entry.Owner.Get() == Owner)
+		{
+			CoroutineIDs.Add(CoroutineID);
+		}
+	}
+
+	// 수집 후 취소
+	for (uint32 CoroutineID : CoroutineIDs)
+	{
+		CancelCoroutine(CoroutineID);
+	}
+}
+
+void FLuaRuntime::CancelAllCoroutines()
+{
+	// 전체 취소 대상 수집
+	TArray<uint32> CoroutineIDs;
+	for (const auto& [CoroutineID, Entry] : Coroutines)
+	{
+		CoroutineIDs.Add(CoroutineID);
+	}
+
+	// 수집 후 취소
+	for (uint32 CoroutineID : CoroutineIDs)
+	{
+		CancelCoroutine(CoroutineID);
+	}
+
 }
 
 // 실패 결과가 확인된 경우에만 Lua 오류로 변환합니다.
@@ -106,4 +173,23 @@ void FLuaRuntime::LogError(const FString& ScriptPath,
 	const char* EventName, const char* Message) const
 {
 	HTR_LOG(Error, "[Lua][{}][{}] {}", ScriptPath, EventName, Message);
+}
+
+void FLuaRuntime::CancelCoroutine(uint32 CoroutineID)
+{
+	// 실행 상태 조회
+	FLuaCoroutine* Entry = Coroutines.Find(CoroutineID);
+	if (!Entry)
+	{
+		return;
+	}
+
+	// 실행 중 제거 지연
+	if (CoroutineID == CurrentCoroutineID)
+	{
+		Entry->bCancelled = true;
+		return;
+	}
+
+	Coroutines.Remove(CoroutineID);
 }
