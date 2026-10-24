@@ -6,6 +6,7 @@
 #include "Component/ParticleSubUVComponent.h"
 #include "Component/ExponentialHeightFogComponent.h"
 #include "Component/LightComponentBase.h"
+#include "Component/ScriptComponent.h"
 #include "Core/EngineLog.h"
 #include "UObject/Object.h"
 
@@ -60,6 +61,23 @@ void AActor::EndPlay()
         assert(Component != nullptr);
      
         Component->EndPlay();
+    }
+}
+
+void AActor::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+    assert(OtherActor != nullptr);
+
+    // 이 액터에 붙은 ScriptComponent들에 알린다.
+    for (UActorComponent* Component : Components)
+    {
+        UScriptComponent* ScriptComponentOrNull = Cast<UScriptComponent>(Component);
+
+        if (ScriptComponentOrNull != nullptr)
+        {
+            // Todo: 하나만 적용시켜야 하나?
+            ScriptComponentOrNull->OnBeginOverlap(OtherActor);
+        }
     }
 }
 
@@ -327,7 +345,7 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 	return NewComponent;
 }
 
-void AActor::DestroyComponent(UActorComponent* Component)
+void AActor::DestroyComponent(ent* Component)
 {
     if (!Component)
         return;

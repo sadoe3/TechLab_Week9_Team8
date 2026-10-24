@@ -19,3 +19,7 @@ end
 function EndPlay()
     print("Lua EndPlay", ElapsedTime)
 end
+
+function OnBeginOverlap(OtherActor)
+    print("Lua OnBeginOverlap", OtherActor ~= nil)
+end

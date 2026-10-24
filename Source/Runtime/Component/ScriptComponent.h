@@ -20,6 +20,8 @@ public:
     virtual void TickComponent(float DeltaTime) override;
     virtual void EndPlay() override;
 
+    void OnBeginOverlap(AActor* otherActor);
+
 private:
     FString ScriptPath;
     sol::environment ScriptEnvironment;
@@ -27,6 +29,7 @@ private:
     sol::protected_function BeginPlayFunction;
     sol::protected_function TickFunction;
     sol::protected_function EndPlayFunction;
+    sol::protected_function BeginOverlapFunction;
 
     bool bScriptReady = false;
 };

@@ -24,6 +24,10 @@ public:
 	// 액터 자신의 로직. 컴포넌트는 각자의 PrimaryComponentTick으로 따로 실행된다.
 	virtual void Tick(float DeltaTime) {}
 	virtual void EndPlay();
+	
+	// 충돌 시스템으로부터 겹침 시작 알림을 받는다.
+	void NotifyActorBeginOverlap(AActor* OtherActor);
+	
 	// FActorTickFunction이 호출하는 진입점
 	void TickActor(float DeltaTime) { Tick(DeltaTime); }
 

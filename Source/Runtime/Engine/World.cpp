@@ -665,7 +665,7 @@ bool UWorld::LineTraceSingle(const FRay& WorldRay, FHitResult& OutHit,
 
 void UWorld::BeginPlay()
 {
-	// Todo: Temp Lua
+	// Todo: Script component
 	TempLuaRuntime = MakeUnique<FTempLuaRuntime>();
 }
 

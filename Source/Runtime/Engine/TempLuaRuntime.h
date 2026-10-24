@@ -4,6 +4,7 @@
 
 #include "GameFramework/Actor.h"
 
+// Todo: Script component
 class FTempLuaRuntime
 {
 public:

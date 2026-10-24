@@ -9,7 +9,7 @@
 #include "Core/EngineLog.h"
 
 UScriptComponent::UScriptComponent()
-    : ScriptPath("Source/Runtime/Asset/Script/LifeCycleTest.lua")
+    : ScriptPath("") // Assets/Script/LifeCycleTest.lua
 {
     PrimaryComponentTick.bCanEverTick = true;
 }
@@ -41,28 +41,48 @@ void UScriptComponent::BeginPlay()
         return;
     }
 
-    // 공용 전역을 검색하지 않고, 이 환경의 BeginPlay 값을 가져온다.
+    // 이 Environment의 OnBeginOverlap 값을 가져온다.
+    {
+        sol::object BeginOverlapObject = ScriptEnvironment.raw_get<sol::object>("OnBeginOverlap");
+        
+        // 함수가 정의돼 있을 때만 참조를 보관한다.
+        if (BeginOverlapObject.is<sol::protected_function>())
+        {
+            BeginOverlapFunction = BeginOverlapObject.as<sol::protected_function>();
+        }
+    }
+
+    // 이 Environment의 BeginPlay 값을 가져온다.
     {
         sol::object BeginPlayObject = ScriptEnvironment.raw_get<sol::object>("BeginPlay");
-        assert(BeginPlayObject.is<sol::protected_function>());
+        //assert(BeginPlayObject.is<sol::protected_function>());
 
-        BeginPlayFunction = BeginPlayObject.as<sol::protected_function>();
+        if (BeginPlayObject.is<sol::protected_function>())
+        {
+            BeginPlayFunction = BeginPlayObject.as<sol::protected_function>();
+        }
     }
     
-    // 이 환경에서 매 프레임 호출할 Tick 함수를 찾는다.
+    // 이 Environment에서 매 프레임 호출할 Tick 함수를 찾는다.
     {
         sol::object TickObject = ScriptEnvironment.raw_get<sol::object>("Tick");
-        assert(TickObject.is<sol::protected_function>());
+        //assert(TickObject.is<sol::protected_function>());
 
-        TickFunction = TickObject.as<sol::protected_function>();
+        if (TickObject.is<sol::protected_function>())
+        {
+            TickFunction = TickObject.as<sol::protected_function>();
+        }
     }
     
-    // 이 환경에서 종료 시, 호출할 EndPlay 함수를 찾는다.
+    // 이 Environment에서 종료 시, 호출할 EndPlay 함수를 찾는다.
     {
         sol::object EndPlayObject = ScriptEnvironment.raw_get<sol::object>("EndPlay");
-        assert(EndPlayObject.is<sol::protected_function>());
+        //assert(EndPlayObject.is<sol::protected_function>());
 
-        EndPlayFunction = EndPlayObject.as<sol::protected_function>();
+        if (EndPlayObject.is<sol::protected_function>())
+        {
+            EndPlayFunction = EndPlayObject.as<sol::protected_function>();
+        }
     }
 
     // Lua 파일에 BeginPlay 함수가 있을 때만 호출한다.
@@ -130,8 +150,29 @@ void UScriptComponent::EndPlay()
     TickFunction = sol::protected_function();
     EndPlayFunction = sol::protected_function();
     ScriptEnvironment = sol::environment();
+    BeginOverlapFunction = sol::protected_function();
 
     Super::EndPlay();
+}
+
+void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
+{
+    assert(OtherActor != nullptr);
+
+    if (bScriptReady == false || BeginOverlapFunction.valid() == false)
+    {
+        return;
+    }
+
+    // Lua의 OnBeginOverlap(OtherActor)을 호출한다.
+    sol::protected_function_result Result = BeginOverlapFunction(OtherActor);
+
+    // Lua 오류를 엔진 로그에 기록한다.
+    if (Result.valid() == false)
+    {
+        sol::error Error = Result;
+        HTR_LOG(Error, "Lua OnBeginOverlap failed ({}): {}", ScriptPath, Error.what());
+    }
 }
 
 
