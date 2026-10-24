@@ -31,6 +31,11 @@ struct FCollisionWorldShape
 	float Radius = 0.0f;
 	float HalfHeight = 0.0f;
 
-	static FCollisionWorldShape FromLocal(const FCollisionLocalShape& LocalShape, const FTransform& WorldTransform);
+	static FCollisionWorldShape CreateFromLocal(const FCollisionLocalShape& LocalShape, const FTransform& WorldTransform);
 	FBox CalcBounds() const;
+	bool IsSupported() const;
+	FVector GetSupportPoint(const FVector& Direction) const;
+	// GJK/EPA는 Sphere의 점, Capsule의 선분을 검사한 뒤 반지름을 더한다.
+	FVector GetCoreSupportPoint(const FVector& Direction) const;
+	float GetMargin() const;
 };

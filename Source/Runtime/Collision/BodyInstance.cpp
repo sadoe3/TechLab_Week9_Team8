@@ -30,7 +30,7 @@ void FBodyInstance::UpdateTransform()
 	if (LocalShape.Type == ECollisionShapeType::None) return;
 
 	const FTransform WorldTransform(OwnerComponent->GetWorldRotation(), OwnerComponent->GetWorldLocation(), OwnerComponent->GetWorldScale3D());
-	WorldShape = FCollisionWorldShape::FromLocal(LocalShape, WorldTransform);
+	WorldShape = FCollisionWorldShape::CreateFromLocal(LocalShape, WorldTransform);
 	Bounds = WorldShape.CalcBounds();
 	if (PhysicsScene)
 		PhysicsScene->UpdateBody(this);
