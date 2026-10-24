@@ -427,20 +427,6 @@ void UEditorEngine::PreTick(float DeltaTime)
 void UEditorEngine::Tick(const float DeltaTime)
 {
 	BeginFrame(DeltaTime);
-	// 임시: 선택된 Actor를 복제해서 결과를 로그로 확인 (PIE 연결 후 삭제)
-	if (!IsPlaying() && !ImGui::GetIO().WantTextInput && FInputSystem::IsKeyPressed(EKeyCode::F9))
-	{
-		UWorld* PIEWorld = UWorld::CreateWorld(EWorldType::PIE, false);
-		FObjectDuplicationParameters Params(EditorWorld, nullptr);
-		Params.DuplicationSeed.Add(EditorWorld, PIEWorld);
-		Params.DuplicationSeed.Add(EditorWorld->GetPersistentLevel(), PIEWorld->GetPersistentLevel());
-		Params.PortFlags = EPropertyPortFlags::PPF_DuplicateForPIE;
-		StaticDuplicateObjectEx(Params);
-
-		HTR_LOG(Info, "[DupTest] actors {} -> {}", EditorWorld->GetPersistentLevel()->GetActors().Num(), PIEWorld->GetPersistentLevel()->GetActors().Num());
-		for (AActor* A : PIEWorld->GetPersistentLevel()->GetActors())
-			HTR_LOG(Info, "[DupTest]   {} world={} level={} root owner ok={}", A->GetName(), A->GetWorld() == PIEWorld, A->GetLevel() == PIEWorld->GetPersistentLevel(), A->GetRootComponent() && A->GetRootComponent()->GetOwner() == A);
-	}
 	UpdateEditorViewportState(DeltaTime);
     UpdatePIEWindowState();
     UpdatePIEInput(); // 현재 표시/입력 대상과 포커스를 이번 World Tick 전에 반영한다.
