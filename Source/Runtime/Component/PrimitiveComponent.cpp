@@ -55,7 +55,7 @@ const FBodyInstance& UPrimitiveComponent::GetBodyInstance() const
 
 void UPrimitiveComponent::CreatePhysicsState()
 {
-	if (bDestroyingPhysicsState) return;
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()) || bDestroyingPhysicsState) return;
 	if (GetCollisionEnabled() == ECollisionEnabled::NoCollision)
 	{
 		DestroyPhysicsState();
@@ -179,6 +179,11 @@ void UPrimitiveComponent::OnTransformDirty()
 
 bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
 {
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))
+	{
+		if (Hit) *Hit = FHitResult();
+		return false;
+	}
 	TArray<FHitResult> PendingOverlaps;
 	const FVector Start = GetWorldLocation();
 	FHitResult MoveHit;
@@ -212,6 +217,7 @@ bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& Ne
 	MoveHit.Location = GetWorldLocation();
 	MoveHit.Distance = (MoveHit.Location - Start).Size();
 	UpdateOverlaps(PendingOverlaps);
+	if (MoveHit.HitComponent && (MoveHit.HitComponent->IsPendingDestroy() || (MoveHit.HitComponent->GetOwner() && MoveHit.HitComponent->GetOwner()->IsPendingDestroy()))) MoveHit.HitComponent = nullptr;
 	if (Hit) *Hit = MoveHit;
 	return true;
 }
@@ -278,7 +284,7 @@ bool UPrimitiveComponent::IsOverlappingActor(const AActor* Other) const
 
 bool UPrimitiveComponent::CanGenerateOverlap(const UPrimitiveComponent* Other) const
 {
-	return Other && Other != this
+	return Other && Other != this && !(IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) && !(Other->IsPendingDestroy() || (Other->GetOwner() && Other->GetOwner()->IsPendingDestroy()))
 		&& !bDestroyingPhysicsState && !Other->bDestroyingPhysicsState
 		&& bGenerateOverlapEvents && Other->bGenerateOverlapEvents
 		&& BodyInstance.GetPhysicsScene() && BodyInstance.GetPhysicsScene() == Other->BodyInstance.GetPhysicsScene()
@@ -293,7 +299,7 @@ void UPrimitiveComponent::BeginComponentOverlap(UPrimitiveComponent* Other, bool
 	OverlappingComponents.Add(Other);
 	Other->OverlappingComponents.Add(this);
 	NotifyBeginOverlap(Other, bFromSweep, SweepResult);
-	// 첫 알림에서 이동·설정 변경으로 관계가 끝났으면 상대 Begin을 보내지 않는다.
+	// 첫 알림에서 삭제·이동·설정 변경으로 관계가 끝났으면 상대 Begin을 보내지 않는다.
 	if (!CanGenerateOverlap(Other) || !IsOverlappingComponent(Other)) return;
 	FHitResult OtherSweepResult = SweepResult;
 	if (bFromSweep)
@@ -313,8 +319,8 @@ void UPrimitiveComponent::EndComponentOverlap(UPrimitiveComponent* Other, bool b
 	const int32 OtherIndex = Other->OverlappingComponents.Find(this);
 	if (OtherIndex < Other->OverlappingComponents.Num()) Other->OverlappingComponents.RemoveAt(OtherIndex);
 	if (!bNotify) return;
-	NotifyEndOverlap(Other);
-	if (!IsOverlappingComponent(Other)) Other->NotifyEndOverlap(this);
+	if (!(IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))) NotifyEndOverlap(Other);
+	if (!(Other->IsPendingDestroy() || (Other->GetOwner() && Other->GetOwner()->IsPendingDestroy())) && !IsOverlappingComponent(Other)) Other->NotifyEndOverlap(this);
 }
 
 void UPrimitiveComponent::ClearOverlaps(bool bNotify)
@@ -337,7 +343,7 @@ void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverla
 	do
 	{
 		bOverlapUpdatePending = false;
-		if (bDestroyingPhysicsState || !bGenerateOverlapEvents || !BodyInstance.GetPhysicsScene() || !BodyInstance.IsQueryEnabled())
+		if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()) || bDestroyingPhysicsState || !bGenerateOverlapEvents || !BodyInstance.GetPhysicsScene() || !BodyInstance.IsQueryEnabled())
 		{
 			ClearOverlaps();
 			continue;
@@ -355,6 +361,7 @@ void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverla
 			for (const FHitResult& CurrentHit : PendingOverlaps)
 			{
 				if (!CurrentHit.bBlockingHit) BeginComponentOverlap(CurrentHit.HitComponent, true, CurrentHit);
+				if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) break;
 			}
 			// 경로 Begin 콜백이 위치나 설정을 바꿨을 수 있으므로 최종 위치를 다시 확인한다.
 			if (!PendingOverlaps.IsEmpty()) bOverlapUpdatePending = true;
@@ -375,7 +382,7 @@ void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverla
 				break;
 			}
 		}
-		if (bOverlapUpdatePending) continue;
+		if (bOverlapUpdatePending || IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) continue;
 
 		for (UPrimitiveComponent* CurrentComponent : FinalComponents)
 		{
@@ -385,7 +392,7 @@ void UPrimitiveComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverla
 			bOverlapUpdatePending = true;
 			break;
 		}
-	} while (bOverlapUpdatePending);
+	} while (bOverlapUpdatePending && !(IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())));
 	bUpdatingOverlaps = false;
 	Super::UpdateOverlaps();
 }

@@ -41,7 +41,7 @@ UWorld::UWorld() = default;
 ECollisionQueryStatus UWorld::QueryComponentOverlapMulti(const UPrimitiveComponent& Component, const FVector& Location, const FRotator& Rotation, TArray<FOverlapResult>& OutOverlaps, bool bIgnoreBlocks)
 {
 	OutOverlaps.Reset();
-	if (Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
+	if (Component.IsPendingDestroy() || (Component.GetOwner() && Component.GetOwner()->IsPendingDestroy()) || Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
 
 	FCollisionWorldShape Shape = Component.GetBodyInstance().GetWorldShape();
 	Shape.Center = Location;
@@ -57,7 +57,7 @@ ECollisionQueryStatus UWorld::QueryComponentOverlapMulti(const UPrimitiveCompone
 ECollisionQueryStatus UWorld::QueryComponentSweepMulti(const UPrimitiveComponent& Component, const FVector& Start, const FVector& Delta, const FRotator& Rotation, TArray<FHitResult>& OutHits, bool bIgnoreInitialBlockingHitsWhenMovingOut)
 {
 	OutHits.Reset();
-	if (Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
+	if (Component.IsPendingDestroy() || (Component.GetOwner() && Component.GetOwner()->IsPendingDestroy()) || Component.GetCollisionEnabled() == ECollisionEnabled::NoCollision) return ECollisionQueryStatus::Success;
 
 	FCollisionWorldShape Shape = Component.GetBodyInstance().GetWorldShape();
 	Shape.Center = Start;

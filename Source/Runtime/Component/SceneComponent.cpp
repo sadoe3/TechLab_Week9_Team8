@@ -233,6 +233,11 @@ void USceneComponent::SetWorldScale3D(FVector NewScale)
 
 bool USceneComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
 {
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))
+	{
+		if (Hit) *Hit = FHitResult();
+		return false;
+	}
 	const FVector Start = GetWorldLocation();
 	InternalSetWorldLocationAndRotation(Start + Delta, NewRotation);
 	UpdateOverlaps();
@@ -248,18 +253,24 @@ bool USceneComponent::MoveComponent(const FVector& Delta, const FRotator& NewRot
 
 void USceneComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps)
 {
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) return;
 	// 자식은 부모와 함께 이동한 최종 위치만 검사한다. 부모의 Sweep 결과는 전달하지 않는다.
 	const TArray<USceneComponent*> Children = AttachChildren;
 	for (USceneComponent* CurrentChild : Children)
-		if (CurrentChild->GetAttachParent() == this) CurrentChild->UpdateOverlaps();
+	{
+		if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) break;
+		if (!(CurrentChild->IsPendingDestroy() || (CurrentChild->GetOwner() && CurrentChild->GetOwner()->IsPendingDestroy())) && CurrentChild->GetAttachParent() == this) CurrentChild->UpdateOverlaps();
+	}
 }
 
 void USceneComponent::MarkTransformDirty()
 {
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) return;
 	OnTransformDirty();         
 
-	for (USceneComponent* Child : AttachChildren)
-		Child->MarkTransformDirty();      // 부모가 움직이면 자식의 월드 행렬도 바뀐다
+	const TArray<USceneComponent*> Children = AttachChildren;
+	for (USceneComponent* CurrentChild : Children)
+		if (!(CurrentChild->IsPendingDestroy() || (CurrentChild->GetOwner() && CurrentChild->GetOwner()->IsPendingDestroy()))) CurrentChild->MarkTransformDirty();
 }
 
 void USceneComponent::Serialize(FStructuredArchive::FRecord Record)

@@ -1,4 +1,6 @@
 #include "EnginePCH.h"
+#include "Component/PrimitiveComponent.h"
+#include "GameFramework/Actor.h"
 #include "PhysicsScene.h"
 #include "BodyInstance.h"
 
@@ -70,7 +72,9 @@ void FPhysicsScene::QueryCandidates(const FBox& Bounds, const FCollisionQueryPar
 			&& Bounds.Min.Z <= CandidateBounds.Max.Z && Bounds.Max.Z >= CandidateBounds.Min.Z;
 	}, [&](FBodyInstance* Body)
 	{
+		if (Body->GetOwnerComponent()->IsPendingDestroy()) return;
 		const FCollisionFilterData& Filter = Body->GetFilterData();
+		if (Filter.Owner && Filter.Owner->IsPendingDestroy()) return;
 		if (Params.IgnoredOwner && Filter.Owner == Params.IgnoredOwner) return;
 		const ECollisionResponse Response = QueryFilter.GetResponseTo(Filter);
 		if (Response == ECollisionResponse::Ignore || (Params.bIgnoreBlocks && Response == ECollisionResponse::Block)) return;
