@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "UObject/WeakObjectPtr.h"
 #include <format>
+#include "Component/SceneComponent.h"
 
 namespace LuaBindings
 {
@@ -49,6 +50,31 @@ namespace LuaBindings
 					}
 
 					return Actor->GetUUID();
+				}),
+			"Location", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FVector
+				{
+					// 루트 컴포넌트의 월드 위치 조회
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || Root->IsPendingDestroy())
+					{
+						throw sol::error("Actor root component is unavailable");
+					}
+
+					return Root->GetWorldLocation();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, const FVector& Location)
+				{
+					// 실행 가능한 루트 컴포넌트의 위치 변경
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || !Root->CanRunGameplay())
+					{
+						throw sol::error("Actor root component cannot move");
+					}
+
+					Root->SetWorldLocation(Location, false);
 				}));
 
 		// Tostring 바인딩

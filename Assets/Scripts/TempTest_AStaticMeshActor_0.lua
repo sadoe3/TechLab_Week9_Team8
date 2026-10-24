@@ -12,22 +12,36 @@ local function Log(Message)
         Version, obj.UUID, Frame, ElapsedTime, Message))
 end
 
--- 대기와 재개 확인
+-- 대기 후 부드러운 이동
 local function RunSequence()
-    Log("1. Start: 2 Second Wait")
+    local StartLocation = obj.Location
+    local Distance = 10.0
+    local Duration = 2.0
 
-    wait(2.0)
-    Log("2. Wait End")
+    Log("1. 이동 전 1초 대기")
+    wait(1.0)
 
-    wait(0)
-    Log("3. Resume On Next Tick")
+    local MoveStartTime = ElapsedTime
 
-    wait(2.0)
-    Log("4. Coroutine End")
-end
+    while true do
+        local Alpha = math.min(
+            (ElapsedTime - MoveStartTime) / Duration, 1.0)
 
-function BeginPlay()
-    Log("BeginPlay")
+        obj.Location = StartLocation + Vector(Distance * Alpha, 0, 0)
+
+        if Alpha >= 1.0 then
+            break
+        end
+
+        -- 다음 소유 컴포넌트 Tick까지 대기
+        wait(0)
+    end
+
+    Log("2. 이동 완료")
+    wait(1.0)
+
+    obj.Location = StartLocation
+    Log("3. 원래 위치로 복귀")
 end
 
 function Tick(DeltaTime)
