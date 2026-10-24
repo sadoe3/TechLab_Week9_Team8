@@ -54,6 +54,10 @@ public:
 	void CancelCoroutines(UScriptComponent* Owner);
 	// 전체 작업 취소
 	void CancelAllCoroutines();
+	// 이번 갱신 대상 확정
+	void PrepareCoroutineTick();
+	// 대기 시간 갱신과 실행 재개
+	void TickCoroutines(UScriptComponent* Owner, float DeltaTime);
 private:
 	bool CheckResult(const sol::protected_function_result& Result,
 		const FString& ScriptPath, const char* EventName) const;
@@ -70,6 +74,8 @@ private:
 		sol::coroutine Function;
 		TWeakObjectPtr<UScriptComponent>Owner;
 		FString ScriptPath;
+		// 재개까지 남은 시간
+		double RemainingWait = 0.0;
 		bool bCancelled = false;
 	};
 
@@ -78,6 +84,8 @@ private:
 
 	// ID별 실행 상태
 	TMap<uint32, FLuaCoroutine> Coroutines;
+	// 이번 갱신 대상 ID
+	TMap<uint32, TArray<uint32>> CoroutineTickIDs;
 	uint32 NextCoroutineID = 1;
 	// 현재 재개중인 작업
 	uint32 CurrentCoroutineID = 0;

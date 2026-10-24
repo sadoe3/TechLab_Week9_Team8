@@ -41,19 +41,24 @@ void UScriptComponent::TickComponent(float DeltaTime)
 {
     Super::TickComponent(DeltaTime);
 
-    // 최초 로드에 실패했거나 Tick 함수가 없어도 변경을 확인한다.
-    CheckScriptChanges(DeltaTime);
+	// 스크립트 변경 확인
+	CheckScriptChanges(DeltaTime);
+	if (!bScriptReady)
+	{
+		return;
+	}
 
-    if (bScriptReady == false || TickFunction.valid() == false)
-    {
-        return;
-    }
+	FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
+	assert(Runtime != nullptr);
 
-    // World Runtime을 통한 갱신 실행
-    FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
-    assert(Runtime != nullptr);
+	// Lua Tick 실행
+	if (TickFunction.valid())
+	{
+		Runtime->Call(TickFunction, ScriptPath, "Tick", DeltaTime);
+	}
 
-    Runtime->Call(TickFunction, ScriptPath, "Tick", DeltaTime);
+	// 소유 컴포넌트 Tick에서 코루틴 재개
+	Runtime->TickCoroutines(this, DeltaTime);
 }
 
 void UScriptComponent::EndPlay()

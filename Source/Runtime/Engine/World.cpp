@@ -114,7 +114,16 @@ void UWorld::Tick(float DeltaTime)
 	}
 	if (HasBegunPlay())
 	{
+		// BeginPlay 이전 코루틴 대상 확정
+		LuaRuntime->PrepareCoroutineTick();
+
 		StartPendingObjects();
+
+		if (!HasBegunPlay() || !AcceptsChanges())
+		{
+			return;
+		}
+
 	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_UpdateAllTransforms);

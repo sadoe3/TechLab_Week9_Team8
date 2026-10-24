@@ -5,6 +5,8 @@
 #include "Component/ScriptComponent.h"
 #include "Containers/Array.h"
 #include "Engine/World.h"
+#include <algorithm>
+#include <cmath>
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -17,6 +19,17 @@ FLuaRuntime::FLuaRuntime()
 		sol::lib::coroutine);
 
 	LuaBindings::Register(Lua);
+
+	// 대기 시간 반환 후 실행 양보
+	// wait 호출 시, coroutine.yield(Seconds) 호출됨.
+	sol::protected_function_result Result = Lua.safe_script(R"(
+			function wait(Seconds)
+			return coroutine.yield(Seconds)
+			end
+)", sol::script_pass_on_error);
+
+	CheckResult(Result, "<runtime>", "RegisterWait");
+
 }
 
 // sol::state가 소멸하면서 VM을 해제합니다.
@@ -93,13 +106,33 @@ sol::call_status FLuaRuntime::ResumeCoroutine(uint32 CoroutineID)
 		Coroutines.Remove(CoroutineID);
 		return sol::call_status::runtime;
 	}
-
+	CurrentCoroutineID = CoroutineID;
 	sol::call_status Status;
 	{
 		// 결과 정리 범위
 		sol::protected_function_result Result = Entry->Function();
 		Status = Result.status();
 		CheckResult(Result, Entry->ScriptPath, "ResumeCoroutine");
+
+		// yield 결과를 다음 대기 시간으로 저장
+		if (Status == sol::call_status::yielded && !Entry->bCancelled)
+		{
+			double WaitTime = 0.0;
+			if (Result.return_count() > 0)
+			{
+				WaitTime = Result.get_type() == sol::type::number ? Result.get<double>() : -1.0;
+			}
+
+			if (!std::isfinite(WaitTime) || WaitTime < 0.0)
+			{
+				LogError(Entry->ScriptPath, "ResumeCoroutine", "Yield must provide a finite, non-negative wait time");
+				Status = sol::call_status::runtime;
+			}
+			else
+			{
+				Entry->RemainingWait = WaitTime;
+			}
+		}
 	}
 
 	CurrentCoroutineID = 0;
@@ -192,4 +225,86 @@ void FLuaRuntime::CancelCoroutine(uint32 CoroutineID)
 	}
 
 	Coroutines.Remove(CoroutineID);
+}
+
+void FLuaRuntime::PrepareCoroutineTick()
+{
+	// 실행 중 갱신 대상 교체 차단
+	if (CurrentCoroutineID != 0)
+	{
+		LogError("<runtime>", "PrepareCoroutineTick", "Nested coroutine tick is not supported");
+		return;
+	}
+
+	CoroutineTickIDs.Reset();
+	TArray<uint32> InvalidCoroutineIDs;
+
+	// 소유 컴포넌트별 프레임 대상 수집
+	for (const auto& [CoroutineID, Entry] : Coroutines)
+	{
+		UScriptComponent* Owner = Entry.Owner.Get();
+		if (!Owner || !Owner->CanRunGameplay())
+		{
+			InvalidCoroutineIDs.Add(CoroutineID);
+			continue;
+		}
+
+		CoroutineTickIDs[Owner->GetUUID()].Add(CoroutineID);
+	}
+
+	// 수집 후 무효 작업 취소
+	for (uint32 CoroutineID : InvalidCoroutineIDs)
+	{
+		CancelCoroutine(CoroutineID);
+	}
+
+	// 소유 컴포넌트 내 생성 순서 유지
+	for (auto& [OwnerID, CoroutineIDs] : CoroutineTickIDs)
+	{
+		std::sort(CoroutineIDs.begin(), CoroutineIDs.end());
+	}
+}
+
+void FLuaRuntime::TickCoroutines(UScriptComponent* Owner, float DeltaTime)
+{
+	// 실행 중 중첩 갱신 차단
+	if (CurrentCoroutineID != 0)
+	{
+		LogError("<runtime>", "TickCoroutines",	"Nested coroutine tick is not supported");
+		return;
+	}
+
+	if (!Owner)
+	{
+		return;
+	}
+
+	// 이번 프레임의 소유 작업을 한 번만 인출
+	TArray<uint32> CoroutineIDs;
+	if (!CoroutineTickIDs.RemoveAndCopyValue(Owner->GetUUID(), CoroutineIDs))
+	{
+		return;
+	}
+
+	for (uint32 CoroutineID : CoroutineIDs)
+	{
+		// 이전 콜백의 종료·삭제 요청 반영
+		if (!Owner->HasBegunPlay() || !Owner->CanRunGameplay())
+		{
+			CancelCoroutines(Owner);
+			break;
+		}
+
+		FLuaCoroutine* Entry = Coroutines.Find(CoroutineID);
+		if (!Entry)
+		{
+			continue;
+		}
+
+		Entry->RemainingWait -= static_cast<double>(DeltaTime);
+		if (Entry->RemainingWait <= 0.0)
+		{
+			ResumeCoroutine(CoroutineID);
+		}
+	}
 }
