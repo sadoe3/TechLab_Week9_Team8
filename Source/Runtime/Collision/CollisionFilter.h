@@ -37,4 +37,6 @@ struct FCollisionQueryParams
 	ECollisionChannel Channel = ECollisionChannel::WorldDynamic;
 	FCollisionResponseContainer Responses;
 	bool bIgnoreBlocks = false;
+	// 이동용 Sweep: 시작 접촉에서 바깥쪽으로 이동할 때는 뒤의 Block까지 검사한다.
+	bool bIgnoreInitialBlockingHitsWhenMovingOut = false;
 };

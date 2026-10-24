@@ -120,6 +120,8 @@ ECollisionQueryStatus FPhysicsScene::QuerySweepMulti(const FCollisionWorldShape&
 			return Result.Status;
 		}
 		if (!Result.bHit) continue;
+		if (Params.bIgnoreInitialBlockingHitsWhenMovingOut && Candidate.Response == ECollisionResponse::Block && Result.Time == 0.0f && FVector::Dot(Delta, Result.Normal) > 0.0)
+			continue;
 		FHitResult Hit;
 		Hit.Time = Result.Time * Limit;
 		Hit.Distance = Delta.Size() * Hit.Time;

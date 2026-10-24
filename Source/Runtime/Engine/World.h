@@ -137,6 +137,10 @@ public:
 	// 엔진 프레임 종료 전용 처리
 	void FlushPendingDestruction(uint32 RequestCount);
 
+	// 위치·회전은 world 기준이며 배율과 충돌 설정은 Component에서 가져온다.
+	ECollisionQueryStatus QueryComponentOverlapMulti(const UPrimitiveComponent& Component, const FVector& Location, const FRotator& Rotation, TArray<FOverlapResult>& OutOverlaps, bool bIgnoreBlocks = false);
+	ECollisionQueryStatus QueryComponentSweepMulti(const UPrimitiveComponent& Component, const FVector& Start, const FVector& Delta, const FRotator& Rotation, TArray<FHitResult>& OutHits, bool bIgnoreInitialBlockingHitsWhenMovingOut = false);
+
 	FScene& GetScene() { return Scene; }
 	FPhysicsScene& GetPhysicsScene() { return PhysicsScene; }
 	const FPhysicsScene& GetPhysicsScene() const { return PhysicsScene; }

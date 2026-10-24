@@ -231,7 +231,7 @@ void USceneComponent::SetWorldLocationAndRotation(FVector NewLocation, FRotator 
 		NewRelRotation = NewRelQuat.ToFRotator();
 	}
 
-	SetRelativeLocationAndRotation(NewLocation, NewRelRotation);
+	SetRelativeLocationAndRotation(NewRelLocation, NewRelRotation);
 }
 
 void USceneComponent::SetWorldScale3D(FVector NewScale)

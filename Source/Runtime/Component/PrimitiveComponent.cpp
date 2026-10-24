@@ -167,26 +167,34 @@ void UPrimitiveComponent::OnTransformDirty()
 
 bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
 {
-	if (!bSweep)
+	const FVector Start = GetWorldLocation();
+	FHitResult MoveHit;
+	MoveHit.TraceStart = Start;
+	MoveHit.TraceEnd = Start + Delta;
+	MoveHit.Location = Start;
+	MoveHit.Distance = 0.0f;
+	if (Hit) *Hit = MoveHit;
+
+	UWorld* World = GetOwner() ? GetOwner()->GetWorld() : nullptr;
+	if (bSweep && World && GetCollisionEnabled() != ECollisionEnabled::NoCollision && GetCollisionShape().Type != ECollisionShapeType::None)
 	{
-		SetWorldLocationAndRotation(Transform.Location + Delta, NewRotation, bSweep);
-	}
-	else
-	{
-		// Simple hit check by ray		
-
-		const FVector TraceStart = Transform.Location;
-		const FVector TraceEnd = TraceStart + Delta;
-		const FRotator InitialRotation = NewRotation;
-
-		FHitResult BlockingHit;
-		BlockingHit.bBlockingHit = false;
-		BlockingHit.Time = 1.0f;
-
 		TArray<FHitResult> Hits;
-		FVector NewLocation = TraceStart;
+		if (World->QueryComponentSweepMulti(*this, Start, Delta, NewRotation, Hits, true) != ECollisionQueryStatus::Success)
+			return false;
+
+		for (const FHitResult& CurrentHit : Hits)
+		{
+			if (!CurrentHit.bBlockingHit) continue;
+			MoveHit = CurrentHit;
+			break;
+		}
 	}
 
+	const FVector NewLocation = Start + Delta * MoveHit.Time;
+	SetWorldLocationAndRotation(NewLocation, NewRotation, false);
+	MoveHit.Location = GetWorldLocation();
+	MoveHit.Distance = (MoveHit.Location - Start).Size();
+	if (Hit) *Hit = MoveHit;
 	return true;
 }
 

@@ -98,6 +98,7 @@ public:
 
 	virtual void OnTransformDirty() override;
 
+	// Delta/NewRotation은 world 기준. 질의 실패 시 false와 위치 유지, 막힘 여부는 Hit로 반환한다.
 	virtual bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit = nullptr) override;
 
 protected:
