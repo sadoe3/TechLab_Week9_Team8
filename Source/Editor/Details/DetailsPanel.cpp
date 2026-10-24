@@ -10,6 +10,8 @@
 #include "imgui_internal.h"
 #include "Editor/HitoriEd/EditorDragDrop.h"
 #include "Editor/HitoriEd/EditorResourcePaths.h"
+#include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/TextRenderComponent.h"
@@ -831,18 +833,21 @@ namespace
 			{
 				*Value = Buffer;
 			}
-			// 스크립트 경로의 생성·편집 버튼
+			if (CustomFont) ImGui::PopFont();
+
+			// 기존 문자열 입력은 유지하고 ScriptPath에만 제작 버튼을 추가한다.
 			UScriptComponent* ScriptComponent = Cast<UScriptComponent>(Object);
 			if (ScriptComponent && Property.Name == "ScriptPath")
 			{
 				if (ImGui::Button("Create"))
 				{
+					// 씬 파일명과 소유 액터 이름으로 템플릿을 복사한다.
 					AActor* OwnerActor = ScriptComponent->GetOwner();
 					if (OwnerActor)
 					{
 						const FString SceneName = FEditorFileUtils::GetCurrentSceneName();
-
-						bChanged |= FLuaScriptEditorUtils::CreateLuaScript(SceneName, OwnerActor->GetName(), *Value);
+						// 생성 성공 시에만 경로를 연결하고 공통 프로퍼티 변경 처리로 알린다.
+						bChanged = FLuaScriptEditorUtils::CreateLuaScript(SceneName, OwnerActor->GetName(), *Value);
 					}
 				}
 
@@ -850,11 +855,11 @@ namespace
 				ImGui::BeginDisabled(Value->empty());
 				if (ImGui::Button("Edit"))
 				{
+					// 편집기로 열기만 하므로 저장된 경로나 프로퍼티 상태는 바꾸지 않는다.
 					FLuaScriptEditorUtils::EditLuaScript(*Value);
 				}
 				ImGui::EndDisabled();
 			}
-			if (CustomFont) ImGui::PopFont();
 			break;
 		}
 		case EPropertyType::Transform:

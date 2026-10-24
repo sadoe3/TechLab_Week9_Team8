@@ -8,6 +8,18 @@
  
 FString FEditorFileUtils::CurrentScenePath = "";
 
+FString FEditorFileUtils::GetCurrentSceneName()
+{
+	// 새 씬이거나 아직 저장하지 않았다면 기본 이름을 사용한다.
+	if (CurrentScenePath.empty())
+	{
+		return "Untitled";
+	}
+
+	// 예: Scene/Main.scene -> Main
+	return fs::path(CurrentScenePath).stem().string();
+}
+
 bool FEditorFileUtils::NewScene(UWorld* World)
 {
 	// 예약 대상 검증
@@ -98,15 +110,6 @@ bool FEditorFileUtils::LoadScene(UWorld* World)
 	// 선택 경로 정규화
 	FilePath = std::filesystem::absolute(FilePath).lexically_normal().string();
 	return GEngine->RequestSceneChange(World, FilePath);
-}
-
-FString FEditorFileUtils::GetCurrentSceneName()
-{
-	if (CurrentScenePath.empty())
-	{
-		return "Untitled";
-	}
-	return fs::path(CurrentScenePath).stem().string();
 }
 
 FString FEditorFileUtils::OpenSaveSceneDialog()

@@ -34,7 +34,7 @@ bool FLuaScriptEditorUtils::CreateLuaScript(const FString& SceneName, const FStr
 	}
 
 	const FString FileName = MakeValidFileName(SceneName) + "_" + MakeValidFileName(ActorName) + ".lua";
-	const fs::path TemplatePath = "Resources/Scripts/template.lua";
+	const fs::path TemplatePath = "Assets/Scripts/template.lua";
 	const fs::path ScriptPath = fs::path("Assets/Scripts") / FileName;
 
 	// 출력 폴더가 없으면 생성한다. 이미 존재하면 그대로 사용한다.

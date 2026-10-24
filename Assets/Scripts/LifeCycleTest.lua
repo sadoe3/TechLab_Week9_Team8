@@ -21,5 +21,9 @@ function EndPlay()
 end
 
 function OnBeginOverlap(OtherActor)
-    print("Lua OnBeginOverlap", OtherActor ~= nil)
+    print("Lua OnOverlap", OtherActor ~= nil)
+end
+
+function OnEndOverla(OtherActor)
+    print("Lua OnEndOverlap", OtherActor~=nil)
 end

@@ -17,6 +17,7 @@ public:
 		CurrentScenePath = ScenePath;
 	}
 
+
 private:
 	static FString OpenSaveSceneDialog();
 	static FString OpenLoadSceneDialog();

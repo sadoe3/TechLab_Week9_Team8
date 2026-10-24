@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <sol/sol.hpp>
 
 #include "ActorComponent.h"
@@ -21,13 +22,21 @@ public:
     virtual void EndPlay() override;
 
     void OnBeginOverlap(AActor* otherActor);
-
+    void OnEndOverlap(AActor* OtherActor);
 private:
-    // 환경 내부의 선택적 이벤트 조회
-    bool CacheFunction(const char* EventName, sol::protected_function& OutFunction);
-
     // 컴포넌트의 Lua 참조 해제
     void ResetScript();
+
+    // 지정한 환경에 직접 정의된 콜백만 찾는다.
+    static sol::protected_function FindScriptFunction(
+        const sol::environment& Environment,
+        const char* FunctionName);
+
+    // 새 환경과 콜백을 준비하고, 성공했을 때만 교체한다.
+    bool TryLoadScript();
+
+    // 일정 간격으로 파일 수정 시각을 확인하고 재로드를 시도한다.
+    void CheckScriptChanges(float DeltaTime);
 
     FString ScriptPath;
     sol::environment ScriptEnvironment;
@@ -38,5 +47,14 @@ private:
     sol::protected_function BeginOverlapFunction;
     sol::protected_function EndOverlapFunction;
     bool bScriptReady = false;
+
+    // 실패한 수정본도 기록하여 같은 파일의 반복 로드를 막는다.
+    std::filesystem::file_time_type LastAttemptedWriteTime{};
+    bool bHasAttemptedWriteTime = false;
+
+    float TimeSinceLastScriptCheck = 0.0f;
+
+    // 최초 로드에 실패해도 수정 후 재시도할 수 있도록 유지한다.
+    bool bCheckScriptChanges = false;
 };
 
