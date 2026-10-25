@@ -76,7 +76,32 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 			}
 			return sol::make_object(State, sol::nil);
 		});
+	// 카메라를 가진 Actor로 게임 시점 변경
+	WorldTable.set_function("set_view_target",
+		[WeakWorld](sol::object Target) -> bool
+		{
+			UWorld* World = WeakWorld.Get();
+			if (!World || !World->AcceptsChanges())
+			{
+				return false;
+			}
 
+			// 명시적인 nil 요청은 내장 카메라로 복귀
+			if (Target.get_type() == sol::type::nil)
+			{
+				return World->SetViewTarget(nullptr);
+			}
+
+			// 기존 Actor 바인딩 타입 확인
+			if (!Target.is<TWeakObjectPtr<AActor>>())
+			{
+				return false;
+			}
+
+			// 소멸한 참조의 Fallback 전환 방지
+			AActor* TargetActor = Target.as<TWeakObjectPtr<AActor>>().Get();
+			return TargetActor && World->SetViewTarget(TargetActor);
+		});
 	// 다음 프레임 씬 전환 예약
 	WorldTable.set_function("change_scene",
 		[WeakWorld](const FString& ScenePath) -> bool

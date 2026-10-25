@@ -19,4 +19,7 @@ namespace ResourcePaths
 	constexpr const char* PointLightIcon = "Resources/Icons/PointLight_64x.png";
 	constexpr const char* SpotLightIcon = "Resources/Icons/SpotLight_64x.png";
 	constexpr const char* SkyLightIcon = "Resources/Icons/SkyLight.png";
+
+	// 카메라액터 빌보드 아이콘
+	constexpr const char* CameraIcon = "Resources/Icons/CameraActor_64x.png";
 }
