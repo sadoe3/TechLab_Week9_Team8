@@ -6,7 +6,8 @@
 #include <format>
 #include "Component/SceneComponent.h"
 #include "Input/InputSystem.h"
-
+#include "Math/Rotator.h"
+#include "GameFramework/Character.h"
 
 namespace LuaBindings
 {
@@ -58,6 +59,15 @@ namespace LuaBindings
 				return std::format("Vector({}, {}, {})", Value.X, Value.Y, Value.Z);
 			},
 			"Normalized", &FVector::Normalized	// 열거형에 없는 함수는 string,함수 포인터로 바인딩할수있음.
+		);
+		
+		// FRotater 바인딩
+		Lua.new_usertype<FRotator>("Rotator",
+			sol::call_constructor,
+			sol::constructors<FRotator(), FRotator(float, float, float)>(),
+			"pitch", &FRotator::Pitch,
+			"yaw", &FRotator::Yaw,
+			"roll", &FRotator::Roll
 		);
 
 		// AActor 바인딩
@@ -116,6 +126,58 @@ namespace LuaBindings
 					}
 
 					Root->SetWorldLocation(Location, false);
+				}),
+			"Rotation", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference)->FRotator
+				{
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || Root->IsPendingDestroy())
+					{
+						throw sol::error("Actor root component is unavailable");
+					}
+
+					return Root->GetWorldRotation();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference,const FRotator& Rotation)
+				{
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || !Root->CanRunGameplay())
+					{
+						throw sol::error("Actor root component cannot rotate");
+					}
+
+					return Root->SetWorldRotation(Rotation,false);
+				}
+			),
+			// Character 관련 바인딩
+			// AActor상속받는 구조->바인딩된 obj에 대해 Character인지 확인하는 절차를 거침.
+			"Velocity", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FVector
+				{
+					ACharacter* Character = Cast<ACharacter>(Reference.Get());
+					if (!Character)
+					{
+						throw sol::error("Velocity requires a Character actor");
+					}
+
+					return Character->GetVelocity();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, const FVector& Velocity)
+				{
+					ACharacter* Character = Cast<ACharacter>(Reference.Get());
+					if (!Character)
+					{
+						throw sol::error("Velocity requires a Character actor");
+					}
+
+					if (!Character->CanRunGameplay())
+					{
+						throw sol::error("Character cannot change velocity");
+					}
+
+					Character->SetVelocity(Velocity);
 				})
 		);
 

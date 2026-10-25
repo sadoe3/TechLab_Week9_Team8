@@ -1,0 +1,138 @@
+{
+    "Version": 4,
+    "World": {
+        "PersistentLevel": {
+            "Actors": [
+                {
+                    "Class": "ACharacter",
+                    "Components": [
+                        {
+                            "Class": "USceneComponent",
+                            "Name": "DefaultSceneRoot",
+                            "Parent": "",
+                            "Properties": {
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UCapsuleComponent",
+                            "Name": "CapsuleComponent",
+                            "Parent": "",
+                            "Properties": {
+                                "CapsuleHalfHeight": 1.0,
+                                "CapsuleRadius": 0.5,
+                                "CollisionEnabled": 1,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 2,
+                                "ShapeColor": {
+                                    "A": 255,
+                                    "B": 0,
+                                    "G": 255,
+                                    "R": 0
+                                },
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": false,
+                                "bDrawOnlyIfSelected": false,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": false,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UStaticMeshComponent",
+                            "Name": "StaticMeshComponent",
+                            "OverrideMaterials": [],
+                            "Parent": "CapsuleComponent",
+                            "Properties": {
+                                "CollisionEnabled": 0,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 1,
+                                "StaticMesh": "Cube",
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": true,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": true,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UMovementComponent",
+                            "Name": "MovementComponent",
+                            "Parent": "",
+                            "Properties": {
+                                "Velocity": {
+                                    "X": 0.0,
+                                    "Y": 0.0,
+                                    "Z": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UScriptComponent",
+                            "Name": "UScriptComponent_0",
+                            "Parent": "",
+                            "Properties": {
+                                "ScriptPath": "Assets/Scripts/ForBindingTest_ACharacter_0.lua"
+                            }
+                        }
+                    ],
+                    "Properties": {}
+                }
+            ],
+            "Properties": {}
+        },
+        "Properties": {}
+    }
+}
