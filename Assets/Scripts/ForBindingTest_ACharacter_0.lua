@@ -26,6 +26,20 @@ function Tick(dt)
         math.sin(yaw) * moveSpeed * axis,
         0
     )
+    if input.is_pressed("R") then
+        local accepted = world.change_scene(
+            "Assets/Scenes/MainScene.scene"
+        )
+        print("[SceneRequest]", accepted)
+        return
+    end
+
+    -- Standalone 종료 검증
+    if input.is_pressed("Ctrl") then
+        print("[QuitRequest]", world.quit())
+        return
+    end
+
 end
 
 function EndPlay()

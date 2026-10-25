@@ -89,6 +89,9 @@ public:
 	// 씬 전환 예약, 빈 경로는 새 씬
 	bool RequestSceneChange(UWorld* World, const FString& ScenePath);
 	
+	// 게임 종료 요청
+	bool RequestExit(UWorld* World);
+
 	UAssetManager* AssetManager;
 protected:
 	FEngineLoop& GetEngineLoop() const { return *EngineLoop; }

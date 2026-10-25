@@ -1,6 +1,6 @@
 #include "EnginePCH.h"
 #include "Engine.h"
-
+#include "Launch/LaunchEngineLoop.h"
 #include "Serialization/JsonArchive.h"
 #include <utility>
 
@@ -70,6 +70,19 @@ bool UEngine::RequestSceneChange(UWorld* World, const FString& ScenePath)
 	// 마지막 요청으로 교체
 	Context->PendingScenePath = ScenePath;
 	Context->bSceneChangeRequested = true;
+	return true;
+}
+
+bool UEngine::RequestExit(UWorld* World)
+{
+	// 게임월드에 대해서만 종료함수 호출, 실행 루프 검증
+	if (!World || World->GetWorldType() != EWorldType::Game || !World->AcceptsChanges()
+		|| !GetWorldContextFromWorld(World) || !EngineLoop)
+	{
+		return false;
+	}
+
+	EngineLoop->RequestExit();
 	return true;
 }
 

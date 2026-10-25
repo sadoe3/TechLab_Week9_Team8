@@ -8,6 +8,7 @@
 #include "Engine/Level.h"
 #include <algorithm>
 #include <cmath>
+#include "Engine/Engine.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -74,6 +75,23 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 				}
 			}
 			return sol::make_object(State, sol::nil);
+		});
+
+	// 다음 프레임 씬 전환 예약
+	WorldTable.set_function("change_scene",
+		[WeakWorld](const FString& ScenePath) -> bool
+		{
+			UWorld* World = WeakWorld.Get();
+			return GEngine && World && World->AcceptsChanges()
+				&& !ScenePath.empty()
+				&& GEngine->RequestSceneChange(World, ScenePath);
+		});
+
+	// Standalone 게임 종료 요청
+	WorldTable.set_function("quit",
+		[WeakWorld]() -> bool
+		{
+			return GEngine && GEngine->RequestExit(WeakWorld.Get());
 		});
 	Environment["world"] = WorldTable;
 	return Environment;

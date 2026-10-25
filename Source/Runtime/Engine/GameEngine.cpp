@@ -18,7 +18,7 @@ FEngineConfig UGameEngine::GetConfig() const
 	Desc.bBorderless = false;
 	Desc.SyncInterval = 0;   // 0 = VSync 끔 (FPS 측정용)
 	Desc.bCreateDepthBuffer = false;
-	Desc.bExitOnEscape = true;        
+	Desc.bExitOnEscape = false;        
 	return Desc;
 }
 

@@ -109,8 +109,11 @@ bool FEngineLoop::PreInit(HINSTANCE hInstance, UClass* EngineClass)
 
 	FSplashScreen::SetText(L"Initializing Engine...");
 	FSplashScreen::SetProgress(0.8f);
+	// 초기화 중 종료 요청 보존
+	bIsRunning = true;
 	if (!GEngine->Init())
 	{
+		bIsRunning = false;
 		FSplashScreen::Hide();
 		return false;
 	}
@@ -127,8 +130,7 @@ bool FEngineLoop::PreInit(HINSTANCE hInstance, UClass* EngineClass)
 	PrevFrameCycles = FPlatformTime::GetCycles64();
 
 	const uint32 Cores = std::max(1u, std::thread::hardware_concurrency());
-	FTaskPool::Get().Init(std::min(Cores - 1, 15u));
-	bIsRunning = true;
+	FTaskPool::Get().Init(std::min(Cores - 1, 15u)); 
 	return true;
 }
 
