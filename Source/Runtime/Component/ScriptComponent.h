@@ -26,6 +26,7 @@ public:
 
     void OnBeginOverlap(AActor* otherActor);
     void OnEndOverlap(AActor* OtherActor);
+    void OnHit(AActor* OtherActor);
 
     // 후보 파일 실행 여부
     bool IsLoadingScript() const
@@ -50,6 +51,7 @@ private:
 
     void HandleComponentBeginOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, bool, const FHitResult& HIt);
     void HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp);
+    void HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
 
 
     FString ScriptPath;
@@ -60,6 +62,7 @@ private:
     sol::protected_function EndPlayFunction;
     sol::protected_function BeginOverlapFunction;
     sol::protected_function EndOverlapFunction;
+    sol::protected_function HitFunction;
     bool bScriptReady = false;
 
     // 실패한 수정본도 기록하여 같은 파일의 반복 로드를 막는다.

@@ -37,6 +37,7 @@ void UScriptComponent::BeginPlay()
 
         comp->OnComponentBeginOverlap.AddRaw(this, &UScriptComponent::HandleComponentBeginOverlap);
         comp->OnComponentEndOverlap.AddRaw(this, &UScriptComponent::HandleComponentEndOverlap);
+        comp->OnComponentHit.AddRaw(this, &UScriptComponent::HandleComponentHit);
     }
 
     // 최초 로드 전 변경 감시 활성화
@@ -105,6 +106,7 @@ void UScriptComponent::EndPlay()
 
         comp->OnComponentBeginOverlap.RemoveAll(this);
         comp->OnComponentEndOverlap.RemoveAll(this);
+        comp->OnComponentHit.RemoveAll(this);
     }
 
     ResetScript();
@@ -165,6 +167,7 @@ bool UScriptComponent::TryLoadScript()
     sol::protected_function NewEndPlayFunction = FindScriptFunction(NewEnvironment, "EndPlay");
     sol::protected_function NewBeginOverlapFunction = FindScriptFunction(NewEnvironment, "OnBeginOverlap");
     sol::protected_function NewEndOverlapFunction = FindScriptFunction(NewEnvironment, "OnEndOverlap");
+    sol::protected_function NewHitFunction = FindScriptFunction(NewEnvironment, "OnHit");
 
     // 최초 시작에만 호출하며, 최초 로드 실패 후 재시도도 포함한다.
     if (bScriptReady == false && NewBeginPlayFunction.valid())
@@ -200,6 +203,7 @@ bool UScriptComponent::TryLoadScript()
     EndPlayFunction = NewEndPlayFunction;
     BeginOverlapFunction = NewBeginOverlapFunction;
     EndOverlapFunction = NewEndOverlapFunction;
+    HitFunction = NewHitFunction;
     bScriptReady = true;
 
     return true;
@@ -264,6 +268,15 @@ void UScriptComponent::HandleComponentEndOverlap(UPrimitiveComponent* thisComp, 
     OnEndOverlap(OtherActor);
 }
 
+void UScriptComponent::HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit){
+    AActor* OtherActor = OtherComp->GetOwner();
+    if (OtherActor == nullptr) return;
+
+    assert(OtherComp != nullptr);
+
+    OnHit(OtherActor);
+}
+
 void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
@@ -296,6 +309,22 @@ void UScriptComponent::OnEndOverlap(AActor* OtherActor)
     Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", OtherActor);
 }
 
+void UScriptComponent::OnHit(AActor* OtherActor)
+{
+    assert(OtherActor != nullptr);
+
+    if (!bScriptReady || !HitFunction.valid())
+    {
+        return;
+    }
+
+    // 겹침 종료 콜백 실행
+    FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
+    assert(Runtime != nullptr);
+
+    Runtime->Call(HitFunction, ScriptPath, "OnHit", OtherActor);
+}
+
 void UScriptComponent::ResetScript()
 {
     // 빈 객체로 교체하여 컴포넌트가 가진 Lua 참조를 해제한다.
@@ -304,6 +333,7 @@ void UScriptComponent::ResetScript()
     EndPlayFunction = sol::protected_function();
     BeginOverlapFunction = sol::protected_function();
     EndOverlapFunction = sol::protected_function();
+    HitFunction = sol::protected_function();
 
     // Environment 해제
     ScriptEnvironment = sol::environment();
