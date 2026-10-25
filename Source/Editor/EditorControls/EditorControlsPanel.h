@@ -13,7 +13,7 @@
 #include "GameFramework/Actor/SpotLightActor.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/RacingCar.h"
-
+#include "Camera/CameraActor.h"
 class FViewportsPanel;
 
 // 액터 생성과 카메라·기즈모 편집에 필요한 패널 상태를 보관한다.
@@ -35,8 +35,8 @@ public:
 
 	int32 SelectedIndex = 0;
 
-	const char* Items[11] ={"Actor", "StaticMesh","Particle","Text","ExponentialHeightFog",
-		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar"};
+	const char* Items[12] ={"Actor", "StaticMesh","Particle","Text","ExponentialHeightFog",
+		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar","Camera"};
 
 	FGizmo* Gizmo = nullptr;
 	int32 GizmoSelectedIndex = 0;
@@ -57,7 +57,8 @@ public:
 		APointLightActor::StaticClass(),
 		ASpotLightActor::StaticClass(),
 		ACharacter::StaticClass(),
-		ARacingCar::StaticClass()
+		ARacingCar::StaticClass(),
+		ACameraActor::StaticClass()
 	};
 
     void SetViewportsPanel(FViewportsPanel* InPanel) { ViewportsPanel = InPanel; }

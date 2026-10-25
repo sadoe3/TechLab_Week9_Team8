@@ -29,9 +29,8 @@
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
 #include "UObject/UObjectHash.h"
-#include "Editor/HitoriEd/EditorFileUtils.h"
-#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
 #include "Component/ScriptComponent.h"
+#include "Camera/CameraComponent.h"
 #include <algorithm>
 
 
@@ -1057,6 +1056,14 @@ namespace
 			if (ImGui::MenuItem("Script Component"))
 			{
 				OutSelectedComponent = Actor->AddComponent(UScriptComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Camera Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(
+					UCameraComponent::StaticClass(),
+					FString(ComponentNameInputBuf));
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
