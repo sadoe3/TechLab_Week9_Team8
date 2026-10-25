@@ -33,9 +33,15 @@ bool UGameEngine::Init()
 	GameWorld = UWorld::CreateWorld(EWorldType::Game, false);
 	CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(GameWorld);
 
+	
 	// 시작 씬 로드
+	/*
 	// TODO: 시작 씬을 게임의 시작씬으로 옮겨야함
 	const FString StartupScenePath = "Assets/Scenes/LinearColorTest.scene";
+	*/
+
+	// 차량 카메라와 주행 Lua가 연결된 테스트 씬으로 시작합니다.
+	const FString StartupScenePath = "Assets/Scenes/Racing.scene";
 	if (!FJsonArchive::LoadWorld(GameWorld, StartupScenePath))
 	{
 		HTR_LOG(Error, "Failed to load startup scene: {}", StartupScenePath);
