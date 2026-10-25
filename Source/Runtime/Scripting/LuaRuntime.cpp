@@ -5,6 +5,7 @@
 #include "Component/ScriptComponent.h"
 #include "Containers/Array.h"
 #include "Engine/World.h"
+#include "Engine/Level.h"
 #include <algorithm>
 #include <cmath>
 
@@ -41,6 +42,34 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 	sol::environment Environment(Lua, sol::create, Lua.globals());
 	Environment["_G"] = Environment;
 	Environment["obj"] = TWeakObjectPtr<AActor>(OwnerActor);
+
+	// 환경에 연결할 World의 비소유 참조
+	const TWeakObjectPtr<UWorld> WeakWorld(OwnerActor ? OwnerActor->GetWorld() : nullptr);
+
+	// 환경별 World API
+	sol::table WorldTable = Lua.create_table();
+	WorldTable.set_function("find_actor",
+		[WeakWorld](sol::this_state State, const FString& Name) -> sol::object
+		{
+			UWorld* World = WeakWorld.Get();
+			ULevel* Level = World ? World->GetPersistentLevel() : nullptr;
+			if (!Level)
+			{
+				return sol::make_object(State, sol::nil);
+			}
+
+			// 기존 FName 정책에 따른 배치 Actor 검색
+			const FName SearchName(Name);
+			for (AActor* Actor : Level->GetActors())
+			{
+				if (Actor && !Actor->IsPendingDestroy()	&& Actor->GetFName() == SearchName)
+				{
+					return sol::make_object(State, TWeakObjectPtr<AActor>(Actor));
+				}
+			}
+			return sol::make_object(State, sol::nil);
+		});
+	Environment["world"] = WorldTable;
 	return Environment;
 }
 
