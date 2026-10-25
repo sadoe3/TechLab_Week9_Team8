@@ -6,9 +6,11 @@
 #include "Render/RenderPacket.h"
 #include "Render/GeometryGenerator.h"
 #include "Collision/HitResult.h"
+#include "Core/Misc/Delegate.h"
 #include "Collision/BodyInstance.h"
 
 class FPrimitiveSceneProxy;
+class UPrimitiveComponent;
 
 enum class EPrimitiveType
 {
@@ -20,6 +22,10 @@ enum class EPrimitiveType
 	Particle,
 	ParticleQuad
 };
+
+DECLARE_DELEGATE(FComponentBeginOverlapSignature, UPrimitiveComponent*, UPrimitiveComponent*, bool, const FHitResult&);
+DECLARE_DELEGATE(FComponentEndOverlapSignature, UPrimitiveComponent*, UPrimitiveComponent*);
+DECLARE_DELEGATE(FComponentHitSignature, UPrimitiveComponent*, UPrimitiveComponent*, const FHitResult&);
 
 class UPrimitiveComponent :public USceneComponent
 {
@@ -62,6 +68,10 @@ public:
 	virtual void UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps = {}) override;
 	void ClearOverlaps(bool bNotify = true);
 
+	FComponentBeginOverlapSignature OnComponentBeginOverlap;
+	FComponentEndOverlapSignature OnComponentEndOverlap;
+	FComponentHitSignature OnComponentHit;
+
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue);
@@ -92,6 +102,7 @@ public:
 		MarkRenderStateDirty();
 	}
 
+
 	virtual bool LineTraceComponent(const FRay& WorldRay, FHitResult& OutHit);
 	virtual bool LineTraceComponentLocal(const FRay& LocalRay, float& OutT);
 	virtual FBox CalcLocalBounds() const override
@@ -115,12 +126,12 @@ protected:
 	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
 	virtual void NotifyEndOverlap(UPrimitiveComponent* Other);
 	virtual void NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
-	bool bGenerateOverlapEvents = true;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;
 	bool bCastShadow = true;
 	bool bReceiveShadow = true;
+	bool bGenerateOverlapEvents = true;
 	// 등록 책임을 프리미티브로 옮김
 	virtual void CreateRenderState() override;
 	virtual void DestroyRenderState() override;

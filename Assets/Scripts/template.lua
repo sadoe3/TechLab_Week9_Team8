@@ -31,3 +31,7 @@ end
 function OnEndOverlap(OtherActor)
     print("Lua OnEndOverlap", OtherActor ~= nil)
 end
+
+function OnHit(OtherActor)
+    print("Lua Hit", OtherActor ~= nil)
+end
