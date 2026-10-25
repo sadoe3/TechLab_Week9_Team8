@@ -4,7 +4,7 @@
 #include "Asset/AssetManager.h"
 #include "Render/RenderCommand.h"
 
-
+#include "Component/ScriptComponent.h"
 #include "Engine/PrimitiveSceneProxy.h"
 #include "Engine/Scene.h"
 #include "GameFramework/Actor.h"
@@ -80,6 +80,19 @@ void UPrimitiveComponent::DestroyPhysicsState()
 void UPrimitiveComponent::OnRegister()
 {
 	Super::OnRegister();
+	// 이미 시작한 소유 스크립트 연결
+	if (AActor* OwnerActor = GetOwner())
+	{
+		for (UActorComponent* Component : OwnerActor->GetComponents())
+		{
+			UScriptComponent* Script = Cast<UScriptComponent>(Component);
+			if (Script && Script->HasBegunPlay())
+			{
+				Script->BindPrimitive(this);
+			}
+		}
+	}
+
 	CreatePhysicsState();
 }
 
@@ -417,18 +430,20 @@ void UPrimitiveComponent::DispatchBlockingHit(const FHitResult& Hit)
 
 void UPrimitiveComponent::NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
-	// TODO: Delegate 연결 시 OnComponentHit.Broadcast(this, OtherComponent, Hit);
 	HTR_LOG(Info, "OnComponentHit: {} [{}] -> {} [{}], Time={}, StartPenetrating={}", GetName(), GetUUID(), OtherComponent->GetName(), OtherComponent->GetUUID(), Hit.Time, Hit.bStartPenetrating);
+
+	OnComponentHit.Broadcast(this, OtherComponent, Hit);
 }
 
 void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// TODO: Delegate 연결 시 OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 	HTR_LOG(Info, "OnComponentBeginOverlap: {} [{}] -> {} [{}], FromSweep={}", GetName(), GetUUID(), Other->GetName(), Other->GetUUID(), bFromSweep);
+
+	OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 }
 
 void UPrimitiveComponent::NotifyEndOverlap(UPrimitiveComponent* Other)
 {
-	// TODO: Delegate 연결 시 OnComponentEndOverlap.Broadcast(this, Other);
 	HTR_LOG(Info, "OnComponentEndOverlap: {} [{}] -> {} [{}]", GetName(), GetUUID(), Other->GetName(), Other->GetUUID());
+	OnComponentEndOverlap.Broadcast(this, Other);
 }
