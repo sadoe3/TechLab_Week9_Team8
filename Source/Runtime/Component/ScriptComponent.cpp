@@ -8,7 +8,6 @@
 
 #include "UObject/Casts.h"
 #include "PrimitiveComponent.h"
-
 #include "UObject/WeakObjectPtr.h"
 
 UScriptComponent::UScriptComponent()
@@ -33,15 +32,6 @@ void UScriptComponent::BeginPlay()
         return;
     }
 
-    for (auto Comp : OwnerActor->GetComponents()) {
-        UPrimitiveComponent *comp = Cast <UPrimitiveComponent> (Comp);
-        if (comp == nullptr) continue;
-
-        comp->OnComponentBeginOverlap.AddRaw(this, &UScriptComponent::HandleComponentBeginOverlap);
-        comp->OnComponentEndOverlap.AddRaw(this, &UScriptComponent::HandleComponentEndOverlap);
-        comp->OnComponentHit.AddRaw(this, &UScriptComponent::HandleComponentHit);
-    }
-
     // 최초 로드 전 변경 감시 활성화
     bHasAttemptedWriteTime = false;
     bCheckScriptChanges = true;
@@ -49,6 +39,15 @@ void UScriptComponent::BeginPlay()
     // 공통 검사 경로로 최초 로드
     TimeSinceLastScriptCheck = 0.5f;
     CheckScriptChanges(0.0f);
+
+    // 시작 중 생성된 Primitive까지 연결
+    for (UActorComponent* Component : OwnerActor->GetComponents())
+    {
+        if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+        {
+            BindPrimitive(Primitive);
+        }
+    }
 }
 
 void UScriptComponent::TickComponent(float DeltaTime)
@@ -325,6 +324,25 @@ void UScriptComponent::OnHit(AActor* OtherActor)
     assert(Runtime != nullptr);
 
     Runtime->Call(HitFunction, ScriptPath, "OnHit", TWeakObjectPtr<AActor>(OtherActor));
+}
+
+void UScriptComponent::BindPrimitive(UPrimitiveComponent* Primitive)
+{
+    // 실행 가능한 동일 Actor의 컴포넌트 확인
+    if (!CanRunGameplay() || !Primitive || Primitive->GetOwner() != GetOwner() || !Primitive->CanRunGameplay())
+    {
+        return;
+    }
+
+    // 기존 구독 제거와 중복 연결 방지
+    Primitive->OnComponentBeginOverlap.RemoveAll(this);
+    Primitive->OnComponentEndOverlap.RemoveAll(this);
+    Primitive->OnComponentHit.RemoveAll(this);
+
+    // 충돌 이벤트 구독
+    Primitive->OnComponentBeginOverlap.AddRaw(this, &UScriptComponent::HandleComponentBeginOverlap);
+    Primitive->OnComponentEndOverlap.AddRaw(this, &UScriptComponent::HandleComponentEndOverlap);
+    Primitive->OnComponentHit.AddRaw(this, &UScriptComponent::HandleComponentHit);
 }
 
 void UScriptComponent::ResetScript()
