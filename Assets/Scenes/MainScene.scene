@@ -111,7 +111,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_137",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -221,7 +224,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_138",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -331,7 +337,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_139",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -441,7 +450,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_140",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -551,7 +563,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_141",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -661,7 +676,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_142",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -771,7 +789,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_143",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -881,7 +902,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_144",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -991,7 +1015,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_145",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1101,7 +1128,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_146",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1211,7 +1241,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_147",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1321,7 +1354,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_148",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1431,7 +1467,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_149",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1541,7 +1580,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_150",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1651,7 +1693,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_151",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1761,7 +1806,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_152",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1871,7 +1919,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_153",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -1981,7 +2032,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_154",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2091,7 +2145,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_155",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2201,7 +2258,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_156",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2311,7 +2371,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_157",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2421,7 +2484,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_158",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2531,7 +2597,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_159",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2641,7 +2710,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_160",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2751,7 +2823,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_161",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2861,7 +2936,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_162",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -2971,7 +3049,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_163",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3081,7 +3162,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_164",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3191,7 +3275,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_165",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3301,7 +3388,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_166",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3411,7 +3501,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_167",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3521,7 +3614,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_168",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3631,7 +3727,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_169",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3741,7 +3840,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_170",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3851,7 +3953,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_171",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -3961,7 +4066,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_172",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4071,7 +4179,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_173",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4181,7 +4292,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_174",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4291,7 +4405,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_175",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4401,7 +4518,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_176",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4511,7 +4631,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_177",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4621,7 +4744,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_178",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4731,7 +4857,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_179",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4841,7 +4970,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_180",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -4951,7 +5083,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_181",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5061,7 +5196,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_182",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5171,7 +5309,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_183",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5281,7 +5422,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_184",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5391,7 +5535,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_185",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5501,7 +5648,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_186",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5611,7 +5761,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_187",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5721,7 +5874,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_188",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5831,7 +5987,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_189",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -5941,7 +6100,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_190",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6051,7 +6213,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_191",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6161,7 +6326,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_192",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6271,7 +6439,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_193",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6381,7 +6552,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_194",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6491,7 +6665,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_195",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6601,7 +6778,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_196",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6711,7 +6891,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_197",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6821,7 +7004,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_198",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -6931,7 +7117,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_199",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7041,7 +7230,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_200",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7151,7 +7343,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_201",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7261,7 +7456,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_202",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7371,7 +7569,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_203",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7481,7 +7682,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_204",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7591,7 +7795,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_205",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7701,7 +7908,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_206",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7811,7 +8021,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_207",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -7921,7 +8134,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_208",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8031,7 +8247,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_209",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8141,7 +8360,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_210",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8251,7 +8473,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_211",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8361,7 +8586,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_212",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8471,7 +8699,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_213",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8581,7 +8812,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_214",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8691,7 +8925,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_215",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8801,7 +9038,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_216",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -8911,7 +9151,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_217",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9021,7 +9264,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_218",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9131,7 +9377,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_219",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9241,7 +9490,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_220",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9351,7 +9603,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_221",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9461,7 +9716,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_222",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9571,7 +9829,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_223",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9681,7 +9942,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_224",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9791,7 +10055,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_225",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -9901,7 +10168,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_226",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10011,7 +10281,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_227",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10121,7 +10394,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_228",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10231,7 +10507,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_229",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10341,7 +10620,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_230",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10451,7 +10733,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_231",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10561,7 +10846,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_232",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10671,7 +10959,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_233",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10781,7 +11072,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_234",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -10891,7 +11185,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_235",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11001,7 +11298,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_236",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11111,7 +11411,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_237",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11221,7 +11524,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_238",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11331,7 +11637,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_239",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11441,7 +11750,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_240",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11551,7 +11863,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_241",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11661,7 +11976,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_242",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11771,7 +12089,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_243",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11881,7 +12202,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_244",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -11991,7 +12315,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_245",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12101,7 +12428,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_246",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12211,7 +12541,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_247",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12321,7 +12654,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_248",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12431,7 +12767,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_249",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12541,7 +12880,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_250",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12679,7 +13021,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_251",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12817,7 +13162,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_252",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -12951,7 +13299,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_253",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13085,7 +13436,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_254",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13219,7 +13573,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_255",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13353,7 +13710,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_256",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13487,7 +13847,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_257",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13621,7 +13984,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_258",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13755,7 +14121,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_259",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -13889,7 +14258,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_260",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14023,7 +14395,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_261",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14157,7 +14532,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_262",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14291,7 +14669,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_263",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14425,7 +14806,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_264",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14559,7 +14943,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_265",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14693,7 +15080,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_266",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14827,7 +15217,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_267",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -14961,7 +15354,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_268",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -15095,7 +15491,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_269",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -15229,7 +15628,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_270",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -15363,7 +15765,10 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_271",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
                     "Class": "AStaticMeshActor",
@@ -15497,10 +15902,13 @@
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "AStaticMeshActor_272",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 },
                 {
-                    "Class": "ACharacter",
+                    "Class": "ARacingCar",
                     "Components": [
                         {
                             "Class": "USceneComponent",
@@ -15510,8 +15918,8 @@
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
-                                        "Y": 0.0,
-                                        "Z": 0.0
+                                        "Y": 10.647099494934082,
+                                        "Z": 0.3297378420829773
                                     },
                                     "Rotation": {
                                         "Pitch": 0.0,
@@ -15519,79 +15927,40 @@
                                         "Yaw": 0.0
                                     },
                                     "Scale": {
-                                        "X": 1.0,
-                                        "Y": 1.0,
-                                        "Z": 1.0
+                                        "X": 2.607020616531372,
+                                        "Y": 1.4204120635986328,
+                                        "Z": 0.8648902773857117
                                     }
                                 }
                             }
                         },
                         {
-                            "Class": "UCapsuleComponent",
-                            "Name": "CapsuleComponent",
-                            "Parent": "",
-                            "Properties": {
-                                "CapsuleHalfHeight": 1.0,
-                                "CapsuleRadius": 0.5,
-                                "CollisionEnabled": 1,
-                                "CollisionResponses.Pawn": 2,
-                                "CollisionResponses.WorldDynamic": 2,
-                                "CollisionResponses.WorldStatic": 2,
-                                "ObjectType": 2,
-                                "ShapeColor": {
-                                    "A": 255,
-                                    "B": 0,
-                                    "G": 255,
-                                    "R": 0
-                                },
-                                "Transform": {
-                                    "Location": {
-                                        "X": -16.0,
-                                        "Y": -9.0,
-                                        "Z": 0.0
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 1.0,
-                                        "Y": 1.0,
-                                        "Z": 1.0
-                                    }
-                                },
-                                "bCastShadow": false,
-                                "bDrawOnlyIfSelected": false,
-                                "bGenerateOverlapEvents": true,
-                                "bReceiveShadow": false,
-                                "bVisible": true
-                            }
-                        },
-                        {
                             "Class": "UStaticMeshComponent",
-                            "Name": "StaticMeshComponent",
+                            "Name": "VehicleMesh",
                             "OverrideMaterials": [
                                 {
                                     "Base": "DefaultMaterial",
                                     "Instance": {
                                         "BaseColor": {
                                             "A": 1.0,
-                                            "B": 0.03999999910593033,
-                                            "G": 0.03999999910593033,
-                                            "R": 0.6000000238418579
+                                            "B": 0.0,
+                                            "G": 0.0,
+                                            "R": 1.0
                                         },
                                         "BlendState": "Opaque",
                                         "Properties": {},
-                                        "SamplerState": "LinearClamp",
+                                        "SamplerState": "LinearWrap",
                                         "Shininess": 32.0,
                                         "SpecularColor": {
                                             "A": 1.0,
-                                            "B": 0.10000000149011612,
-                                            "G": 0.10000000149011612,
-                                            "R": 0.10000000149011612
+                                            "B": 0.5,
+                                            "G": 0.5,
+                                            "R": 0.5
                                         },
-                                        "Textures": [],
+                                        "Textures": [
+                                            "WhiteTexture",
+                                            ""
+                                        ],
                                         "UVScrollSpeed": [
                                             0.0,
                                             0.0
@@ -15600,14 +15969,14 @@
                                     }
                                 }
                             ],
-                            "Parent": "CapsuleComponent",
+                            "Parent": "DefaultSceneRoot",
                             "Properties": {
                                 "CollisionEnabled": 0,
                                 "CollisionResponses.Pawn": 2,
                                 "CollisionResponses.WorldDynamic": 2,
                                 "CollisionResponses.WorldStatic": 2,
                                 "ObjectType": 1,
-                                "StaticMesh": "Cube",
+                                "StaticMesh": "Cone",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -15615,14 +15984,14 @@
                                         "Z": 0.0
                                     },
                                     "Rotation": {
-                                        "Pitch": 0.0,
+                                        "Pitch": 88.3713150024414,
                                         "Roll": 0.0,
                                         "Yaw": 0.0
                                     },
                                     "Scale": {
-                                        "X": 1.600000023841858,
-                                        "Y": 1.0,
-                                        "Z": 0.699999988079071
+                                        "X": 0.03461037576198578,
+                                        "Y": 0.07531929016113281,
+                                        "Z": 0.5
                                     }
                                 },
                                 "bCastShadow": true,
@@ -15632,27 +16001,42 @@
                             }
                         },
                         {
-                            "Class": "UMovementComponent",
-                            "Name": "MovementComponent",
-                            "Parent": "",
+                            "Class": "UCameraComponent",
+                            "Name": "VehicleCamera",
+                            "Parent": "DefaultSceneRoot",
                             "Properties": {
-                                "Velocity": {
-                                    "X": 2.0,
-                                    "Y": 0.0,
-                                    "Z": 0.0
+                                "Transform": {
+                                    "Location": {
+                                        "X": -4.0,
+                                        "Y": 0.0,
+                                        "Z": 2.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 15.000003814697266,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
                                 }
                             }
                         },
                         {
                             "Class": "UScriptComponent",
-                            "Name": "UScriptComponent_0",
+                            "Name": "VehicleScript",
                             "Parent": "",
                             "Properties": {
-                                "ScriptPath": "Assets/Scripts/template.lua"
+                                "ScriptPath": "Assets/Scripts/RacingCar.lua"
                             }
                         }
                     ],
-                    "Properties": {}
+                    "Name": "ARacingCar_1",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
                 }
             ],
             "Properties": {}
