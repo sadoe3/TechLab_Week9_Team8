@@ -17,7 +17,13 @@ FLuaRuntime::FLuaRuntime()
 		sol::lib::math,
 		sol::lib::table,
 		sol::lib::string,
-		sol::lib::coroutine);
+		sol::lib::coroutine,
+		sol::lib::package);
+
+	// 프로젝트 모듈 경로 우선 검색
+	sol::table Package = Lua["package"];
+	const FString ExistingPath = Package["path"];
+	Package["path"] = FString("Assets/Scripts/?.lua;Assets/Scripts/?/init.lua;") + ExistingPath;
 
 	LuaBindings::Register(Lua);
 
