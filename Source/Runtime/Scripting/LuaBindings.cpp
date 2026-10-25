@@ -5,9 +5,32 @@
 #include "UObject/WeakObjectPtr.h"
 #include <format>
 #include "Component/SceneComponent.h"
+#include "Input/InputSystem.h"
+
 
 namespace LuaBindings
 {
+	// Lua 키 이름->키코드 변환 함수
+	// 지원하고싶은 입력이 생길때마다 변경해야함.
+	static EKeyCode ResolveInputKey(const FString& Key)
+	{
+		if (Key == "W"|| Key == "A"|| Key == "S"|| Key == "D"|| Key == "R")
+		{
+			return static_cast<EKeyCode>(Key[0]);
+		}
+		if (Key == "Ctrl")
+		{
+			return EKeyCode::Control;
+		}
+
+		if (Key == "Escape")
+		{
+			return EKeyCode::Escape;
+		}
+
+		throw sol::error("Unsupported input key: " + Key);
+	}
+
 	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
 	// TODO : 다른 공통 타입들도 바인딩해야함.
 	void Register(sol::state_view Lua)
@@ -75,7 +98,8 @@ namespace LuaBindings
 					}
 
 					Root->SetWorldLocation(Location, false);
-				}));
+				})
+		);
 
 		// Tostring 바인딩
 		const sol::protected_function ToString = Lua["tostring"];
@@ -105,6 +129,25 @@ namespace LuaBindings
 				}
 
 				HTR_LOG(Info, "[Lua] {}", Message);
-			});
+			}
+		);
+
+		// 인풋 관련 함수 바인딩
+		sol::table Input = Lua.create_named_table("input");
+		Input.set_function("is_down", [](const FString& Key)
+			{
+				return FInputSystem::IsKeyDown(ResolveInputKey(Key));
+			}
+		);
+		Input.set_function("is_pressed", [](const FString& Key)
+			{
+				return FInputSystem::IsKeyPressed(ResolveInputKey(Key));
+			}
+		);
+		Input.set_function("is_released", [](const FString& Key)
+			{
+				return FInputSystem::IsKeyReleased(ResolveInputKey(Key));
+			}
+		);
 	}
 }
