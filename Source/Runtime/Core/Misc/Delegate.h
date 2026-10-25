@@ -3,7 +3,7 @@
 #include "Containers/Array.h"
 #include <functional>
 #include "Core/Types.h"
-
+#include <utility>
 
 struct FDelegateHandle {
 	int64 ID;
@@ -37,7 +37,7 @@ class TMulticastDelegate
 	using FuncType = std::function<void(Args...)>;
 
 	struct FHandlerEntry {
-		FuncType func;
+		TSharedPtr<FuncType> func;
 		FDelegateHandle ID;
 		void* Owner;		// Owner : 구독자
 	};
@@ -46,7 +46,7 @@ public:
 	FDelegateHandle Add(FuncType InFunc) {
 		FHandlerEntry handle;
 		handle.ID = FDelegateHandle::Generate();
-		handle.func = InFunc;
+		handle.func = MakeShared<FuncType>(std::move(InFunc));
 		handle.Owner = nullptr;
 		Handlers.Push(handle);
 		return handle.ID;
@@ -56,7 +56,7 @@ public:
 	FDelegateHandle AddRaw(T* Instance, void (T::*Func)(Args...)) {
 		FHandlerEntry handle;
 		handle.ID = FDelegateHandle::Generate();
-		handle.func = [Instance, Func](Args... args) {(Instance->*Func)(args...);};
+		handle.func = MakeShared<FuncType>([Instance, Func](Args... args) {(Instance->*Func)(args...);});
 		handle.Owner = Instance;
 		Handlers.Push(handle);
 		return handle.ID;
@@ -90,7 +90,7 @@ public:
 	void Broadcast(Args... args) {
 		TArray <FHandlerEntry> HandlerList = Handlers;	//TArray는 vector기반 -> 삭제시 오류남! 
 		for (auto & Entry : HandlerList) {
-			Entry.func(args...);
+			(*Entry.func)(args...);
 		}
 	}
 
