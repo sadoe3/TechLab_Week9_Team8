@@ -15,7 +15,7 @@ namespace LuaBindings
 	// 지원하고싶은 입력이 생길때마다 변경해야함.
 	static EKeyCode ResolveInputKey(const FString& Key)
 	{
-		if (Key == "W"|| Key == "A"|| Key == "S"|| Key == "D"|| Key == "R")
+		if (Key == "W" || Key == "A" || Key == "S" || Key == "D" || Key == "R" || Key == "Q" || Key == "E")
 		{
 			return static_cast<EKeyCode>(Key[0]);
 		}
@@ -188,7 +188,7 @@ namespace LuaBindings
 		// Tostring 바인딩
 		const sol::protected_function ToString = Lua["tostring"];
 
-		// Print 뱌인딩
+		// Print 바인딩
 		Lua.set_function("print", [ToString](sol::variadic_args Args)
 			{
 				FString Message;
