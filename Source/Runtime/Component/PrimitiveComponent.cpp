@@ -121,24 +121,6 @@ void UPrimitiveComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UPrimitiveComponent::NotifyBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp)
-{
-	if (bGenerateOverlapEvents == false) return;
-	OnComponentBeginOverlap.Broadcast(this, OtherActor, OtherComp);
-}
-
-void UPrimitiveComponent::NotifyEndOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp)
-{
-	if (bGenerateOverlapEvents == false) return;
-	OnComponentEndOverlap.Broadcast(this, OtherActor, OtherComp);
-}
-
-void UPrimitiveComponent::NotifyHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit)
-{
-	if (bBlockComponent == false) return;
-	OnComponentHit.Broadcast(this, OtherActor, OtherComp, Hit);
-}
-
 
 void UPrimitiveComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue)
 {
@@ -435,18 +417,20 @@ void UPrimitiveComponent::DispatchBlockingHit(const FHitResult& Hit)
 
 void UPrimitiveComponent::NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
-	// TODO: Delegate 연결 시 OnComponentHit.Broadcast(this, OtherComponent, Hit);
 	HTR_LOG(Info, "OnComponentHit: {} [{}] -> {} [{}], Time={}, StartPenetrating={}", GetName(), GetUUID(), OtherComponent->GetName(), OtherComponent->GetUUID(), Hit.Time, Hit.bStartPenetrating);
+
+	OnComponentHit.Broadcast(this, OtherComponent, Hit);
 }
 
 void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// TODO: Delegate 연결 시 OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 	HTR_LOG(Info, "OnComponentBeginOverlap: {} [{}] -> {} [{}], FromSweep={}", GetName(), GetUUID(), Other->GetName(), Other->GetUUID(), bFromSweep);
+
+	OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 }
 
 void UPrimitiveComponent::NotifyEndOverlap(UPrimitiveComponent* Other)
 {
-	// TODO: Delegate 연결 시 OnComponentEndOverlap.Broadcast(this, Other);
 	HTR_LOG(Info, "OnComponentEndOverlap: {} [{}] -> {} [{}]", GetName(), GetUUID(), Other->GetName(), Other->GetUUID());
+	OnComponentEndOverlap.Broadcast(this, Other);
 }

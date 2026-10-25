@@ -23,9 +23,9 @@ enum class EPrimitiveType
 	ParticleQuad
 };
 
-DECLARE_DELEGATE(FComponentBeginOverlapSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*);
-DECLARE_DELEGATE(FComponentEndOverlapSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*);
-DECLARE_DELEGATE(FComponentHitSignature, UPrimitiveComponent*, AActor*, UPrimitiveComponent*, const FHitResult&);
+DECLARE_DELEGATE(FComponentBeginOverlapSignature, UPrimitiveComponent*, UPrimitiveComponent*, bool, const FHitResult&);
+DECLARE_DELEGATE(FComponentEndOverlapSignature, UPrimitiveComponent*, UPrimitiveComponent*);
+DECLARE_DELEGATE(FComponentHitSignature, UPrimitiveComponent*, UPrimitiveComponent*, const FHitResult&);
 
 class UPrimitiveComponent :public USceneComponent
 {
@@ -72,10 +72,6 @@ public:
 	FComponentEndOverlapSignature OnComponentEndOverlap;
 	FComponentHitSignature OnComponentHit;
 
-	void NotifyBeginOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp);
-	void NotifyEndOverlap(AActor* OtherActor, UPrimitiveComponent* OtherComp);
-	void NotifyHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
-
 	// Todo: subuv
 	//void SubmitToRenderQueue(TQueue<FRenderPacket>& RenderQueue);
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue);
@@ -106,11 +102,6 @@ public:
 		MarkRenderStateDirty();
 	}
 
-	bool IsGenerateOverlapEvents() const { return bGenerateOverlapEvents; }
-	void SetGenerateOverlapEvents(bool bInOverlap) { bGenerateOverlapEvents = bInOverlap; }
-	bool IsBlock() const { return bBlockComponent; }
-	void SetBlock(bool bInBlock) { bBlockComponent = bInBlock; }
-
 
 	virtual bool LineTraceComponent(const FRay& WorldRay, FHitResult& OutHit);
 	virtual bool LineTraceComponentLocal(const FRay& LocalRay, float& OutT);
@@ -135,14 +126,12 @@ protected:
 	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
 	virtual void NotifyEndOverlap(UPrimitiveComponent* Other);
 	virtual void NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
-	bool bGenerateOverlapEvents = true;
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;
 	bool bCastShadow = true;
 	bool bReceiveShadow = true;
-	bool bGenerateOverlapEvents = false;
-	bool bBlockComponent = false;	// Hit 대상인지
+	bool bGenerateOverlapEvents = true;
 	// 등록 책임을 프리미티브로 옮김
 	virtual void CreateRenderState() override;
 	virtual void DestroyRenderState() override;
