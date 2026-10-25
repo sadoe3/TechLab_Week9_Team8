@@ -70,7 +70,8 @@ void ULevel::Serialize(FStructuredArchive::FRecord Record)
 		{
 			FStructuredArchive::FRecord ActorRecord = ActorArray.EnterElement().EnterRecord();
 			FString ClassName = Actor->GetClass()->Name;
-			ActorRecord << SA_VALUE("Class", ClassName);
+			FString ActorName = Actor->GetName();
+			ActorRecord << SA_VALUE("Class", ClassName) << SA_VALUE("Name", ActorName);
 			Actor->Serialize(ActorRecord);
 		}
 		return;
@@ -87,7 +88,12 @@ void ULevel::Serialize(FStructuredArchive::FRecord Record)
 
 		FString ClassName;
 		ActorRecord << SA_VALUE("Class", ClassName);
-
+		// 이름없는 기존 씬도 읽을수 있도록 try사용
+		FString ActorName;
+		if (auto NameSlot = ActorRecord.TryEnterField("Name", false))
+		{
+			NameSlot.GetValue() << ActorName;
+		}
 		UClass* Class = FindClass(ClassName);
 		if (!Class || !Class->IsChildOf(AActor::StaticClass()))
 		{
@@ -95,7 +101,7 @@ void ULevel::Serialize(FStructuredArchive::FRecord Record)
 			continue;
 		}
 
-		if (AActor* Actor = OwningWorld->SpawnActor(Class))
+		if (AActor* Actor = OwningWorld->SpawnActor(Class, FName(ActorName)))
 		{
 			Actor->Serialize(ActorRecord);
 
