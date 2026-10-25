@@ -9,6 +9,8 @@
 #include "UObject/Casts.h"
 #include "PrimitiveComponent.h"
 
+#include "UObject/WeakObjectPtr.h"
+
 UScriptComponent::UScriptComponent()
     : ScriptPath("Assets/Scripts/HotReloadTest.lua") // Assets/Script/LifeCycleTest.lua
 {
@@ -290,7 +292,7 @@ void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(BeginOverlapFunction, ScriptPath, "OnBeginOverlap", OtherActor);
+    Runtime->Call(BeginOverlapFunction, ScriptPath, "OnBeginOverlap", TWeakObjectPtr<AActor>(OtherActor));
 }
 
 void UScriptComponent::OnEndOverlap(AActor* OtherActor)
@@ -306,7 +308,7 @@ void UScriptComponent::OnEndOverlap(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", OtherActor);
+    Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", TWeakObjectPtr<AActor>(OtherActor));
 }
 
 void UScriptComponent::OnHit(AActor* OtherActor)
@@ -322,7 +324,7 @@ void UScriptComponent::OnHit(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(HitFunction, ScriptPath, "OnHit", OtherActor);
+    Runtime->Call(HitFunction, ScriptPath, "OnHit", TWeakObjectPtr<AActor>(OtherActor));
 }
 
 void UScriptComponent::ResetScript()
