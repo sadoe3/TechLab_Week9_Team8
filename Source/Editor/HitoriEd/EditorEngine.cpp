@@ -18,7 +18,6 @@
 
 #include "Render/Renderer.h"
 
-#include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 
 #include "Asset/AssetManager.h"
@@ -31,6 +30,7 @@
 #include "Editor/HitoriEd/EditorResourcePaths.h"
 #include "UObject/UObjectIterator.h"
 #include "Component/SpotLightComponent.h"
+#include "Component/ShapeComponent.h"
 #include "Component/DirectionalLightComponent.h"
 #include "Core/ResourcePaths.h"
 
@@ -148,7 +148,7 @@ bool UEditorEngine::Init()
 	TextRenderer->Init();
 
 	// 투영 행렬 생성 
-	UCameraComponent* MainCamera = GetActiveWorld()->GetMainCamera() ? GetActiveWorld()->GetMainCamera()->GetCameraComponent() : nullptr;
+	UCameraComponent* MainCamera = GetActiveWorld()->GetMainCamera();
 	assert(MainCamera != nullptr);
 	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
     {
@@ -163,7 +163,7 @@ bool UEditorEngine::Init()
 	ViewportsPanel->SetMaximizedSlotIndex(SettingsPanel->GetSettings().MaximizedViewportIndex);
 	// 뷰포트 레이아웃 설정
 	ViewportsPanel->SetSlotMaximized(SettingsPanel->GetSettings().bViewportMaximized);
-	GetActiveWorld()->GetMainCamera()->GetCameraComponent()->SetExternalInputManaged(true);
+	MainCamera->SetExternalInputManaged(true);
 
 	/// 삭제 예정
 	//SceneManager = EditorUI->AddEditorPanel<FSceneManager>();
@@ -371,50 +371,123 @@ bool UEditorEngine::Init()
 	return true;
 }
 
-// 프레임 시작·View 상태·월드 갱신 후 View별 오프스크린 렌더와 UI 합성을 진행한다.
-// 입력·창 메시지는 FEngineLoop가 먼저 처리하고 Present는 호출 직후에 한다.
-void UEditorEngine::Tick(const float DeltaTime)
+void UEditorEngine::PreTick(float DeltaTime)
 {
-	// PIE 창의 닫기 버튼은 앱이 아니라 PIE 세션만 끝낸다.
+	// PIE 창 종료 요청 수집
 	if (PIEWindow && PIEWindow->ConsumeCloseRequest())
 	{
 		RequestEndPlayMap();
 	}
-	if (bRequestEndPlayMapQueued) 
-	{ 
-		bRequestEndPlayMapQueued = false; 
-		EndPlayMap(); 
-	}
-	if (bPlaySessionRequested)	
+
+	// PIE 요청 선확정
+	const bool bStopRequested = bRequestEndPlayMapQueued;
+	const bool bStartRequested = bPlaySessionRequested;
+	bRequestEndPlayMapQueued = false;
+	bPlaySessionRequested = false;
+
+	// 모든 World의 씬 요청 선확정
+	FString EditorScenePath;
+	FString PlayScenePath;
+	const bool bEditorSceneRequested =
+		EditorWorld && ConsumeSceneChangeRequest(EditorWorld, EditorScenePath);
+	const bool bPlaySceneRequested =
+		PlayWorld && ConsumeSceneChangeRequest(PlayWorld, PlayScenePath);
+
+	// 기존 PIE 종료 우선
+	if (bStopRequested)
 	{
-		bPlaySessionRequested = false;
-		if (!PlayWorld)
+		EndPlayMap();
+	}
+
+	// 편집 World 전환
+	if (bEditorSceneRequested && EditorWorld)
+	{
+		ReleaseWorldShadowResources(EditorWorld);
+		if (ApplySceneChange(EditorWorld, EditorScenePath))
 		{
-			StartPlayInEditorSession();
+			FEditorFileUtils::SetCurrentScenePath(EditorScenePath);
 		}
 	}
 
-	BeginFrame(DeltaTime);
-	// 임시: 선택된 Actor를 복제해서 결과를 로그로 확인 (PIE 연결 후 삭제)
-	if (!IsPlaying() && !ImGui::GetIO().WantTextInput && FInputSystem::IsKeyPressed(EKeyCode::F9))
+	// 종료되지 않은 기존 PIE 전환
+	if (!bStopRequested && bPlaySceneRequested && PlayWorld)
 	{
-		UWorld* PIEWorld = UWorld::CreateWorld(EWorldType::PIE, false);
-		FObjectDuplicationParameters Params(EditorWorld, nullptr);
-		Params.DuplicationSeed.Add(EditorWorld, PIEWorld);
-		Params.DuplicationSeed.Add(EditorWorld->GetPersistentLevel(), PIEWorld->GetPersistentLevel());
-		Params.PortFlags = EPropertyPortFlags::PPF_DuplicateForPIE;
-		StaticDuplicateObjectEx(Params);
-
-		HTR_LOG(Info, "[DupTest] actors {} -> {}", EditorWorld->GetPersistentLevel()->GetActors().Num(), PIEWorld->GetPersistentLevel()->GetActors().Num());
-		for (AActor* A : PIEWorld->GetPersistentLevel()->GetActors())
-			HTR_LOG(Info, "[DupTest]   {} world={} level={} root owner ok={}", A->GetName(), A->GetWorld() == PIEWorld, A->GetLevel() == PIEWorld->GetPersistentLevel(), A->GetRootComponent() && A->GetRootComponent()->GetOwner() == A);
+		ReleaseWorldShadowResources(PlayWorld);
+		ApplySceneChange(PlayWorld, PlayScenePath);
 	}
+
+	// 편집 World 전환 후 PIE 생성
+	if (bStartRequested && !PlayWorld)
+	{
+		StartPlayInEditorSession();
+	}
+}
+
+// 프레임 시작·View 상태·월드 갱신 후 View별 오프스크린 렌더와 UI 합성을 진행한다.
+// 입력·창 메시지는 FEngineLoop가 먼저 처리하고 Present는 호출 직후에 한다.
+void UEditorEngine::Tick(const float DeltaTime)
+{
+	BeginFrame(DeltaTime);
 	UpdateEditorViewportState(DeltaTime);
     UpdatePIEWindowState();
     UpdatePIEInput(); // 현재 표시/입력 대상과 포커스를 이번 World Tick 전에 반영한다.
 	TickWorldAndEditor(DeltaTime);
 	RenderViewports();
 	EndFrame();
+}
+
+void UEditorEngine::ReleaseWorldReferences(UWorld* World)
+{
+	if (World != EditorWorld && World != PlayWorld)
+	{
+		return;
+	}
+
+	// 선택·편집 참조 해제
+	ResetSceneSelection();
+
+	// Viewport 수집 자료 정리
+	if (ViewportsPanel)
+	{
+		for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
+		{
+			if (FViewport* Viewport = ViewportsPanel->GetViewport(Index))
+			{
+				Viewport->ClearSceneData();
+			}
+		}
+	}
+
+	if (PIEViewport)
+	{
+		PIEViewport->ClearSceneData();
+	}
+
+	// 렌더 수집 참조 해제
+	SceneRenderer.EndFrame();
+
+	if (Renderer)
+	{
+		Renderer->ReleaseSceneReferences();
+	}
+
+}
+
+void UEditorEngine::PostTick(float DeltaTime)
+{
+	// 모든 World의 처리 개수 선확정
+	const uint32 EditorCount = EditorWorld ? EditorWorld->GetPendingDestroyCount() : 0;
+	const uint32 PlayCount = PlayWorld ? PlayWorld->GetPendingDestroyCount() : 0;
+
+	if (EditorWorld)
+	{
+		EditorWorld->FlushPendingDestruction(EditorCount);
+	}
+
+	if (PlayWorld)
+	{
+		PlayWorld->FlushPendingDestruction(PlayCount);
+	}
 }
 
 // DeltaTime을 패널에 전달하고 에디터 단축키를 처리한다.
@@ -780,6 +853,14 @@ void UEditorEngine::RenderOverlayPass(FEditorViewportClient* OverlayClient, UWor
 				SpotLight->DrawDebug(LineBatcher.get());
 			}
 		}
+		for (TObjectIterator<UShapeComponent> Shape; Shape; ++Shape)
+		{
+			if (Shape->GetOwner() && Shape->GetOwner()->GetWorld() == &ViewWorld && Shape->IsVisible())
+			{
+				if (!Shape->ShouldDrawOnlyIfSelected() || Shape->GetOwner() == OutlinerPanel->GetSelectedActor())
+					Shape->DrawDebug(LineBatcher.get());
+			}
+		}
 		LineBatcher->OnRender(ViewProjection);
 	}
 
@@ -1131,26 +1212,22 @@ void UEditorEngine::PreExit()
 // 선택과 Gizmo 참조를 정리한 뒤 Actor를 삭제한다.
 void UEditorEngine::DeleteActor(AActor* Actor)
 {
-	if (!Actor)
-		return;
 	// 실행 중 삭제는 게임 로직이 들고 있는 참조를 깨뜨릴 수 있어 Pause 상태에서만 허용한다.
-	if (IsPlaying() && !bIsPaused)
+	if (!Actor || (IsPlaying() && !bIsPaused))
+	{
 		return;
-
-	OutlinerPanel->SelectActor(nullptr);
-	DetailsPanel->SelectComponent(nullptr);
-
+	}
 	Actor->Destroy();
 }
 
 void UEditorEngine::DeleteComponent(UActorComponent* Component)
 {
-	if (!Component)
+	if (!Component || (IsPlaying() && !bIsPaused))
+	{
 		return;
-	if (IsPlaying() && !bIsPaused)
-		return;
-	DetailsPanel->SelectComponent(nullptr);
-	Outline->SetTarget(nullptr);
+	}
+
+	// Actor 삭제 경로 사용
 	Component->GetOwner()->DestroyComponent(Component);
 }
 
@@ -1166,30 +1243,26 @@ void UEditorEngine::StartPlayInEditorSession()
 
 	if (PlayWorld)
 	{
-		// 1. 씬에 배치된 ACameraActor가 있으면 해당 카메라를 메인 카메라로 지정
-		ACameraActor* PlacedCamera = nullptr;
+		// 1. 카메라 컴포넌트가 있는 첫 배치 액터를 시점 대상으로 선택합니다.
+		bool bFoundCamera = false;
 		if (PlayWorld->GetPersistentLevel())
 		{
 			for (AActor* Actor : PlayWorld->GetPersistentLevel()->GetActors())
 			{
-				if (ACameraActor* CamActor = Cast<ACameraActor>(Actor))
+				if (Actor && PlayWorld->SetViewTarget(Actor))
 				{
-					PlacedCamera = CamActor;
+					bFoundCamera = true;
 					break;
 				}
 			}
 		}
 
-		if (PlacedCamera)
-		{
-			PlayWorld->SetMainCamera(PlacedCamera);
-		}
-		else if (PlayWorld->GetMainCamera())
+		if (!bFoundCamera)
 		{
 			// 2. 배치된 카메라가 없으면 현재 활성 에디터 뷰포트 시점에서 시작
 			const int32 SourceViewIndex = ViewportsPanel->GetEditorViewIndex();
 			const FEditorCameraState& EditorCam = ViewportsPanel->GetEditorClient(SourceViewIndex)->GetCamera();
-			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera()->GetCameraComponent())
+			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera())
 			{
 				GameCam->SetRelativeLocation(EditorCam.Location);
 				GameCam->SetRelativeRotation(EditorCam.Rotation.ToFRotator());
@@ -1219,6 +1292,7 @@ void UEditorEngine::StartPlayInEditorSession()
     PIEViewport->BeginPlay(MakeUnique<FGameViewportClient>(*PlayWorld));
     // BeginPlay는 입력을 차단한다. 아래 일반 프레임 갱신이 첫 World Tick 전에 한 번 허용한다.
 	OnActiveWorldChanged();
+	PlayWorld->BeginPlay();
 }
 
 UWorld* UEditorEngine::CreatePIEWorldByDuplication(FWorldContext& PIEContext, UWorld* InEditorWorld)
@@ -1257,7 +1331,7 @@ void UEditorEngine::EndPlayMap()
 	DestroyPIEWindow();
 	PlayWorld->EndPlay();
 	ReleaseWorldShadowResources(PlayWorld);
-	PlayWorld->ClearWorld();
+	PlayWorld->Shutdown();
 	DestroyWorldContext(PlayWorld);
 	delete PlayWorld;
 	PlayWorld = nullptr;
@@ -1357,44 +1431,55 @@ void UEditorEngine::CopyPIEWindowToBackbuffer()
 // 씬 변경으로 무효화된 에디터의 선택 참조를 모두 해제한다.
 void UEditorEngine::ResetSceneSelection()
 {
-	Gizmo->SetTarget(nullptr, false);
-	Outline->SetTarget(nullptr);
-	DetailsPanel->SetTarget(nullptr);
-	OutlinerPanel->SelectActor(nullptr);
+	// 패널 선택·예약 참조 해제
+	if (OutlinerPanel)
+	{
+		OutlinerPanel->ResetSelection();
+	}
+
+	if (DetailsPanel)
+	{
+		DetailsPanel->ResetSelection();
+	}
+
+	// 편집 도구 참조 해제
+	if (Gizmo)
+	{
+		Gizmo->EndDrag();
+		Gizmo->SetTarget(nullptr, false);
+	}
+
+	if (Outline)
+	{
+		Outline->SetTarget(nullptr);
+	}
+
 }
 
-// 새 씬 생성이 성공하면 에디터 선택 상태를 초기화한다.
+// 새 씬 생성 예약
 void UEditorEngine::CreateNewScene()
 {
+	// PIE 중 편집 씬 변경 차단
 	if (IsPlaying())
 	{
 		HTR_LOG(Warning, "Cannot create a new scene during PIE. Stop the play session first.");
 		return;
 	}
-	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
-		ViewportsPanel->GetViewport(Index)->ClearSceneData();
-	ReleaseWorldShadowResources(EditorWorld);
-	if (!FEditorFileUtils::NewScene(EditorWorld))
-		return;
 
-	ResetSceneSelection();
+	FEditorFileUtils::NewScene(EditorWorld);
 }
 
-// 씬 불러오기가 성공하면 에디터 선택 상태를 초기화한다.
+// 씬 불러오기 예약
 void UEditorEngine::OpenScene()
 {
+	// PIE 중 편집 씬 변경 차단
 	if (IsPlaying())
 	{
 		HTR_LOG(Warning, "Cannot open a scene during PIE. Stop the play session first.");
 		return;
 	}
-	for (int32 Index = 0; Index < ViewportsPanel->GetSlotCount(); ++Index)
-		ViewportsPanel->GetViewport(Index)->ClearSceneData();
-	ReleaseWorldShadowResources(EditorWorld);
-	if (!FEditorFileUtils::LoadScene(EditorWorld))
-		return;
 
-	ResetSceneSelection();
+	FEditorFileUtils::LoadScene(EditorWorld);
 }
 
 // 공통 파일 유틸리티로 현재 씬을 저장한다.

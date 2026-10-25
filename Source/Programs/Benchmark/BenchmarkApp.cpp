@@ -52,6 +52,8 @@ bool UBenchmarkEngine::Init()
 		return false;
 
 	World = UWorld::CreateWorld(EWorldType::Game, true);
+	// Benchmark World의 명시적 등록
+	CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
 
 	ImGuiRenderer = MakeUnique<FImGuiRenderer>();
 	if (!ImGuiRenderer->Init(GetEngineLoop().GetMainWindow()->GetHandle(), GetEngineLoop().GetRenderDevice()->GetDevice(), GetEngineLoop().GetRenderDevice()->GetContext()))
@@ -126,7 +128,7 @@ bool UBenchmarkEngine::Init()
 		HTR_LOG(Warning, "Failed to load scene: {}", ScenePath);
 
 	InitEditorTools();
-
+	World->BeginPlay();
 	return true;
 }
 
@@ -152,18 +154,13 @@ void UBenchmarkEngine::InitEditorTools()
 	EditorUI = MakeUnique<FEditorUI>();
 	EditorUI->Init(true, true);
 
-	// File 메뉴로 씬을 바꾼다. 기존 액터가 지워지므로 선택(기즈모·아웃라인·디테일)을 먼저 비운다.
-	// 아웃라이너 선택을 비우면 콜백으로 기즈모·아웃라인·디테일 선택도 함께 비워진다.
+	// 공통 씬 변경 경로 사용
 	EditorUI->SetOpenSceneCallback([this]()
 		{
-			OutlinerPanel->SelectActor(nullptr);
-			DetailsPanel->SelectComponent(nullptr);
 			FEditorFileUtils::LoadScene(World);
 		});
 	EditorUI->SetNewSceneCallback([this]()
 		{
-			OutlinerPanel->SelectActor(nullptr);
-			DetailsPanel->SelectComponent(nullptr);
 			FEditorFileUtils::NewScene(World);
 		});
 
@@ -185,9 +182,7 @@ void UBenchmarkEngine::InitEditorTools()
 	OutlinerPanel->SetDeleteActorCallback(
 		[this](AActor* Actor)
 		{
-			// 선택된 물체를 지우면 선택 표시(UUID·박스)가 해제된 포인터를 읽지 않도록 먼저 비운다.
-			if (UPrimitiveComponent* Selected = GetSelectedPrimitive(); Selected && Selected->GetOwner() == Actor)
-				SelectScene(nullptr);
+			// 공통 Actor 삭제 경로 사용
 			World->DestroyActor(Actor);
 		});
 
@@ -255,7 +250,7 @@ void UBenchmarkEngine::UpdateGizmoAndPicking()
 	if (Width == 0 || Height == 0)
 		return;
 
-	UCameraComponent* Camera = World->GetMainCamera()->GetCameraComponent();
+	UCameraComponent* Camera = World->GetMainCamera();
 
 	const FVector2 MousePosition(
 		static_cast<float>(FInputSystem::GetMouseX()),
@@ -283,16 +278,36 @@ void UBenchmarkEngine::UpdateGizmoAndPicking()
 	}
 }
 
+void UBenchmarkEngine::PreTick(float DeltaTime)
+{
+	// 대상 World 검증
+	if (!World)
+	{
+		return;
+	}
+
+	// 이번 프레임 요청 확정
+	FString ScenePath;
+	if (!ConsumeSceneChangeRequest(World, ScenePath))
+	{
+		return;
+	}
+
+	// 적용 완료 후 저장 경로 갱신
+	if (ApplySceneChange(World, ScenePath))
+	{
+		FEditorFileUtils::SetCurrentScenePath(ScenePath);
+	}
+}
+
 void UBenchmarkEngine::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
 	const uint32 Width = GetEngineLoop().GetViewportWidth();
 	const uint32 Height = GetEngineLoop().GetViewportHeight();
 	if (Width == 0 || Height == 0)
 		return;
 
-	UCameraComponent* Camera = World->GetMainCamera()->GetCameraComponent();
+	UCameraComponent* Camera = World->GetMainCamera();
 	Camera->SetAspectRatio(static_cast<float>(Width) / Height);
 
 	// 기즈모 조작 결과가 같은 프레임의 UpdateAllTransforms에 반영되도록 World Tick보다 앞에 둔다.
@@ -302,6 +317,10 @@ void UBenchmarkEngine::Tick(float DeltaTime)
 
 	EditorControlsPanel->DeltaTime = DeltaTime;
 	EditorUI->Tick(DeltaTime);
+
+	// Tick·UI 처리 중 시점이 바뀌거나 삭제될 수 있으므로 렌더 직전에 다시 조회합니다.
+	Camera = World->GetMainCamera();
+	Camera->SetAspectRatio(static_cast<float>(Width) / Height);
 
 	const FMatrix ViewProjection = Camera->GetViewProjectionMatrix();
 	const FMatrix Projection = Camera->GetProjectionMatrix();
@@ -395,9 +414,62 @@ void UBenchmarkEngine::Tick(float DeltaTime)
 	FStatRegistry::EndFrame();
 }
 
+void UBenchmarkEngine::ReleaseWorldReferences(UWorld* InWorld)
+{
+	if (InWorld != World)
+	{
+		return;
+	}
+
+	// 선택·예약 참조 해제
+	if (OutlinerPanel)
+	{
+		OutlinerPanel->ResetSelection();
+	}
+
+	if (DetailsPanel)
+	{
+		DetailsPanel->ResetSelection();
+	}
+
+	if (Gizmo)
+	{
+		Gizmo->EndDrag();
+		Gizmo->SetTarget(nullptr);
+	}
+
+	if (Outline)
+	{
+		Outline->SetTarget(nullptr);
+	}
+
+	// 렌더 수집 참조 해제
+	RenderQueue.Reset();
+	if (FRenderer* Renderer = GetEngineLoop().GetRenderer())
+	{
+		Renderer->ReleaseSceneReferences();
+	}
+}
+
+void UBenchmarkEngine::PostTick(float DeltaTime)
+{
+	// Benchmark World 삭제 처리
+	if (World)
+	{
+		World->FlushPendingDestruction(World->GetPendingDestroyCount());
+	}
+}
+
 void UBenchmarkEngine::PreExit()
 {
 	Super::PreExit();
+
+	// UI 종료 전 World·컨텍스트 정리
+	if (World)
+	{
+		World->Shutdown();
+		DestroyWorldContext(World);
+	}
 
 	if (ImGuiRenderer)
 	{

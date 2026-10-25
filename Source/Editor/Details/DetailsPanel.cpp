@@ -6,10 +6,15 @@
 #include "Component/LightComponent.h"
 #include "Component/DirectionalLightComponent.h"
 #include "Component/PointLightComponent.h"
+#include "Component/BoxComponent.h"
+#include "Component/SphereComponent.h"
+#include "Component/CapsuleComponent.h"
 #include <d3dcompiler.h>
 #include "imgui_internal.h"
 #include "Editor/HitoriEd/EditorDragDrop.h"
 #include "Editor/HitoriEd/EditorResourcePaths.h"
+#include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/TextRenderComponent.h"
@@ -23,6 +28,10 @@
 #include "UObject/UObjectIterator.h"
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
+#include "UObject/UObjectHash.h"
+#include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
+#include "Component/ScriptComponent.h"
 #include <algorithm>
 
 
@@ -720,6 +729,18 @@ namespace
 			break;
 		case EPropertyType::Int:
 		{
+			if (Cast<UPrimitiveComponent>(Object))
+			{
+				const char* Items = nullptr;
+				if (Property.Name == "CollisionEnabled") Items = "NoCollision\0QueryOnly\0";
+				else if (Property.Name == "ObjectType") Items = "WorldStatic\0WorldDynamic\0Pawn\0";
+				else if (Property.Name.starts_with("CollisionResponses.")) Items = "Ignore\0Overlap\0Block\0";
+				if (Items)
+				{
+					bChanged = ImGui::Combo(Label.c_str(), static_cast<int*>(ValuePtr), Items);
+					break;
+				}
+			}
 			const auto* Directional = Cast<UDirectionalLightComponent>(Object);
 			if (Directional && Property.Name == "CascadeCount")
 			{
@@ -828,6 +849,32 @@ namespace
 				*Value = Buffer;
 			}
 			if (CustomFont) ImGui::PopFont();
+
+			// 기존 문자열 입력은 유지하고 ScriptPath에만 제작 버튼을 추가한다.
+			UScriptComponent* ScriptComponent = Cast<UScriptComponent>(Object);
+			if (ScriptComponent && Property.Name == "ScriptPath")
+			{
+				if (ImGui::Button("Create"))
+				{
+					// 씬 파일명과 소유 액터 이름으로 템플릿을 복사한다.
+					AActor* OwnerActor = ScriptComponent->GetOwner();
+					if (OwnerActor)
+					{
+						const FString SceneName = FEditorFileUtils::GetCurrentSceneName();
+						// 생성 성공 시에만 경로를 연결하고 공통 프로퍼티 변경 처리로 알린다.
+						bChanged = FLuaScriptEditorUtils::CreateLuaScript(SceneName, OwnerActor->GetName(), *Value);
+					}
+				}
+
+				ImGui::SameLine();
+				ImGui::BeginDisabled(Value->empty());
+				if (ImGui::Button("Edit"))
+				{
+					// 편집기로 열기만 하므로 저장된 경로나 프로퍼티 상태는 바꾸지 않는다.
+					FLuaScriptEditorUtils::EditLuaScript(*Value);
+				}
+				ImGui::EndDisabled();
+			}
 			break;
 		}
 		case EPropertyType::Transform:
@@ -965,6 +1012,24 @@ namespace
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
+			if (ImGui::MenuItem("Box Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UBoxComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Sphere Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(USphereComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Capsule Shape Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UCapsuleComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
 			if (ImGui::MenuItem("Text Component"))
 			{
 				OutSelectedComponent = Actor->AddComponent(UTextRenderComponent::StaticClass(), FString(ComponentNameInputBuf));
@@ -986,6 +1051,12 @@ namespace
 			if (ImGui::MenuItem("Projectile Movement Component"))
 			{
 				OutSelectedComponent = Actor->AddComponent(UProjectileMovementComponent::StaticClass(), FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::MenuItem("Script Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(UScriptComponent::StaticClass(), FString(ComponentNameInputBuf));
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
@@ -1194,10 +1265,11 @@ void FDetailsPanel::DrawSceneComponentNode(USceneComponent* Component, USceneCom
 
 	USceneComponent* DragComponent = Component;
 
-	// source: Root 제외, 현재 Component를 payload에 담음
+	// source: Root 제외, 현재 Component의 UUID를 payload에 담음
 	if (Component != Root && ImGui::BeginDragDropSource())
 	{
-		ImGui::SetDragDropPayload(EditorDragDrop::Component, &Component, sizeof(USceneComponent*));
+		const uint32 UUID = Component->GetUUID();
+		ImGui::SetDragDropPayload(EditorDragDrop::Component, &UUID, sizeof(UUID));
 		ImGui::EndDragDropSource();
 	}
 	// target: 모든 행이 가능, payload를 받아 현재 Component를 부모로 사용
@@ -1205,9 +1277,22 @@ void FDetailsPanel::DrawSceneComponentNode(USceneComponent* Component, USceneCom
 	{
 		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(EditorDragDrop::Component))
 		{
-			USceneComponent* DroppedComponent = *static_cast<USceneComponent**>(Payload->Data);
-			PendingDroppedComponent = DroppedComponent;
-			PendingDragComponent = DragComponent;
+			if (Payload->DataSize == sizeof(uint32))
+			{
+				const uint32 UUID = *static_cast<const uint32*>(Payload->Data);
+				USceneComponent* DroppedComponent =	Cast<USceneComponent>(FindObjectByUUID(UUID));
+
+				// 삭제 예정 대상의 재부착 차단
+				AActor* Owner = Component->GetOwner();
+
+				if (DroppedComponent && Owner && DroppedComponent->GetOwner() == Owner
+					&& !Owner->IsPendingDestroy() && !Component->IsPendingDestroy()
+					&& !DroppedComponent->IsPendingDestroy())
+				{
+					PendingDroppedComponent = DroppedComponent;
+					PendingDragComponent = DragComponent;
+				}
+			}
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -1423,4 +1508,19 @@ void FDetailsPanel::DrawShadowPreview(ULightComponent* Light)
         DrawList->PopClipRect();
         ImGui::TreePop();
     }
+}
+
+void FDetailsPanel::ResetSelection()
+{
+	// 선택·편집·예약 참조 해제
+	TargetActor = nullptr;
+	TargetComponent = nullptr;
+	PendingDeleteComponent = nullptr;
+	EditingNameComponent = nullptr;
+	PendingDroppedComponent = nullptr;
+	PendingDragComponent = nullptr;
+
+	bFocusNameEdit = false;
+	bIsEditingName = false;
+	ComponentNameEditBuffer[0] = '\0';
 }

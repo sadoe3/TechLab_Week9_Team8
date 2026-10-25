@@ -29,6 +29,20 @@ void UExponentialHeightFogComponent::OnTransformDirty()
 	UpdateSceneFogInfo();
 }
 
+void UExponentialHeightFogComponent::CreateRenderState()
+{
+	Super::CreateRenderState();
+
+	GetOwner()->GetWorld()->GetScene().AddFogInfo(GetUUID(), GetFogInfo());
+}
+
+void UExponentialHeightFogComponent::DestroyRenderState()
+{
+	GetOwner()->GetWorld()->GetScene().RemoveFogInfo(GetUUID());
+
+	Super::DestroyRenderState();
+}
+
 void UExponentialHeightFogComponent::UpdateSceneFogInfo()
 {
 	AActor* OwnerActor = GetOwner();

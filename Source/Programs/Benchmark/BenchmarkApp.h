@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/GameEngine.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 
 #include "Editor/EditorUI/EditorUI.h"
@@ -20,17 +20,21 @@ class FEditorControlsPanel;
 class FOutputLogPanel;
 class UPrimitiveComponent;
 
-class UBenchmarkEngine : public UGameEngine
+class UBenchmarkEngine : public UEngine
 {
-	DECLARE_CLASS(UBenchmarkEngine, UGameEngine)
+	DECLARE_CLASS(UBenchmarkEngine, UEngine)
 
 public:
 	FEngineConfig GetConfig() const override;
 
 	bool Init() override;
+	// 프레임 시작 씬 전환
+	void PreTick(float DeltaTime) override;
 	void Tick(float DeltaTime) override;
 	void PreExit() override;
-
+	// World 비소유 참조 정리
+	void ReleaseWorldReferences(UWorld* InWorld) override;
+	void PostTick(float DeltaTime) override;
 private:
 	// ImGui로 프로파일링 오버레이를 그린다.
 	void DrawProfileOverlay();

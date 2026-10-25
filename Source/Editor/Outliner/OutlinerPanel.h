@@ -36,7 +36,8 @@ public:
     void SelectActor(AActor* Actor);
 
     AActor* GetSelectedActor() const;
-
+    // 선택·삭제 대기 상태 초기화
+    void ResetSelection();
 
 private:
     UWorld* World = nullptr;

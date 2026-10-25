@@ -11,14 +11,18 @@
 #include "Math/Frustum.h"
 #include "Math/BVH.h"
 #include "Engine/Scene.h"
+#include "Collision/PhysicsScene.h"
 #include "Camera/CameraActor.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
+#include "Containers/Queue.h"
 
 //class ACameraActor;
 class ULevel;
 class UBillboardComponent;
-
+class UEngine;
+class FJsonArchive;
+class FLuaRuntime;
 struct FLODViewContext;
 
 struct FRenderStats
@@ -33,12 +37,20 @@ struct FRenderStats
 	void Reset() { *this = FRenderStats(); }
 };
 
+enum class EWorldPlayState : uint8
+{
+	NotStarted,
+	Starting,
+	Playing,
+	Ending
+};
+
 class UWorld : public UObject
 {
 	DECLARE_CLASS(UWorld, UObject)
 
 public:
-	UWorld() = default;
+	UWorld();
 	virtual ~UWorld();
 
 	bool Init();
@@ -48,20 +60,21 @@ public:
 	template <class T>
 	T* SpawnActor(FName InName = NAME_None, const FTransform* Transform = nullptr)
 	{
-		return CastChecked<T>(SpawnActor(T::StaticClass(), InName, Transform));
+		return Cast<T>(SpawnActor(T::StaticClass(), InName, Transform));
 	}
 
 	void Tick(float DeltaTime);
 
-	void ClearWorld();
-
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
-	void CreateMainCamera();
+	// 카메라가 있는 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
+	bool SetViewTarget(AActor* Actor);
 
-	// 카메라 Get/Set
-	void SetMainCamera(ACameraActor* Camera);
-	ACameraActor* GetMainCamera() const { return MainCamera; }
+	// 현재 선택된 시점 제공 액터입니다.
+	AActor* GetViewTarget() const { return MainViewTarget; }
+
+	// 선택된 액터의 첫 카메라 컴포넌트를 반환합니다.
+	UCameraComponent* GetMainCamera() const;
 
 	// Level
 	ULevel* GetPersistentLevel() const { return PersistentLevel; }
@@ -83,9 +96,56 @@ public:
 	void BeginPlay();
 	void EndPlay();
 
-	FScene& GetScene() { return Scene; }
-	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
+	void Shutdown();
 
+	bool AcceptsChanges()const
+	{
+		return !bClearingWorld && !bShuttingDown && !bShutdown
+			&& PlayState != EWorldPlayState::Ending;
+	}
+
+	// 게임월드 여부 판정. 플레이 시작에 사용
+	bool IsGameWorld()const
+	{
+		return WorldType == EWorldType::Game ||
+			WorldType == EWorldType::PIE;
+	}
+
+	// 시작했는가/초기화중인가
+	bool IsRunningPlay()const 
+	{
+		return IsGameWorld()&& (PlayState == EWorldPlayState::Starting
+			|| PlayState == EWorldPlayState::Playing);
+	}
+
+	// 시작했는가
+	bool HasBegunPlay()const
+	{
+		return PlayState == EWorldPlayState::Playing;
+	}
+
+	// 틱 도중에 생성된 액터/컴포넌트들을 다음 프레임에 시작시키기 위한 함수
+	void QueueActorForBeginPlay(AActor* Actor);
+	void QueueComponentForBeginPlay(UActorComponent* Component);
+
+	// 프레임 종료 시 삭제할 예약 수
+	uint32 GetPendingDestroyCount() const
+	{
+		return PendingDestroyList.Num();
+	}
+
+	// 엔진 프레임 종료 전용 처리
+	void FlushPendingDestruction(uint32 RequestCount);
+
+	// 위치·회전은 world 기준이며 배율과 충돌 설정은 Component에서 가져온다.
+	ECollisionQueryStatus QueryComponentOverlapMulti(const UPrimitiveComponent& Component, const FVector& Location, const FRotator& Rotation, TArray<FOverlapResult>& OutOverlaps, bool bIgnoreBlocks = false);
+	ECollisionQueryStatus QueryComponentSweepMulti(const UPrimitiveComponent& Component, const FVector& Start, const FVector& Delta, const FRotator& Rotation, TArray<FHitResult>& OutHits, bool bIgnoreInitialBlockingHitsWhenMovingOut = false);
+
+	FScene& GetScene() { return Scene; }
+	FPhysicsScene& GetPhysicsScene() { return PhysicsScene; }
+	const FPhysicsScene& GetPhysicsScene() const { return PhysicsScene; }
+	FTickTaskManager& GetTickTaskManager() { return TickTaskManager; }
+	FLuaRuntime* GetLuaRuntime() const { return LuaRuntime.get(); }
 	const FRenderStats& GetRenderStats() const { return RenderStats; }
 
 	void SetWorldType(EWorldType InType) { WorldType = InType; }
@@ -103,6 +163,19 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 private:
+	friend class AActor;
+	friend class UEngine;
+	friend class FJsonArchive;
+
+	// 초기 로드·프레임 경계·종료 전용 정리
+	bool ClearWorld();
+
+	// World가 생성하는 최종 복귀용 카메라를 준비합니다.
+	void CreateFallbackCamera();
+
+	// 같은 World의 액터에서 첫 카메라 컴포넌트를 찾습니다.
+	UCameraComponent* FindCameraComponent(AActor* Actor) const;
+
 	EWorldType WorldType = EWorldType::None;
 
 	struct alignas(64) FGatherChunk
@@ -121,16 +194,21 @@ private:
 	// 등록된 Tick 함수만 실행한다. Actor보다 먼저 사라져도 남은 함수와의 연결을 스스로 끊는다.
 	FTickTaskManager TickTaskManager;
 
-	TQueue<AActor*> BeginPlayList;
+	// UUID로 액터/컴포넌트 관리
+	TQueue<uint32> BeginPlayList;
 
-	//메인 카메라 
-	ACameraActor* MainCamera = nullptr;
+	// World가 생성·보관하는 최종 복귀용 카메라 액터입니다.
+	ACameraActor* FallbackCamera = nullptr;
+
+	// 현재 시점을 제공하는 액터입니다. 배치 액터의 소유권은 가져오지 않습니다.
+	AActor* MainViewTarget = nullptr;
 
 	ULevel* PersistentLevel = nullptr;
 	ULevel* CurrentLevel = nullptr;
 	TArray<ULevel*> Levels;
 
 	FScene Scene;
+	FPhysicsScene PhysicsScene;
 
 	// GatherRenderPackets가 매 프레임 채우는 컬링 결과. 용량을 재사용한다.
 	TArray<FPrimitiveSceneProxy*> VisibleProxies;
@@ -139,4 +217,30 @@ private:
 
 	FRenderStats RenderStats;
 
+	void StartPendingObjects();
+
+	EWorldPlayState PlayState = EWorldPlayState::NotStarted;
+
+	// 중복 정리 막는 변수
+	bool bClearingWorld = false;
+	bool bShuttingDown = false;
+	bool bShutdown = false;
+
+	// 삭제 전 외부 참조 정리
+	void ReleaseExternalReferences();
+
+	// 검증된 Component의 삭제 예약
+	void QueueComponentForDestroy(UActorComponent* Component);
+
+	// 실제 Actor 삭제
+	void DestroyActorNow(AActor* Actor);
+
+	// Actor·Component 삭제 식별자
+	TQueue<uint32> PendingDestroyList;
+
+	// 삭제 배치 재진입 방지
+	bool bFlushingPendingDestroy = false;
+
+	// World 전용 Lua VM 소유
+	TUniquePtr<FLuaRuntime> LuaRuntime;
 };

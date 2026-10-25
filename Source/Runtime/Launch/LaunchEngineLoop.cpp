@@ -19,6 +19,9 @@
 #include "Core/Async/TaskPool.h"
 
 #include "UObject/UObjectGlobals.h"
+#include "Component/ActorComponent.h"
+#include "Engine/World.h"
+#include "UObject/UObjectIterator.h"
 
 namespace
 {
@@ -155,7 +158,13 @@ bool FEngineLoop::Tick()
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_EngineTick);
-		GEngine->Tick(EngineTimer::GetDeltaTime());
+		// 프레임 시작·실행
+		const float DeltaTime = EngineTimer::GetDeltaTime();
+		GEngine->PreTick(DeltaTime);
+		GEngine->Tick(DeltaTime);
+		// 렌더 참조 정리 후 종료 요청 처리
+		Renderer->ReleaseSceneReferences();
+		GEngine->PostTick(DeltaTime);
 	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_Present);
@@ -182,6 +191,18 @@ void FEngineLoop::Exit()
 		GEngine->PreExit();
 	}
 	bEngineInitialized = false;
+
+	// 대량 Proxy를 먼저 일괄 제거
+	for (TObjectIterator<UWorld> It; It; ++It)
+	{
+		It->Shutdown();
+	}
+
+	// Owner와 World가 살아 있는 동안 등록 상태와 개별 자원을 정리
+	for (TObjectIterator<UActorComponent> It; It; ++It)
+	{
+		It->UnregisterComponent();
+	}
 
 	// UAssetManager도 UObject이므로 일괄 삭제 전에 종료한다.
 	UAssetManager::Shutdown();

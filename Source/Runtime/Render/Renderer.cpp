@@ -239,6 +239,19 @@ void FRenderer::RenderDepthPrepass(const FMatrix& ViewProjection)
     DrawPackets(0, FirstTranslucentIndex, ViewProjection, ESceneMeshPass::DepthPrepass);
 }
 
+void FRenderer::ReleaseSceneReferences()
+{
+	// 패킷·묶음 참조 해제
+	RenderPackets.Reset();
+	SortEntries.Reset();
+	StaticGroups.clear();
+
+	FirstTranslucentIndex = 0;
+	LastMaterial = nullptr;
+	LastMesh = nullptr;
+	bObjectConstantsPrepared = false;
+}
+
 // RenderOpaque가 남긴 반투명 패킷을 먼 것부터 그린다.
 void FRenderer::RenderTranslucent(const FMatrix& ViewProjection)
 {

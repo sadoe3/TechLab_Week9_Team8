@@ -24,15 +24,28 @@ public:
 	// 액터 자신의 로직. 컴포넌트는 각자의 PrimaryComponentTick으로 따로 실행된다.
 	virtual void Tick(float DeltaTime) {}
 	virtual void EndPlay() {};
+
+	// 게임 실행중인가
+	bool CanRunGameplay() const;
 	// FActorTickFunction이 호출하는 진입점
-	void TickActor(float DeltaTime) { Tick(DeltaTime); }
+	void TickActor(float DeltaTime)
+	{
+		if (bHasBegunPlay && CanRunGameplay())
+		{
+			Tick(DeltaTime);
+		}
+	}
+	bool HasBegunPlay() const { return bHasBegunPlay; }
 
 	UWorld* GetWorld() const { return World; }
 	ULevel* GetLevel() const { return Level; }
 
 	const TArray<UActorComponent*>& GetComponents() const { return Components; }
 	USceneComponent* GetRootComponent() const { return RootComponent; }
-	void SetRootComponent(USceneComponent* SceneComponent) { RootComponent = SceneComponent; }
+	void SetRootComponent(USceneComponent* SceneComponent) {
+		if (SceneComponent && SceneComponent->IsPendingDestroy()){ return; }
+		RootComponent = SceneComponent;
+	}
 
 	void RemoveOwnedComponent(UActorComponent* Component);
 	
@@ -44,7 +57,11 @@ public:
 	bool TryGetActorBounds(FBox& OutBounds) const;
 
 	bool Destroy();
-	
+	// 삭제 예정 여부
+	bool IsPendingDestroy() const
+	{
+		return bPendingDestroy;
+	}
 	//xx삭제 예정
 	friend class UWorld;
 
@@ -70,6 +87,17 @@ protected:
 	UWorld* World = nullptr;
 	ULevel* Level = nullptr;
 private:
-	
+	// World가 호출하는 공통 진입점
+	void DispatchBeginPlay();
+	void DispatchEndPlay();
+	void UninitializeComponents();
 
+	bool bBeginningPlay = false;
+	bool bHasBegunPlay = false;
+	bool bStopping = false;
+
+	// World가 호출하는 실제 Component 삭제
+	void DestroyComponentNow(UActorComponent* Component);
+	// 삭제 예정 상태
+	bool bPendingDestroy = false;
 };

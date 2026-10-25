@@ -17,6 +17,10 @@ struct FWorldContext
 	// Renderer 소유 World별 그림자 자원 슬롯의 비소유 번호. 저장/복제하지 않는다.
 	uint32 ShadowResourceIndex = InvalidShadowResourceIndex;
 
+	// 마지막 씬 전환 요청
+	bool bSceneChangeRequested = false;
+	FString PendingScenePath;
+
 	void SetCurrentWorld(UWorld* World);
 
 	inline UWorld* World() const
@@ -64,8 +68,14 @@ public:
 
 	// Device·Window·Swapchain·AssetManager가 준비된 뒤 호출된다.
 	virtual bool Init();
+	// 프레임 시작 요청 처리
+	virtual void PreTick(float) {}
 	// 한 프레임의 갱신과 모든 렌더 패스를 기록한다. Present는 FEngineLoop가 호출 직후에 한다.
 	virtual void Tick(float DeltaTime) = 0;
+	// World 비소유 참조 정리
+	virtual void ReleaseWorldReferences(UWorld*) {}
+	// 프레임 종료 요청 처리
+	virtual void PostTick(float) {}
 	virtual void OnResize(uint32 Width, uint32 Height) {}
 	// UObject 일괄 정리와 GPU 자원 해제 전에 호출된다.
 	virtual void PreExit() {};
@@ -76,9 +86,18 @@ public:
 	FWorldContext* GetWorldContextFromWorld(const UWorld* InWorld);
 	void DestroyWorldContext(UWorld* InWorld);
 
+	// 씬 전환 예약, 빈 경로는 새 씬
+	bool RequestSceneChange(UWorld* World, const FString& ScenePath);
+	
 	UAssetManager* AssetManager;
 protected:
 	FEngineLoop& GetEngineLoop() const { return *EngineLoop; }
+
+	// 프레임 시작 요청 수집
+	bool ConsumeSceneChangeRequest(UWorld* World, FString& OutScenePath);
+
+	// 프레임 시작 전용 적용
+	bool ApplySceneChange(UWorld* World, const FString& ScenePath);
 
 	TIndirectArray<FWorldContext> WorldList;
 	//UWorld* World = nullptr;

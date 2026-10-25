@@ -2,21 +2,33 @@
 #include "Editor/HitoriEd/EditorFileUtils.h"
 
 #include "Core/EngineLog.h"
+#include "Engine/Engine.h"
 #include <commdlg.h>
 #include "Serialization/JsonArchive.h"
  
 FString FEditorFileUtils::CurrentScenePath = "";
 
+FString FEditorFileUtils::GetCurrentSceneName()
+{
+	// 새 씬이거나 아직 저장하지 않았다면 기본 이름을 사용한다.
+	if (CurrentScenePath.empty())
+	{
+		return "Untitled";
+	}
+
+	// 예: Scene/Main.scene -> Main
+	return fs::path(CurrentScenePath).stem().string();
+}
+
 bool FEditorFileUtils::NewScene(UWorld* World)
 {
-	if (!World)
+	// 예약 대상 검증
+	if (!World || !GEngine)
+	{
 		return false;
+	}
 
-	World->ClearWorld();
-
-	CurrentScenePath.clear();
-
-	return true;
+	return GEngine->RequestSceneChange(World, FString());
 }
 
 bool FEditorFileUtils::SaveScene(UWorld* World)
@@ -81,26 +93,23 @@ bool FEditorFileUtils::SaveSceneAs(UWorld* World)
 
 bool FEditorFileUtils::LoadScene(UWorld* World)
 {
-	if (!World)
+	// 예약 대상 검증
+	if (!World || !GEngine)
+	{
 		return false;
+	}
 
 	FString FilePath = OpenLoadSceneDialog();
 
 	// 파일 선택 취소
 	if (FilePath.empty())
+	{
 		return false;
+	}
 
+	// 선택 경로 정규화
 	FilePath = std::filesystem::absolute(FilePath).lexically_normal().string();
-
-	if (!FJsonArchive::LoadWorld(World, FilePath))
-		return false;
-
-	// 이제 이 파일이 현재 Scene
-	CurrentScenePath = FilePath;
-
-	HTR_LOG(Info, "Load Scene : {}", CurrentScenePath);
-
-	return true;
+	return GEngine->RequestSceneChange(World, FilePath);
 }
 
 FString FEditorFileUtils::OpenSaveSceneDialog()

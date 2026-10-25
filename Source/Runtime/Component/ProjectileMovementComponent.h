@@ -17,7 +17,6 @@ class UProjectileMovementComponent : public UMovementComponent
 			PROPERTY(bSweepCollision)
 			PROPERTY(bIsHomingProjectile)
 			PROPERTY(HomingAccelerationMagnitude)
-			PROPERTY(Velocity)
 			PROPERTY(Gravity)
 			PROPERTY(bConstrainToPlane)
 		REFLECT_END()
@@ -52,7 +51,7 @@ public:
 	// Homing
 	bool bIsHomingProjectile;
 	float HomingAccelerationMagnitude;
-	USceneComponent* HomingTargetComponent = nullptr;
+	TWeakObjectPtr<USceneComponent> HomingTargetComponent = nullptr;
 
 	// Interpolation
 

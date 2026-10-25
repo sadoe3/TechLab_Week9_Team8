@@ -90,7 +90,7 @@ public:
 	bool IsA(const UClass* Class);
 
 	uint32 GetUUID() const { return ObjectUUID; }
-	void SetUUID(uint32 Uid) { ObjectUUID = Uid; }
+	//void SetUUID(uint32 Uid) { ObjectUUID = Uid; }
 
 	const FName& GetFName() const { return Name; }         // FName 비교용
 	FString GetName() const { return Name.ToString(); }    // Name 출력용

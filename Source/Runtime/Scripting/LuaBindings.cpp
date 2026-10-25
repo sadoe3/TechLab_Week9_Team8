@@ -1,0 +1,110 @@
+#include "EnginePCH.h"
+#include "Scripting/LuaBindings.h"
+#include "Math/Vector.h"
+#include "GameFramework/Actor.h"
+#include "UObject/WeakObjectPtr.h"
+#include <format>
+#include "Component/SceneComponent.h"
+
+namespace LuaBindings
+{
+	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
+	// TODO : 다른 공통 타입들도 바인딩해야함.
+	void Register(sol::state_view Lua)
+	{
+		// FVector 바인딩
+		Lua.new_usertype<FVector>("Vector",
+			sol::call_constructor,
+			sol::constructors<FVector(), FVector(float, float, float)>(),
+			"x", &FVector::X,
+			"y", &FVector::Y,
+			"z", &FVector::Z,
+			sol::meta_function::addition,
+			[](const FVector& A, const FVector& B)
+			{
+				return A + B;
+			},
+			sol::meta_function::multiplication,
+			[](const FVector& Value, float Scalar)
+			{
+				return Value * Scalar;
+			},
+			sol::meta_function::to_string,
+			[](const FVector& Value)
+			{
+				return std::format("Vector({}, {}, {})", Value.X, Value.Y, Value.Z);
+			},
+			"Normalized", &FVector::Normalized	// 열거형에 없는 함수는 string,함수 포인터로 바인딩할수있음.
+		);
+
+		// AActor 바인딩
+		Lua.new_usertype<TWeakObjectPtr<AActor>>("Actor",
+			sol::no_constructor,
+			"UUID", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> uint32
+				{
+					AActor* Actor = Reference.Get();
+					if (!Actor)
+					{
+						throw sol::error("Actor has been destroyed");
+					}
+
+					return Actor->GetUUID();
+				}),
+			"Location", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FVector
+				{
+					// 루트 컴포넌트의 월드 위치 조회
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || Root->IsPendingDestroy())
+					{
+						throw sol::error("Actor root component is unavailable");
+					}
+
+					return Root->GetWorldLocation();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, const FVector& Location)
+				{
+					// 실행 가능한 루트 컴포넌트의 위치 변경
+					AActor* Actor = Reference.Get();
+					USceneComponent* Root = Actor ? Actor->GetRootComponent() : nullptr;
+					if (!Root || !Root->CanRunGameplay())
+					{
+						throw sol::error("Actor root component cannot move");
+					}
+
+					Root->SetWorldLocation(Location, false);
+				}));
+
+		// Tostring 바인딩
+		const sol::protected_function ToString = Lua["tostring"];
+
+		// Print 뱌인딩
+		Lua.set_function("print", [ToString](sol::variadic_args Args)
+			{
+				FString Message;
+
+				for (int Index = 0; Index < Args.leftover_count(); ++Index)
+				{
+					// Coroutine에서 호출시 Lua참조로 전달
+					const sol::object Value = Args.get<sol::object>(Index);
+					sol::protected_function_result Result = ToString(Value);
+
+					// 변환 오류 보호된 실행으로 전달해 Runtime에서 기록
+					if (!Result.valid())
+					{
+						const sol::error Error = Result;
+						throw Error;
+					}
+
+					if (Index > 0)
+						Message += '\t';
+
+					Message += Result.get<FString>();
+				}
+
+				HTR_LOG(Info, "[Lua] {}", Message);
+			});
+	}
+}

@@ -178,7 +178,7 @@ FVector UProjectileMovementComponent::ComputAcceleration(const FVector& InVeloci
 	
 	Acceleration += PendingForceThisUpdate;
 
-	if (bIsHomingProjectile && HomingTargetComponent != nullptr)
+	if (bIsHomingProjectile)
 	{
 		Acceleration += ComputeHomingAcceleration(InVelocity, DeltaTime);
 	}
@@ -188,8 +188,17 @@ FVector UProjectileMovementComponent::ComputAcceleration(const FVector& InVeloci
 
 FVector UProjectileMovementComponent::ComputeHomingAcceleration(const FVector& InVelocity, float DeltaTime) const
 {
-	FVector HomingAcceleration = (HomingTargetComponent->GetWorldLocation() - UpdatedComponent->GetWorldLocation()).Normalized();
-	return HomingAcceleration;
+	// 이동 대상과 추적 대상 조회
+	USceneComponent* Updated = UpdatedComponent.Get();
+	USceneComponent* Target = HomingTargetComponent.Get();
+
+	// 검증을 이 함수에 모아둠
+	if (!Updated || !Target)
+	{
+		return FVector::ZeroVector;
+	}
+
+	return (Target->GetWorldLocation() - Updated->GetWorldLocation()).Normalized();
 }
 
 FVector UProjectileMovementComponent::ComputeBounceResult(const FHitResult& Hit, float Timeslice, const FVector& MoveDelta)
@@ -263,11 +272,18 @@ bool UProjectileMovementComponent::HandleDeflection(FHitResult& Hit, const FVect
 
 bool UProjectileMovementComponent::HandleSliding(FHitResult& Hit, float& SubTickTimeRemaining)
 {
+	USceneComponent* Updated = UpdatedComponent.Get();
+	if (!Updated)
+	{
+		return false;
+	}
+
 	FHitResult InitailHit;
 	const FVector OldHitNormal = ConstrainDirectionToPlane(Hit.Normal);
 
-	MoveUpdatedComponent(Velocity * SubTickTimeRemaining, UpdatedComponent->GetRelativeRotation(), bSweepCollision, &Hit);
-
+	MoveUpdatedComponent(Velocity * SubTickTimeRemaining, Updated->GetRelativeRotation(), bSweepCollision, &Hit);
+	
+	
 	if (Hit.bBlockingHit)
 	{
 		const float TimeTick = SubTickTimeRemaining;

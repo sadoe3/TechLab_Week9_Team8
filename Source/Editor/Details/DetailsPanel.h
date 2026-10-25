@@ -45,6 +45,9 @@ public:
 
 	ImFont* GetCustomFont() { return CustomFont; }
 
+	// 선택·편집 대기 상태 초기화
+	void ResetSelection();
+
 private:
     void DrawShadowPreview(ULightComponent* Light);
     std::function<const FShadowResources*(ULightComponent*, FString&)> ShadowPreviewQuery;

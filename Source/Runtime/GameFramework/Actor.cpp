@@ -4,8 +4,6 @@
 #include "Engine/Level.h"
 #include "Component/SceneComponent.h"
 #include "Component/ParticleSubUVComponent.h"
-#include "Component/ExponentialHeightFogComponent.h"
-#include "Component/LightComponentBase.h"
 #include "Core/EngineLog.h"
 #include "UObject/Object.h"
 
@@ -20,7 +18,18 @@ AActor::AActor()
 
 AActor::~AActor()
 {
+    // 소멸 중 실행 차단
+    bStopping = true;
+    RegisterAllActorTickFunctions(false);
+
     TArray<UActorComponent*> ToDelete = Components;
+
+    for (UActorComponent* Component : ToDelete)
+    {
+        if (Component)
+            Component->UnregisterComponent();
+    }
+
     Components.Reset();
     RootComponent = nullptr;
 
@@ -32,43 +41,109 @@ AActor::~AActor()
 
 void AActor::BeginPlay()
 {
-	//if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(RootComponent))
-	//{
-	//	World->AddPrimitive(Cast<UPrimitiveComponent>(RootComponent));
-	//}
+}
+
+bool AActor::CanRunGameplay() const
+{
+    return !bPendingDestroy && !bStopping && World && World->IsRunningPlay() && World->AcceptsChanges();
+
+}
+
+void AActor::DispatchBeginPlay()
+{
+    // 중복 시작 막음
+    if (!CanRunGameplay() || bBeginningPlay || bHasBegunPlay)
+    {
+        return;
+    }
+
+    bBeginningPlay = true;
+
+    // 컴포넌트 준비 후 액터 호출
+    BeginPlay();
+    bHasBegunPlay = true;
+    bBeginningPlay = false;
+
+    // 시작 후 틱함수 등록
+    RegisterAllActorTickFunctions(true);
+}
+
+void AActor::DispatchEndPlay()
+{
+    if (bStopping)
+    {
+        return;
+    }
+
+    bStopping = true;
+    RegisterAllActorTickFunctions(false);
+
+    if (bHasBegunPlay)
+    {
+        // 중복 종료 방지
+        bHasBegunPlay = false;
+        EndPlay();
+    }
 
     for (UActorComponent* Component : Components)
     {
-        Component->InitializeComponent();
+        if (Component)
+        {
+            Component->DispatchEndPlay();
+        }
     }
 
-	for (UActorComponent* Component : Components)
-	{
-		Component->BeginPlay();
-	}
+    bStopping = false;
+}
 
-	RegisterAllActorTickFunctions(true);
+void AActor::UninitializeComponents()
+{
+    if (bStopping)
+    {
+        return;
+    }
+
+    // 해제 중 소유 구성 변경 차단
+    bStopping = true;
+
+    for (UActorComponent* Component : Components)
+    {
+        if (Component)
+        {
+            Component->DispatchUninitializeComponent();
+        }
+    }
+
+    bStopping = false;
 }
 
 void AActor::RegisterAllActorTickFunctions(bool bRegister)
 {
-	if (bRegister && !World)
-		return;
+	if (bRegister && (!bHasBegunPlay || !CanRunGameplay()))
+    {
+        return;
+    }
 
 	// bCanEverTick이 꺼진 함수는 등록하지 않으므로 정적 메시 액터는 매 프레임 순회 대상에서 빠진다.
 	auto Apply = [&](FTickFunction& Function)
 	{
 		if (bRegister)
-			Function.RegisterTickFunction(World->GetTickTaskManager());
+        {
+            Function.RegisterTickFunction(World->GetTickTaskManager());
+        }
 		else
-			Function.UnRegisterTickFunction();
+        {
+            Function.UnRegisterTickFunction();
+        }
 	};
 
 	Apply(PrimaryActorTick);
 	for (UActorComponent* Component : Components)
 	{
-		if (Component)
-			Apply(Component->PrimaryComponentTick);
+		if (Component&& (!bRegister || (Component->HasBegunPlay() && Component->CanRunGameplay())))
+        {
+            Apply(Component->PrimaryComponentTick);
+        }
 	}
 }
 
@@ -259,24 +334,22 @@ FTransform AActor::GetActorTransform() const
 
 bool AActor::Destroy()
 {
-    if (!World)
-        return false;
-
-    return World->DestroyActor(this);
+    // World에 삭제 예약 요청
+    return World && World->DestroyActor(this);
 }
 
 UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 {
-    if (!ComponentClass 
-        || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
+    if (bPendingDestroy || bStopping || (World && !World->AcceptsChanges()) ||
+        !ComponentClass || !ComponentClass->IsChildOf(UActorComponent::StaticClass()))
     {
         return nullptr;
     }
 
 
-    if (FName(Name) == FName("None"))
+    if (Name.IsNone() || StaticFindObjectFast(nullptr, this, Name))
     {
-        Name = MakeUniqueObjectName(this, ComponentClass);
+        Name = MakeUniqueObjectName(this, ComponentClass, Name);
     }
 
     UActorComponent* NewComponent = NewObject<UActorComponent>(this, ComponentClass, Name);
@@ -284,12 +357,7 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
     {
         return nullptr;
     }
-
-	if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(NewComponent))
-	{
-        World->GetScene().AddPrimitive(Primitive);
-	}
-    
+        
 	if (USceneComponent* SceneComponent = Cast<USceneComponent>(NewComponent))
 	{
 		SceneComponent->SetupAttachment(RootComponent, EAttachmentRule::KeepRelative);        
@@ -297,18 +365,11 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 
     NewComponent->SetOwner(this);    
     Components.Add(NewComponent);
-    NewComponent->InitializeComponent();
-
-    //if (UParticleSubUVComponent* ParticleSubUV = Cast<UParticleSubUVComponent>(NewComponent))
-    //{
-    //    ParticleSubUV->BeginPlay();
-    //    RegisterAllActorTickFunctions(true);
-    //}
-
+    NewComponent->RegisterComponent();
+    
     if (World)
     {
-        NewComponent->BeginPlay();
-        RegisterAllActorTickFunctions(true);
+        World->QueueComponentForBeginPlay(NewComponent);
     }
 
 	return NewComponent;
@@ -316,42 +377,59 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
 
 void AActor::DestroyComponent(UActorComponent* Component)
 {
-    if (!Component)
-        return;
-
-    if (Component == RootComponent)
+    // Level 소속 Component의 삭제 요청 검증
+    if (!Component || Component->GetOwner() != this || !World || !Level
+        || bPendingDestroy || Component->IsPendingDestroy() || !World->AcceptsChanges())
     {
-        HTR_LOG(Warning, "DefaultSceneRoot cannot be deleted.");
         return;
     }
 
+    // Root·기본 서브오브젝트 보호
+    if (Component == RootComponent || Component->HasAnyFlags(EObjectFlags::RF_DefaultSubObject))
+    {
+        HTR_LOG(Warning, "Root/default components cannot be deleted individually.");
+        return;
+    }
+
+    World->QueueComponentForDestroy(Component);
+}
+
+void AActor::DestroyComponentNow(UActorComponent* Component)
+{
+    // 실제 구성 변경 구간
+    bStopping = true;
+    World->ReleaseExternalReferences();
+
+    Component->DispatchEndPlay();
+    Component->DispatchUninitializeComponent();
+
+    // 자식의 기존 상위 Component 복귀
     if (USceneComponent* Parent = Cast<USceneComponent>(Component))
     {
         TArray<USceneComponent*> Children = Parent->GetAttachChildren();
-        for (USceneComponent* Candidate : Children)
+        for (USceneComponent* Child : Children)
         {
-            if (!Candidate) { continue; }
+            if (!Child)
+            {
+                continue;
+            }
 
-            Candidate->DetachFromParent(EAttachmentRule::KeepWorld);
-            Candidate->SetupAttachment(Parent->GetAttachParent(), EAttachmentRule::KeepWorld);
+            Child->DetachFromParent(EAttachmentRule::KeepWorld);
+            Child->SetupAttachment(Parent->GetAttachParent(), EAttachmentRule::KeepWorld);
         }
     }
 
-    if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+    // 삭제 전 시점 복구
+    if (World->GetMainCamera() == Component)
     {
-        World->GetScene().RemovePrimitive(Primitive);
+        World->SetViewTarget(nullptr);
     }
-    else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-    {
-        World->GetScene().RemoveFogInfo(Fog->GetUUID());
-    }
-    else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
-    {
-        World->GetScene().RemoveLight(Light);
-    }
+
+    Component->UnregisterComponent();
     RemoveOwnedComponent(Component);
     delete Component;
-    return;
+
+    bStopping = false;
 }
 
 void AActor::OnDefaultSubobjectCreated(UObject* Subobject)
@@ -366,8 +444,13 @@ void AActor::OnDefaultSubobjectCreated(UObject* Subobject)
 UActorComponent* AActor::FindComponentByName(FName Name) const
 {
     for (UActorComponent* Component : Components)
+    {
         if (Component && Component->GetFName() == Name)
+        {
             return Component;
+        }
+    }
+    
     return nullptr;
 }
 

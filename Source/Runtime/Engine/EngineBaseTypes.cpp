@@ -37,8 +37,10 @@ void FActorTickFunction::ExecuteTick(float DeltaTime)
 
 void FActorComponentTickFunction::ExecuteTick(float DeltaTime)
 {
-	if (Target)
+	if (Target && Target->HasBegunPlay() && Target->CanRunGameplay() && Target->GetOwner()->HasBegunPlay())
+	{
 		Target->TickComponent(DeltaTime);
+	}
 }
 
 FTickTaskManager::~FTickTaskManager()

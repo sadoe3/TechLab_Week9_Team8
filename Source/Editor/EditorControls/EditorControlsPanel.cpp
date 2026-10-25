@@ -2,7 +2,6 @@
 
 #include "Editor/EditorControls/EditorControlsPanel.h"
 #include "Editor/Viewports/ViewportsPanel.h"
-#include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 
 #include "Engine/World.h"
@@ -151,7 +150,7 @@ void FEditorControlsPanel::DrawCameraProperties()
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
 	ImGui::SeparatorText("Viewport");
 
-	UCameraComponent* CamCom = World && World->GetMainCamera() ? World->GetMainCamera()->GetCameraComponent() : nullptr;
+	UCameraComponent* CamCom = World ? World->GetMainCamera() : nullptr;
 	if (!ViewportsPanel && !CamCom) return;
 
 	int32 CameraViewIndex = 0;
