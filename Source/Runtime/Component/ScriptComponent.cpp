@@ -283,7 +283,7 @@ void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
 
-    if (!bScriptReady || !BeginOverlapFunction.valid())
+    if (!bScriptReady || !CanRunGameplay() || !BeginOverlapFunction.valid())
     {
         return;
     }
@@ -299,7 +299,7 @@ void UScriptComponent::OnEndOverlap(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
 
-    if (!bScriptReady || !EndOverlapFunction.valid())
+    if (!bScriptReady || !CanRunGameplay() || !EndOverlapFunction.valid())
     {
         return;
     }
@@ -315,7 +315,7 @@ void UScriptComponent::OnHit(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
 
-    if (!bScriptReady || !HitFunction.valid())
+    if (!bScriptReady || !CanRunGameplay() || !HitFunction.valid())
     {
         return;
     }
