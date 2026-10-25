@@ -15,7 +15,7 @@ class UScriptComponent : public UActorComponent
 
     REFLECT_START(ClassName)
         PROPERTY(ScriptPath)
-        REFLECT_END()
+    REFLECT_END()
 
 public:
     UScriptComponent();
@@ -34,14 +34,18 @@ public:
         return bLoadingScript;
     }
 
+    // BeginPlay 전에 실행할 Lua 파일 경로를 지정합니다.
+    void SetScriptPath(const FString& InScriptPath)
+    {
+        ScriptPath = InScriptPath;
+    }
+
 private:
     // 컴포넌트의 Lua 참조 해제
     void ResetScript();
 
     // 지정한 환경에 직접 정의된 콜백만 찾는다.
-    static sol::protected_function FindScriptFunction(
-        const sol::environment& Environment,
-        const char* FunctionName);
+    static sol::protected_function FindScriptFunction(const sol::environment& Environment, const char* FunctionName);
 
     // 새 환경과 콜백을 준비하고, 성공했을 때만 교체한다.
     bool TryLoadScript();
@@ -53,7 +57,7 @@ private:
     void HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp);
     void HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
 
-
+private:
     FString ScriptPath;
     sol::environment ScriptEnvironment;
 
@@ -68,7 +72,6 @@ private:
     // 실패한 수정본도 기록하여 같은 파일의 반복 로드를 막는다.
     std::filesystem::file_time_type LastAttemptedWriteTime{};
     bool bHasAttemptedWriteTime = false;
-
     float TimeSinceLastScriptCheck = 0.0f;
 
     // 최초 로드에 실패해도 수정 후 재시도할 수 있도록 유지한다.
