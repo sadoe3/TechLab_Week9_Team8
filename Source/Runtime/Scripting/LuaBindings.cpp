@@ -98,10 +98,15 @@ namespace LuaBindings
 				}),
 			// 삭제 예약 상태를 포함한 유효성 판정
 			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
-			{
-				AActor* Actor = Reference.Get();
-				return Actor && !Actor->IsPendingDestroy();
-			},
+				{
+					AActor* Actor = Reference.Get();
+					return Actor && !Actor->IsPendingDestroy();
+				},
+				"Destroy", [](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					AActor* Actor = Reference.Get();
+					return Actor && Actor->Destroy();
+				},
 			"Location", sol::property(
 				[](const TWeakObjectPtr<AActor>& Reference) -> FVector
 				{
@@ -149,8 +154,7 @@ namespace LuaBindings
 					}
 
 					return Root->SetWorldRotation(Rotation,false);
-				}
-			),
+				}),
 			// Character 관련 바인딩
 			// AActor상속받는 구조->바인딩된 obj에 대해 Character인지 확인하는 절차를 거침.
 			"Velocity", sol::property(
