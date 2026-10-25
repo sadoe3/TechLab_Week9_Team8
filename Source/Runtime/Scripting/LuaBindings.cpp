@@ -74,6 +74,24 @@ namespace LuaBindings
 
 					return Actor->GetUUID();
 				}),
+			// Actor 이름 조회
+			"Name", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FString
+				{
+					AActor* Actor = Reference.Get();
+					if (!Actor)
+					{
+						throw sol::error("Actor has been destroyed");
+					}
+
+					return Actor->GetName();
+				}),
+			// 삭제 예약 상태를 포함한 유효성 판정
+			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
+			{
+				AActor* Actor = Reference.Get();
+				return Actor && !Actor->IsPendingDestroy();
+			},
 			"Location", sol::property(
 				[](const TWeakObjectPtr<AActor>& Reference) -> FVector
 				{
