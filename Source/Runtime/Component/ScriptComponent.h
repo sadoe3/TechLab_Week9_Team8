@@ -6,6 +6,9 @@
 #include "ActorComponent.h"
 #include "Core/EngineString.h"
 
+class UPrimitiveComponent;
+struct FHitResult;
+
 class UScriptComponent : public UActorComponent
 {
     DECLARE_CLASS(UScriptComponent, UActorComponent)
@@ -44,6 +47,10 @@ private:
 
     // 일정 간격으로 파일 수정 시각을 확인하고 재로드를 시도한다.
     void CheckScriptChanges(float DeltaTime);
+
+    void HandleComponentBeginOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, bool, const FHitResult& HIt);
+    void HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp);
+
 
     FString ScriptPath;
     sol::environment ScriptEnvironment;

@@ -6,6 +6,9 @@
 #include "Engine/World.h"
 #include "Scripting/LuaRuntime.h"
 
+#include "UObject/Casts.h"
+#include "PrimitiveComponent.h"
+
 UScriptComponent::UScriptComponent()
     : ScriptPath("Assets/Scripts/HotReloadTest.lua") // Assets/Script/LifeCycleTest.lua
 {
@@ -26,6 +29,14 @@ void UScriptComponent::BeginPlay()
     if (OwnerWorld->GetWorldType() == EWorldType::Editor)
     {
         return;
+    }
+
+    for (auto Comp : OwnerActor->GetComponents()) {
+        UPrimitiveComponent *comp = Cast <UPrimitiveComponent> (Comp);
+        if (comp == nullptr) continue;
+
+        comp->OnComponentBeginOverlap.AddRaw(this, &UScriptComponent::HandleComponentBeginOverlap);
+        comp->OnComponentEndOverlap.AddRaw(this, &UScriptComponent::HandleComponentEndOverlap);
     }
 
     // 최초 로드 전 변경 감시 활성화
@@ -83,6 +94,17 @@ void UScriptComponent::EndPlay()
     {
         assert(Runtime != nullptr);
         Runtime->Call(EndPlayFunction, ScriptPath, "EndPlay");
+    }
+
+    AActor* OwnerActor = GetOwner();
+    assert(OwnerActor != nullptr);
+
+    for (auto Comp : OwnerActor->GetComponents()) {
+        UPrimitiveComponent *comp = Cast <UPrimitiveComponent>(Comp);
+        if (comp == nullptr) continue;
+
+        comp->OnComponentBeginOverlap.RemoveAll(this);
+        comp->OnComponentEndOverlap.RemoveAll(this);
     }
 
     ResetScript();
@@ -220,6 +242,26 @@ void UScriptComponent::CheckScriptChanges(float DeltaTime)
     bHasAttemptedWriteTime = true;
 
     TryLoadScript();
+}
+
+void UScriptComponent::HandleComponentBeginOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, bool, const FHitResult& HIt)
+{
+    AActor* OtherActor = OtherComp->GetOwner();
+    if (OtherActor == nullptr) return;
+
+    assert(OtherComp != nullptr);
+
+    OnBeginOverlap(OtherActor);
+}
+
+void UScriptComponent::HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp)
+{
+    AActor* OtherActor = OtherComp->GetOwner();
+    if (OtherActor == nullptr) return;
+
+    assert(OtherComp != nullptr);
+
+    OnEndOverlap(OtherActor);
 }
 
 void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
