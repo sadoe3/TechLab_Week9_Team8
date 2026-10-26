@@ -8,6 +8,7 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Component/ParticleSubUVComponent.h"
 
 namespace LuaBindings
 {
@@ -32,6 +33,21 @@ namespace LuaBindings
 		throw sol::error("Unsupported input key: " + Key);
 	}
 
+	// Actor 소유 파티클 컴포넌트 조회
+	static UParticleSubUVComponent* ResolveParticleComponent(const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName)
+	{
+		AActor* Actor = Reference.Get();
+		UParticleSubUVComponent* Component = Actor ? 
+			Cast<UParticleSubUVComponent>(Actor->FindComponentByName(FName(ComponentName)))
+			: nullptr;
+
+		if (!Component)
+		{
+			throw sol::error("Particle component is unavailable: " + ComponentName);
+		}
+
+		return Component;
+	}
 	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
 	// TODO : 다른 공통 타입들도 바인딩해야함.
 	void Register(sol::state_view Lua)
@@ -155,6 +171,22 @@ namespace LuaBindings
 
 					return Root->SetWorldRotation(Rotation,false);
 				}),
+			// 파티클 관련 바인딩
+			// 지정한 컴포넌트의 Burst 재생
+			"EmitParticleBurst", [](
+				const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName,
+				const FVector& Position, const FVector& Direction, int32 Count) -> int32
+			{
+				return ResolveParticleComponent(Reference, ComponentName)
+					->EmitBurst(Position, Direction, Count);
+			},
+
+			// 지정한 컴포넌트의 활성 입자 정리
+			"ClearParticles", [](
+				const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName)
+			{
+				ResolveParticleComponent(Reference, ComponentName)->ClearParticles();
+			},
 			// Character 관련 바인딩
 			// AActor상속받는 구조->바인딩된 obj에 대해 Character인지 확인하는 절차를 거침.
 			"Velocity", sol::property(
