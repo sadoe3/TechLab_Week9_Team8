@@ -158,20 +158,16 @@ void UWorld::Tick(float DeltaTime)
 		}
 
 	}
-	{
-		SCOPE_CYCLE_COUNTER(STAT_UpdateAllTransforms);
-		Scene.UpdateAllTransforms();
-	}
-
-	if (!IsGameWorld() || !HasBegunPlay())
-	{
-		return;
-	}
-
+	if (IsGameWorld() && HasBegunPlay())
 	{
 		SCOPE_CYCLE_COUNTER(STAT_ActorTick);
 		// 모든 Actor를 도는 대신 등록된 Tick 함수(메인 카메라 포함)만 실행한다.
 		TickTaskManager.RunAllTickGroups(DeltaTime);
+	}
+	{
+		SCOPE_CYCLE_COUNTER(STAT_UpdateAllTransforms);
+		// 이동이 끝난 뒤 갱신해 렌더 프록시와 카메라가 같은 프레임의 Transform을 사용한다.
+		Scene.UpdateAllTransforms();
 	}
 }
 
