@@ -8,6 +8,7 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/RacingCar.h"
 
 namespace LuaBindings
 {
@@ -27,6 +28,10 @@ namespace LuaBindings
 		if (Key == "Escape")
 		{
 			return EKeyCode::Escape;
+		}
+		if (Key == "Space")
+		{
+			return EKeyCode::Space;
 		}
 
 		throw sol::error("Unsupported input key: " + Key);
@@ -182,6 +187,16 @@ namespace LuaBindings
 					}
 
 					Character->SetVelocity(Velocity);
+				}),
+			"MaxSpeed", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> float
+				{
+					ARacingCar* Car = Cast<ARacingCar>(Reference.Get());
+					if (!Car)
+					{
+						throw sol::error("MaxSpeed requires a RacingCar actor");
+					}
+					return Car->GetMaxSpeed();
 				})
 		);
 

@@ -13761,7 +13761,8 @@
                     ],
                     "Name": "ARacingCar_1",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "",
+                        "MaxSpeed": 6.0
                     }
                 },
                 {
@@ -13887,6 +13888,103 @@
                         }
                     ],
                     "Name": "AAmbientLightActor_1",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
+                },
+                {
+                    "Class": "ASwamp",
+                    "Components": [
+                        {
+                            "Class": "UStaticMeshComponent",
+                            "Name": "StaticMeshComponent",
+                            "OverrideMaterials": [],
+                            "Parent": "",
+                            "Properties": {
+                                "CollisionEnabled": 0,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 1,
+                                "StaticMesh": "Cube",
+                                "Transform": {
+                                    "Location": {
+                                        "X": 13.34038257598877,
+                                        "Y": 8.93425178527832,
+                                        "Z": -0.36869144439697266
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 4.497025489807129,
+                                        "Y": 3.850691795349121,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": true,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": true,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UBoxComponent",
+                            "Name": "BoxComponent",
+                            "Parent": "StaticMeshComponent",
+                            "Properties": {
+                                "BoxExtent": {
+                                    "X": 0.5,
+                                    "Y": 0.5,
+                                    "Z": 0.5
+                                },
+                                "CollisionEnabled": 1,
+                                "CollisionResponses.Pawn": 1,
+                                "CollisionResponses.WorldDynamic": 0,
+                                "CollisionResponses.WorldStatic": 0,
+                                "ObjectType": 0,
+                                "ShapeColor": {
+                                    "A": 255,
+                                    "B": 0,
+                                    "G": 255,
+                                    "R": 0
+                                },
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": false,
+                                "bDrawOnlyIfSelected": false,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": false,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UScriptComponent",
+                            "Name": "SwampScript",
+                            "Parent": "",
+                            "Properties": {
+                                "ScriptPath": "Assets/Scripts/Swamp.lua"
+                            }
+                        }
+                    ],
+                    "Name": "ASwamp_0",
                     "Properties": {
                         "ActorLabel": ""
                     }
