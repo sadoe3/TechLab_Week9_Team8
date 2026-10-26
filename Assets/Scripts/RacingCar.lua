@@ -92,8 +92,8 @@ function Tick(DeltaTime)
             SpeedRatio = math.min(math.abs(Speed) / MaxSpeed, 1.0)
         end
 
-        -- 현재 설정대로 볼륨은 0.1 ~ 0.4로 변화합니다.
-        local TargetVolume = 0.1 + (0.3 * SpeedRatio)
+        -- 현재 설정대로 볼륨은 0.2 ~ 0.5로 변화합니다.
+        local TargetVolume = 0.2 + (0.3 * SpeedRatio)
 
         -- 피치는 정지 시 1.0, 최고 속력에서 2.0이 됩니다.
         local TargetPitch = 1.0 + (1.0 * SpeedRatio)

@@ -39,12 +39,40 @@ local function ProcessPendingTriggers()
 
             elseif Label == "Finish" then
                 if Race.LastCheckpoint == Race.CheckpointCount then
-                    -- 완주 상태와 기록 확정
+                    -- 주행을 종료하고 이번 점수와 시간을 확정합니다.
                     Race.State = "Finished"
+                    Race.FinishScore = game.get_score()
                     Race.FinishTime = Race.ElapsedTime
                     Race.Player.Velocity = Vector(0, 0, 0)
 
-                    print(string.format("[Race] Finished: %.2f seconds",
+                    -- 주행 중 넓어진 시야를 기본 FOV로 복원합니다.
+                    -- RacingCar.lua의 BaseFOV(60.0)와 같은 값을 사용합니다.
+                    Race.Player.CameraFOV = 60.0
+
+                    -- 최고 기록을 각각 갱신하고 파일에 저장합니다.
+                    local BestScore, BestFinishTime, SaveSucceeded =
+                        game.update_best_records(
+                            Race.FinishScore,
+                            Race.FinishTime)
+
+                    Race.BestScore = BestScore
+                    Race.BestFinishTime = BestFinishTime
+
+                    if not SaveSucceeded then
+                        print("[Race] Failed to save leaderboard records")
+                    end
+
+                    -- UI에서 읽을 기록을 C++에 전달한 뒤 완주 UI를 요청합니다.
+                    game.set_race_result(
+                        Race.FinishScore,
+                        Race.FinishTime,
+                        Race.BestScore,
+                        Race.BestFinishTime)
+                    game.show_finish_ui()
+
+                    print(string.format(
+                        "[Race] Finished: score=%d, time=%.2f seconds",
+                        Race.FinishScore,
                         Race.FinishTime))
                 else
                     print(string.format("[Race] Checkpoints required: %d/%d",
@@ -57,6 +85,8 @@ end
 
 -- 출발 상태 초기화
 function BeginPlay()
+    -- 새 주행에는 이전 결과 화면이 남지 않도록 합니다.
+    game.reset_result_ui()
     script.set_tick_group("PostPhysics")
 
     local Player = world.find_actor(PlayerActorName)
@@ -128,6 +158,8 @@ end
 
 -- 레이스 소유권 정리
 function EndPlay()
+    -- C++에 보관된 결과 화면 상태를 씬 종료 시 정리합니다.
+    game.reset_result_ui()
     GoDisplayRemaining = 0.0
     game.set_countdown("")
     Race.Stop()
