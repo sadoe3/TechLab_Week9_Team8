@@ -30,6 +30,9 @@ namespace
 
 	const FVector ScoreTextBase(3.0f, -1.5f, 0.8f);
 	constexpr float ScoreTextSize = 0.3f;
+
+	const FVector CountdownTextBase(3.0f, 0.0f, 0.0f);
+	constexpr float CountdownTextSize = 1.2f;
 }
 
 ARacingCar::ARacingCar()
@@ -55,6 +58,13 @@ ARacingCar::ARacingCar()
 	ScoreText->SetRelativeLocation(ScoreTextBase);
 	ScoreText->SetTextSize(ScoreTextSize);
 	ScoreText->SetDrawOnTop(true);
+
+	CountdownText = CreateDefaultSubobject<UTextRenderComponent>("CountdownText");
+	CountdownText->SetupAttachment(Camera);
+	CountdownText->SetRelativeLocation(CountdownTextBase);
+	CountdownText->SetTextSize(CountdownTextSize);
+	CountdownText->SetDrawOnTop(true);
+	CountdownText->SetText("");
 
 	// 눈금판
 	SpeedDial = CreateDefaultSubobject<UStaticMeshComponent>("SpeedDial");
@@ -114,6 +124,12 @@ void ARacingCar::BeginPlay()
 	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
 	if (ScoreText) ScoreText->SetDrawOnTop(true);
+	CountdownText = Cast<UTextRenderComponent>(FindComponentByName("CountdownText"));
+	if (CountdownText)
+	{
+		CountdownText->SetDrawOnTop(true);
+		CountdownText->SetText("");
+	}
 	SpeedNeedlePivot = Cast<USceneComponent>(FindComponentByName("SpeedNeedlePivot"));
 	SpeedDial = Cast<UStaticMeshComponent>(FindComponentByName("SpeedDial"));
 	if (SpeedDial) SpeedDial->SetHudElement(true);
@@ -127,6 +143,10 @@ void ARacingCar::BeginPlay()
 
 	FGameHud::OnScoreChanged.AddRaw(this, &ARacingCar::HandleScoreChanged);
 	FGameHud::SetScore(0);
+
+	FGameHud::OnCountdownChanged.RemoveAll(this);
+	FGameHud::OnCountdownChanged.AddRaw(this, &ARacingCar::HandleCountdownChanged);
+	HandleCountdownChanged(FGameHud::GetCountdown());
 }
 
 // fov 조정
@@ -147,6 +167,11 @@ void ARacingCar::UpdateHudForFieldOfView()
 		ScoreText->SetRelativeLocation(
 			FVector(ScoreTextBase.X, ScoreTextBase.Y * Scale, ScoreTextBase.Z * Scale));
 		ScoreText->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+	}
+
+	if (CountdownText)
+	{
+		CountdownText->SetRelativeScale3D(FVector(Scale, Scale, Scale));
 	}
 
 	if (SpeedDial)
@@ -187,6 +212,11 @@ void ARacingCar::HandleScoreChanged(int32 NewScore)
 	ScoreText->SetText(std::to_string(NewScore));
 }
 
+void ARacingCar::HandleCountdownChanged(const FString& NewCountdown)
+{
+	if (CountdownText) CountdownText->SetText(NewCountdown);
+}
+
 void ARacingCar::EndPlay()
 {
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
@@ -194,6 +224,7 @@ void ARacingCar::EndPlay()
 		Capsule->OnComponentHit.RemoveAll(this);
 	}
 	FGameHud::OnScoreChanged.RemoveAll(this);
+	FGameHud::OnCountdownChanged.RemoveAll(this);
 	Super::EndPlay();
 }
 
