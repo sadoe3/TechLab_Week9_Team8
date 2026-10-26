@@ -10,11 +10,10 @@ ARacingCar::ARacingCar()
 {
 	// Character 기본 메시 재사용
 	UStaticMeshComponent* VehicleMesh = GetStaticMeshComponent();
-	VehicleMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.5f));
 
-	// Capsule 루트에 추적 카메라 부착
+	// Capsule과 같은 부모에 부착하여 충돌 도형의 상대 회전과 카메라를 분리한다.
 	UCameraComponent* Camera = CreateDefaultSubobject<UCameraComponent>("VehicleCamera");
-	Camera->SetupAttachment(GetRootComponent());
+	Camera->SetupAttachment(VehicleMesh);
 	Camera->SetRelativeLocation(FVector(-4.0f, 0.0f, 2.0f));
 	Camera->SetRelativeRotation(FRotator(15.0f, 0.0f, 0.0f));
 
@@ -30,6 +29,7 @@ ARacingCar::ARacingCar()
 void ARacingCar::BeginPlay()
 {
 	Super::BeginPlay();
+	if (IsPendingDestroy()) return;
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
 	GetWorld()->SetViewTarget(this);

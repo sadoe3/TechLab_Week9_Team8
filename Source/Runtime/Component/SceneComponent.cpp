@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "Component/SceneComponent.h"
+#include "Component/PrimitiveComponent.h"
 
 #include "GameFramework/Actor.h"
 
@@ -212,7 +213,7 @@ void USceneComponent::SetWorldLocationAndRotation(FVector NewLocation, FRotator 
 	MoveComponent(NewLocation - GetWorldLocation(), NewRotation, bSweep);
 }
 
-void USceneComponent::InternalSetWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation)
+void USceneComponent::ApplyWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation)
 {
 	Transform.Location = AttachParent ? AttachParent->GetWorldMatrix().Inverse().TransformPosition(NewLocation) : NewLocation;
 	Transform.Rotation = AttachParent ? (AttachParent->GetWorldRotation().Quaternion().Inverse() * NewRotation.Quaternion()).ToFRotator() : NewRotation;
@@ -233,24 +234,46 @@ void USceneComponent::SetWorldScale3D(FVector NewScale)
 
 bool USceneComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
 {
-	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))
-	{
-		if (Hit) *Hit = FHitResult();
-		return false;
-	}
-	const FVector Start = GetWorldLocation();
-	InternalSetWorldLocationAndRotation(Start + Delta, NewRotation);
-	UpdateOverlaps();
-	if (Hit)
-	{
-		*Hit = FHitResult();
-		Hit->TraceStart = Start;
-		Hit->TraceEnd = Hit->Location = GetWorldLocation();
-		Hit->Distance = (Hit->Location - Start).Size();
-	}
-	return true;
+	// Capsule 루트처럼 자신이 충돌 대상인 일반 이동도 공통 실행 경로를 사용한다.
+	return MoveComponent(Delta, NewRotation, bSweep, Hit, this);
 }
 
+bool USceneComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit, USceneComponent* CollisionComponent)
+{
+	if (Hit) *Hit = FHitResult();
+	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) return false;
+	if (CollisionComponent)
+	{
+		if (CollisionComponent->IsPendingDestroy() || CollisionComponent->GetOwner() != GetOwner()) return false;
+		USceneComponent* CurrentAncestor = CollisionComponent;
+		while (CurrentAncestor && CurrentAncestor != this) CurrentAncestor = CurrentAncestor->GetAttachParent();
+		if (!CurrentAncestor) return false;
+	}
+
+	const FVector MovementStart = GetWorldLocation();
+	const FQuat RotationDelta = NewRotation.Quaternion() * GetWorldRotation().Quaternion().Inverse();
+	const FVector QueryStart = CollisionComponent ? MovementStart + RotationDelta.RotateVector(CollisionComponent->GetWorldLocation() - MovementStart) : MovementStart;
+	const FRotator QueryRotation = CollisionComponent ? (RotationDelta * CollisionComponent->GetWorldRotation().Quaternion()).ToFRotator() : NewRotation;
+	FHitResult MoveHit;
+	MoveHit.TraceStart = MoveHit.Location = QueryStart;
+	MoveHit.TraceEnd = QueryStart + Delta;
+	MoveHit.Distance = 0.0f;
+	if (Hit) *Hit = MoveHit;
+
+	TArray<FHitResult> PendingOverlaps;
+	if (bSweep && CollisionComponent && !CollisionComponent->QueryMovement(QueryStart, Delta, QueryRotation, MoveHit, PendingOverlaps)) return false;
+
+	// 질의 -> 자기 Transform 적용 -> Overlap 갱신 -> Hit 알림 순서를 여기서 관리한다.
+	ApplyWorldLocationAndRotation(MovementStart + Delta * MoveHit.Time, NewRotation);
+	MoveHit.Location = CollisionComponent ? CollisionComponent->GetWorldLocation() : GetWorldLocation();
+	MoveHit.Distance = (MoveHit.Location - QueryStart).Size();
+	if (CollisionComponent) CollisionComponent->UpdateOverlaps(PendingOverlaps);
+	if (CollisionComponent != this) UpdateOverlaps();
+	if (!IsPendingDestroy() && CollisionComponent) CollisionComponent->DispatchBlockingHit(MoveHit);
+	if (MoveHit.HitComponent && (MoveHit.HitComponent->IsPendingDestroy() || (MoveHit.HitComponent->GetOwner() && MoveHit.HitComponent->GetOwner()->IsPendingDestroy()))) MoveHit.HitComponent = nullptr;
+	if (Hit) *Hit = MoveHit;
+	return true;
+}
 void USceneComponent::UpdateOverlaps(const TArray<FHitResult>& PendingOverlaps)
 {
 	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy())) return;

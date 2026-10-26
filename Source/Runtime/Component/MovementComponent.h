@@ -1,6 +1,7 @@
 #pragma once
 #include "ActorComponent.h"
 #include "SceneComponent.h"
+#include "PrimitiveComponent.h"
 #include "UObject/WeakObjectPtr.h"
 
 class UMovementComponent : public UActorComponent
@@ -12,6 +13,7 @@ class UMovementComponent : public UActorComponent
 
 protected:
 	TWeakObjectPtr<USceneComponent> UpdatedComponent;
+	TWeakObjectPtr<UPrimitiveComponent> CollisionComponent;
 
 public:
 	FVector Velocity;
@@ -23,8 +25,11 @@ public:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime) override;
 
+	// 이동 대상이 Shape면 자신, Mesh면 첫 번째 자식 Shape를 자동 선택한다. 없으면 nullptr.
 	virtual void SetUpdatedComponent(USceneComponent* NewComponent);
-	virtual void UpdateComponentVelocity();
+	// 자동 선택 대신 사용할 Shape를 명시적으로 지정한다.
+	bool SetCollisionComponent(UPrimitiveComponent* NewComponent);
+	UPrimitiveComponent* GetCollisionComponent() const;
 
 	virtual void HandleImpact(const FHitResult& Hit, float TimeSlice = 0.0f, const FVector& MoveDelta = FVector::ZeroVector);
 	virtual FVector ComputeSlideVector(const FVector& Delta, const float Time, const FVector& Normal, const FHitResult& HIt) const;
@@ -35,6 +40,7 @@ public:
 	virtual void StopMovementImmediately();
 
 protected:
+	UPrimitiveComponent* FindCollisionComponent() const;
 	bool ResolvePenetration(const FHitResult& Hit, const FRotator& NewRotation);
 	bool bConstrainToPlane = false;
 	FVector PlaneConstraintNormal = FVector::ZeroVector;

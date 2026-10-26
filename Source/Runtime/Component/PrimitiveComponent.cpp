@@ -190,52 +190,25 @@ void UPrimitiveComponent::OnTransformDirty()
 		SceneProxy->GetScene()->MarkDirty(SceneProxy);
 }
 
-bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
+bool UPrimitiveComponent::QueryMovement(const FVector& Start, const FVector& Delta, const FRotator& Rotation, FHitResult& OutHit, TArray<FHitResult>& OutOverlaps)
 {
-	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))
-	{
-		if (Hit) *Hit = FHitResult();
-		return false;
-	}
-	TArray<FHitResult> PendingOverlaps;
-	const FVector Start = GetWorldLocation();
-	FHitResult MoveHit;
-	MoveHit.TraceStart = Start;
-	MoveHit.TraceEnd = Start + Delta;
-	MoveHit.Location = Start;
-	MoveHit.Distance = 0.0f;
-	if (Hit) *Hit = MoveHit;
-
 	UWorld* World = GetOwner() ? GetOwner()->GetWorld() : nullptr;
-	if (bSweep && World && GetCollisionEnabled() != ECollisionEnabled::NoCollision && GetCollisionShape().Type != ECollisionShapeType::None)
+	if (!World || GetCollisionEnabled() == ECollisionEnabled::NoCollision || GetCollisionShape().Type == ECollisionShapeType::None) return true;
+
+	TArray<FHitResult> Hits;
+	if (World->QueryComponentSweepMulti(*this, Start, Delta, Rotation, Hits, true) != ECollisionQueryStatus::Success) return false;
+	for (const FHitResult& CurrentHit : Hits)
 	{
-		TArray<FHitResult> Hits;
-		if (World->QueryComponentSweepMulti(*this, Start, Delta, NewRotation, Hits, true) != ECollisionQueryStatus::Success)
-			return false;
-
-		for (const FHitResult& CurrentHit : Hits)
+		if (!CurrentHit.bBlockingHit)
 		{
-			if (!CurrentHit.bBlockingHit)
-			{
-				PendingOverlaps.Add(CurrentHit);
-				continue;
-			}
-			MoveHit = CurrentHit;
-			break;
+			OutOverlaps.Add(CurrentHit);
+			continue;
 		}
+		OutHit = CurrentHit;
+		break;
 	}
-
-	const FVector NewLocation = Start + Delta * MoveHit.Time;
-	InternalSetWorldLocationAndRotation(NewLocation, NewRotation);
-	MoveHit.Location = GetWorldLocation();
-	MoveHit.Distance = (MoveHit.Location - Start).Size();
-	UpdateOverlaps(PendingOverlaps);
-	DispatchBlockingHit(MoveHit);
-	if (MoveHit.HitComponent && (MoveHit.HitComponent->IsPendingDestroy() || (MoveHit.HitComponent->GetOwner() && MoveHit.HitComponent->GetOwner()->IsPendingDestroy()))) MoveHit.HitComponent = nullptr;
-	if (Hit) *Hit = MoveHit;
 	return true;
 }
-
 bool UPrimitiveComponent::TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult)
 {
 	FBox MeshBox = Mesh.AABB.GetWorldAABB(WorldMatrix);
