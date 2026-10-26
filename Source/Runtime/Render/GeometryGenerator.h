@@ -10,6 +10,7 @@ public:
 	static TUniquePtr<FStaticMeshData> CreateLine(const FVector& Start, const FVector& End, const FVector4& Color);
 	static TUniquePtr<FStaticMeshData> CreatePlane(float Size, const FVector4& Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f));
 	static TUniquePtr<FStaticMeshData> CreateAxis();
+	static TUniquePtr<FStaticMeshData> CreateUIQuad(float Size, const FVector4& Color = FVector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	static TUniquePtr<FStaticMeshData> CreateCone(float Radius, float Height, int Segments, const FVector4& Color);
 	static TUniquePtr<FStaticMeshData> CreateCylinder(float Radius, float Height, int Segments, const FVector4& Color);

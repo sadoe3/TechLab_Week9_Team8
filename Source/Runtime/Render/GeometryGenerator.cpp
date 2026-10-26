@@ -77,6 +77,40 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreatePlane(float Size, const FV
 	return PlaneMeshData;
 }
 
+TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateUIQuad(float Size, const FVector4& Color)
+{
+	TUniquePtr<FStaticMeshData> QuadMeshData = MakeUnique<FStaticMeshData>();
+
+	const float Half = Size * 0.5f;
+
+	const TArray<FVector> Positions =
+	{
+		FVector(0.0f, -Half,  Half),
+		FVector(0.0f,  Half,  Half),
+		FVector(0.0f,  Half, -Half),
+		FVector(0.0f, -Half, -Half),
+	};
+
+	const TArray<FVector2> UVs =
+	{
+		FVector2(0.0f, 0.0f),
+		FVector2(1.0f, 0.0f),
+		FVector2(1.0f, 1.0f),
+		FVector2(0.0f, 1.0f),
+	};
+
+	const FVector Normal(-1.0f, 0.0f, 0.0f);
+	for (int32 i = 0; i < Positions.Num(); i++)
+	{
+		QuadMeshData->Vertices.Add({ Positions[i], Normal, FVector(0.0f, 0.0f, 0.0f), Color, UVs[i] });
+	}
+
+	QuadMeshData->Indices = { 0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2 };
+	QuadMeshData->AABB = CalculateAABB(QuadMeshData->Vertices);
+
+	return QuadMeshData;
+}
+
 TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateCone(float Radius, float Height, int Segments, const FVector4& Color)
 {
 	TUniquePtr<FStaticMeshData> ConeMeshData = MakeUnique<FStaticMeshData>();
@@ -460,6 +494,7 @@ void FGeometryGenerator::CreateDefaultMeshDatas()
 	MeshDataMap["Cylinder"] = CreateCylinder(1.0f, 1.0f, 20, FVector4(1.0f, 1.0f, 1.0f, 1.0f));
 	MeshDataMap["Sphere"] = CreateSphere(1.0f, 100, 50, FVector4(1.0f, 1.0f, 1.0f, 1.0f));
 	MeshDataMap["Plane"] = CreatePlane(1.0f, FVector4(1.0f, 1.0f, 1.0f, 1.0f));
+	MeshDataMap["UIQuad"] = CreateUIQuad(1.0f, FVector4(1.0f, 1.0f, 1.0f, 1.0f));
 	MeshDataMap["Arrow"] = CreateArrow(0.1f, 1.0f, 0.2f, 0.5f, 20, FVector4(1.0f, 0.0f, 0.0f, 1.0f));
 	MeshDataMap["Ring"] = CreateRing(1.0f, 0.03f, 32, 16, FVector4(1.0f, 0.0f, 0.0f, 1.0f));
 	MeshDataMap["ScaleBar"] = CreateScaleBar(0.1f, 1.0f, 0.4f, 20, FVector4(1.0f, 0.0f, 0.0f, 1.0f));

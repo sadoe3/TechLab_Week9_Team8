@@ -5,6 +5,7 @@
 
 class UTextRenderComponent;
 class UPrimitiveComponent;
+class USceneComponent;
 struct FHitResult;
 
 class ARacingCar : public ACharacter
@@ -18,12 +19,15 @@ public:
 	ARacingCar();
 	virtual void BeginPlay() override;
 	virtual void EndPlay() override;
-	
+	virtual void Tick(float DeltaTime) override;
+
 	void HandleScoreChanged(int32 NewScore);
 
 	float GetMaxSpeed() const { return MaxSpeed; }
 
 	UTextRenderComponent* ScoreText = nullptr;
+
+	USceneComponent* SpeedNeedlePivot = nullptr;
 protected:
 	float MaxSpeed = 6.0f;
 
