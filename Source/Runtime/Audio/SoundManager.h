@@ -25,6 +25,8 @@ public:
 	bool StopSound(int64 SoundId);
 	// 해당 재생의 볼륨만 변경합니다. 범위는 0.0~1.0입니다.
 	bool SetSoundVolume(int64 SoundId, float Volume);
+	// 해당 재생의 피치만 변경합니다. 전달한 값은 0.5~2.0으로 제한합니다.
+	bool SetSoundPitch(int64 SoundId, float Pitch);
 
 	// 모든 효과음과 BGM을 일시정지하거나 재개합니다.
 	bool SetAllPaused(bool bPaused);

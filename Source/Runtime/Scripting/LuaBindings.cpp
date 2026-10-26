@@ -394,6 +394,12 @@ namespace LuaBindings
 			return GEngine->GetSoundManager()->SetSoundVolume(SoundId, Volume);
 		});
 
+		Audio.set_function("set_pitch", [](int64 SoundId, float Pitch)
+		{
+			// 피치 범위 보정은 사운드 매니저에서 C++ 호출과 동일하게 처리합니다.
+			return GEngine->GetSoundManager()->SetSoundPitch(SoundId, Pitch);
+		});
+
 		// BGM 볼륨을 생략하면 기본값 1.0을 사용합니다.
 		auto PlayBGM = [](const FString& FilePath, sol::optional<float> Volume)
 		{
