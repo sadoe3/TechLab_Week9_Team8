@@ -13762,7 +13762,7 @@
                     "Name": "ARacingCar_1",
                     "Properties": {
                         "ActorLabel": "",
-                        "MaxSpeed": 6.0
+                        "MaxSpeed": 39.29999923706055
                     }
                 },
                 {
@@ -13973,6 +13973,42 @@
                                 "bGenerateOverlapEvents": true,
                                 "bReceiveShadow": false,
                                 "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UExponentialHeightFogComponent",
+                            "Name": "FogComponent",
+                            "Parent": "StaticMeshComponent",
+                            "Properties": {
+                                "FogColor": {
+                                    "A": 1.0,
+                                    "B": 0.7435266971588135,
+                                    "G": 0.09700320661067963,
+                                    "R": 0.22978048026561737
+                                },
+                                "FogCutoffDistance": 0.0,
+                                "FogDensity": 0.11999999731779099,
+                                "FogHeightFalloff": 0.25,
+                                "FogMaxOpacity": 1.0,
+                                "StartDistance": 0.10000000149011612,
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bFogEnabled": false
                             }
                         },
                         {

@@ -3,6 +3,7 @@
 #include "Component/BoxComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/ScriptComponent.h"
+#include "Component/ExponentialHeightFogComponent.h"
 
 ASwamp::ASwamp()
 {
@@ -18,6 +19,10 @@ ASwamp::ASwamp()
 	Box->SetCollisionResponseToAllChannels(ECollisionResponse::Ignore);
 	Box->SetCollisionResponseToChannel(ECollisionChannel::Pawn, ECollisionResponse::Overlap);
 
+	UExponentialHeightFogComponent* Fog = CreateDefaultSubobject<UExponentialHeightFogComponent>("FogComponent");
+	Fog->SetupAttachment(Mesh);
+	Fog->SetFogEnabled(false);
+
 	// BeginPlay에서 ScriptComponent가 Box의 Overlap 이벤트를 Lua 콜백에 연결한다.
 	UScriptComponent* Script = CreateDefaultSubobject<UScriptComponent>("SwampScript");
 	Script->SetScriptPath("Assets/Scripts/Swamp.lua");
@@ -31,4 +36,9 @@ UBoxComponent* ASwamp::GetBoxComponent() const
 UStaticMeshComponent* ASwamp::GetStaticMeshComponent() const
 {
 	return Cast<UStaticMeshComponent>(GetRootComponent());
+}
+
+UExponentialHeightFogComponent* ASwamp::GetFogComponent() const
+{
+	return Cast<UExponentialHeightFogComponent>(FindComponentByName("FogComponent"));
 }

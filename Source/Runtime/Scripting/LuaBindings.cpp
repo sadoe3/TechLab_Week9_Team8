@@ -9,6 +9,8 @@
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/RacingCar.h"
+#include "GameFramework/Swamp.h"
+#include "Component/ExponentialHeightFogComponent.h"
 
 namespace LuaBindings
 {
@@ -187,6 +189,19 @@ namespace LuaBindings
 					}
 
 					Character->SetVelocity(Velocity);
+				}),
+			"FogEnabled", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent()) throw sol::error("FogEnabled requires a Swamp with a Fog component");
+					return Swamp->GetFogComponent()->IsFogEnabled();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, bool bEnabled)
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent() || Swamp->GetFogComponent()->IsPendingDestroy()) throw sol::error("Swamp Fog component is unavailable");
+					Swamp->GetFogComponent()->SetFogEnabled(bEnabled);
 				}),
 			"MaxSpeed", sol::property(
 				[](const TWeakObjectPtr<AActor>& Reference) -> float

@@ -1,12 +1,19 @@
 local SlowDownMultiplier = 0.5
+local OverlapCount = 0
 
 function OnBeginOverlap(OtherActor)
     print("[Swamp] BeginOverlap", OtherActor.Name)
     OtherActor.Velocity = OtherActor.Velocity * SlowDownMultiplier
-    -- TODO: Fog를 활성화한다.
+    OverlapCount = OverlapCount + 1
+    obj.FogEnabled = true
 end
 
 function OnEndOverlap(OtherActor)
     print("[Swamp] EndOverlap", OtherActor.Name)
-    -- TODO: Fog를 비활성화한다.
+    OverlapCount = math.max(0, OverlapCount - 1)
+    obj.FogEnabled = OverlapCount > 0
+end
+
+function EndPlay()
+    obj.FogEnabled = false
 end
