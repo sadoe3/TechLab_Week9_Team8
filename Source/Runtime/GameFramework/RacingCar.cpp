@@ -3,6 +3,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ScriptComponent.h"
+#include "Component/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
 
@@ -30,7 +31,26 @@ void ARacingCar::BeginPlay()
 {
 	Super::BeginPlay();
 	if (IsPendingDestroy()) return;
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->OnComponentHit.RemoveAll(this);
+		Capsule->OnComponentHit.AddRaw(this, &ARacingCar::HandleComponentHit);
+	}
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
 	GetWorld()->SetViewTarget(this);
+}
+
+void ARacingCar::EndPlay()
+{
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->OnComponentHit.RemoveAll(this);
+	}
+	Super::EndPlay();
+}
+
+void ARacingCar::HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
+{
+	SetVelocity(FVector::ZeroVector);
 }
