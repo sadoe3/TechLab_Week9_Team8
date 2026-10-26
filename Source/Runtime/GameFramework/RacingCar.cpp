@@ -52,12 +52,6 @@ void ARacingCar::BeginPlay()
 	FGameHud::SetScore(0);
 }
 
-void ARacingCar::EndPlay()
-{
-	FGameHud::OnScoreChanged.RemoveAll(this);
-	Super::EndPlay();
-}
-
 void ARacingCar::HandleScoreChanged(int32 NewScore)
 {
 	ScoreText->SetText(std::to_string(NewScore));
@@ -69,6 +63,7 @@ void ARacingCar::EndPlay()
 	{
 		Capsule->OnComponentHit.RemoveAll(this);
 	}
+	FGameHud::OnScoreChanged.RemoveAll(this);
 	Super::EndPlay();
 }
 
