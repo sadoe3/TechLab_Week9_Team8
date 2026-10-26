@@ -123,75 +123,6 @@
                     }
                 },
                 {
-                    "Class": "ATextRenderActor",
-                    "Components": [
-                        {
-                            "Class": "USceneComponent",
-                            "Name": "DefaultSceneRoot",
-                            "Parent": "",
-                            "Properties": {
-                                "Transform": {
-                                    "Location": {
-                                        "X": 0.0005365777178667486,
-                                        "Y": -1.7455697161494754e-05,
-                                        "Z": -0.024598121643066406
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 88.13675689697266
-                                    },
-                                    "Scale": {
-                                        "X": 1.0,
-                                        "Y": 0.5504589080810547,
-                                        "Z": 1.0
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "Class": "UTextRenderComponent",
-                            "Name": "TextRenderComponent",
-                            "Parent": "DefaultSceneRoot",
-                            "Properties": {
-                                "CollisionEnabled": 0,
-                                "CollisionResponses.Pawn": 2,
-                                "CollisionResponses.WorldDynamic": 2,
-                                "CollisionResponses.WorldStatic": 2,
-                                "Font": "Resources/Fonts/Pretendard.json",
-                                "ObjectType": 0,
-                                "Text": "Press E To GameStart",
-                                "TextSize": 1.0,
-                                "Transform": {
-                                    "Location": {
-                                        "X": 0.0,
-                                        "Y": 0.0,
-                                        "Z": 0.0
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 1.0,
-                                        "Y": 1.0,
-                                        "Z": 1.0
-                                    }
-                                },
-                                "bCastShadow": true,
-                                "bGenerateOverlapEvents": true,
-                                "bReceiveShadow": true,
-                                "bVisible": true
-                            }
-                        }
-                    ],
-                    "Name": "ATextRenderActor_0",
-                    "Properties": {
-                        "ActorLabel": ""
-                    }
-                },
-                {
                     "Class": "AActor",
                     "Components": [
                         {
@@ -355,6 +286,125 @@
                         }
                     ],
                     "Name": "AAmbientLightActor_0",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
+                },
+                {
+                    "Class": "AMainMenuHud",
+                    "Components": [
+                        {
+                            "Class": "USceneComponent",
+                            "Name": "DefaultSceneRoot",
+                            "Parent": "",
+                            "Properties": {
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UCameraComponent",
+                            "Name": "MenuCamera",
+                            "Parent": "",
+                            "Properties": {
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 0.6000000238418579,
+                                        "Y": 0.6000000238418579,
+                                        "Z": 0.6000000238418579
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UBillboardComponent",
+                            "Material": {
+                                "Base": "BillboardMaterial",
+                                "Instance": {
+                                    "BaseColor": {
+                                        "A": 1.0,
+                                        "B": 1.0,
+                                        "G": 1.0,
+                                        "R": 1.0
+                                    },
+                                    "BlendState": "AlphaBlend",
+                                    "Properties": {},
+                                    "SamplerState": "LinearClamp",
+                                    "Shininess": 32.0,
+                                    "SpecularColor": {
+                                        "A": 1.0,
+                                        "B": 0.5,
+                                        "G": 0.5,
+                                        "R": 0.5
+                                    },
+                                    "Textures": [
+                                        "Assets/UI/menu_0.png"
+                                    ],
+                                    "UVScrollSpeed": [
+                                        0.0,
+                                        0.0
+                                    ],
+                                    "bFlipNormalGreen": false
+                                }
+                            },
+                            "Name": "Billboard",
+                            "Parent": "MenuCamera",
+                            "Properties": {
+                                "CollisionEnabled": 0,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 1,
+                                "Transform": {
+                                    "Location": {
+                                        "X": 10.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 17.31999969482422,
+                                        "Z": 11.550000190734863
+                                    }
+                                },
+                                "bCastShadow": true,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": true,
+                                "bVisible": true
+                            }
+                        }
+                    ],
+                    "Name": "AMainMenuHud_0",
                     "Properties": {
                         "ActorLabel": ""
                     }

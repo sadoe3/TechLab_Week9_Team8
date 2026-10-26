@@ -197,6 +197,20 @@ void UGameEngine::RenderGameView()
 	Renderer->RenderOpaque(View.ViewProjection, true);
 	Renderer->RenderTranslucent(View.ViewProjection);
 	RenderCommand::EndRenderPass(ColorInfo);
+
+	if (!Data.HudRenderQueue.IsEmpty())
+	{
+		FRenderingInfo HudInfo = SceneInfo;
+		for (FRenderingDesc& Color : HudInfo.ColorRenderTargets)
+			Color.LoadOp = ERenderTargetLoadOp::Load;
+		HudInfo.DepthStencil.Texture = nullptr;
+
+		RenderCommand::BeginRenderPass(HudInfo);
+		RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
+		Renderer->RenderHud(Data.HudRenderQueue, View.ViewProjection, View.GetCameraLocation(), View.RenderMode);
+		RenderCommand::EndRenderPass(HudInfo);
+	}
+
 	RenderCommand::UnbindShaderResources(8, 4, EShaderBindFlagBits::Pixel);
 	RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Vertex);
 

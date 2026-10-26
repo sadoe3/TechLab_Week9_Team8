@@ -179,7 +179,7 @@ void FTextRenderer::OnRender(const FString& Text, const FMatrix& WorldMatrix, fl
 
 // ViewProjection과 MSDF 상수로 텍스트 Mesh를 그린다.
 void FTextRenderer::OnRender(const FString& Text, const FMatrix& WorldMatrix, float TextSize,
-	const UFont& Atlas, const FMatrix& ViewProjection)
+	const UFont& Atlas, const FMatrix& ViewProjection, bool bIgnoreDepth)
 {
 	if (Text.empty() || !Atlas.AtlasTexture)
 	{
@@ -213,6 +213,7 @@ void FTextRenderer::OnRender(const FString& Text, const FMatrix& WorldMatrix, fl
 	MSDFData MSDFData;
 	MSDFData.ScreenPx = Atlas.DistanceRange;
 
+	PipelineState.DepthStencilState = bIgnoreDepth ? EDepthStencilState::Disabled : EDepthStencilState::Default;
 	RenderCommand::BindPipelineState(PipelineState);
 	RenderCommand::BindShaderResource(0, Atlas.AtlasTexture, EShaderBindFlagBits::Pixel);
 	RenderCommand::UpdateBufferData(MVP.get(), &TransData, sizeof(TextTransformData));

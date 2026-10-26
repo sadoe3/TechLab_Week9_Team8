@@ -226,6 +226,20 @@ void FRenderer::RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection, 
 	RenderTranslucent(ViewProjection);
 }
 
+void FRenderer::RenderHud(FRenderQueue& HudQueue, const FMatrix& ViewProjection, const FVector& CameraPosition, const FViewRenderMode& SceneMode)
+{
+	if (HudQueue.IsEmpty())
+		return;
+
+	FViewRenderMode HudMode = SceneMode;
+	HudMode.ViewMode = EViewMode::Unlit;
+	SetViewMode(HudMode);
+
+	RenderAll(HudQueue, ViewProjection, CameraPosition);
+
+	SetViewMode(SceneMode);
+}
+
 void FRenderer::RenderOpaque(const FMatrix& ViewProjection, bool bAfterPrepass)
 {
     const ESceneMeshPass Pass = bAfterPrepass ? ESceneMeshPass::OpaqueAfterPrepass : ESceneMeshPass::Color;

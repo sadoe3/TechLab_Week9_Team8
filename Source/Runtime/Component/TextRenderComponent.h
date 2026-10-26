@@ -27,6 +27,9 @@ public:
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue) override {}
 
 	const FString& GetText() const { return Text; }
+
+	bool IsDrawOnTop() const { return bDrawOnTop; }	// 맨 앞에 그리기
+	void SetDrawOnTop(bool bInDrawOnTop) { bDrawOnTop = bInDrawOnTop; }
 	void SetText(const FString& InText) { Text = InText; }
 
 	UFont* GetFont() const { return Font; }
@@ -41,6 +44,7 @@ private:
 	FString Text = "Text";
 	UFont* Font = nullptr;
 	float TextSize = 1.0f;
+	bool bDrawOnTop = false;
 
 	mutable FStaticMeshData PickingMesh;
 	mutable FString CachedText;
