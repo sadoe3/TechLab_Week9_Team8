@@ -6,6 +6,8 @@ local CoastingDamping = 2.0
 local BrakeDamping = 20.0
 local StopSpeed = 0.01
 
+local score = 0
+
 function Tick(DeltaTime)
     -- W/S는 추진력, A/D는 조향만 담당합니다. 동시 입력은 S와 A가 우선합니다.
     local Throttle = 0.0
@@ -54,4 +56,14 @@ function Tick(DeltaTime)
     -- 조향은 속력을 바꾸지 않습니다. 실제 이동과 충돌 처리는 Character Tick이 담당합니다.
     Yaw = math.rad(Rotation.yaw)
     obj.Velocity = Vector(math.cos(Yaw) * Speed, math.sin(Yaw) * Speed, Velocity.z)
+end
+
+function OnBeginOverlap(OtherActor)
+    if(OtherActor.Label == "Coin")
+    then
+        score = score + 5;
+        print("Score " .. score)
+        game.set_score(score);
+        OtherActor:Destroy()
+    end
 end

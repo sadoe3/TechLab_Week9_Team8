@@ -3,6 +3,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 
+class UTextRenderComponent;
 class UPrimitiveComponent;
 struct FHitResult;
 
@@ -17,8 +18,12 @@ public:
 	ARacingCar();
 	virtual void BeginPlay() override;
 	virtual void EndPlay() override;
+	
+	void HandleScoreChanged(int32 NewScore);
+
 	float GetMaxSpeed() const { return MaxSpeed; }
 
+	UTextRenderComponent* ScoreText = nullptr;
 protected:
 	float MaxSpeed = 6.0f;
 

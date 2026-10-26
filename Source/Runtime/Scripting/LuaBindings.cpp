@@ -8,6 +8,7 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Core/GameHud.h"
 #include "GameFramework/RacingCar.h"
 #include "GameFramework/Swamp.h"
 #include "Component/ExponentialHeightFogComponent.h"
@@ -102,6 +103,18 @@ namespace LuaBindings
 					}
 
 					return Actor->GetName();
+				}),
+			// Label 이름 조회 
+			"Label", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FString
+				{
+					AActor* Actor = Reference.Get();
+					if (!Actor)
+					{
+						throw sol::error("Actor has been destroyed");
+					}
+
+					return Actor->GetActorLabel();
 				}),
 			// 삭제 예약 상태를 포함한 유효성 판정
 			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
@@ -261,6 +274,13 @@ namespace LuaBindings
 		Input.set_function("is_released", [](const FString& Key)
 			{
 				return FInputSystem::IsKeyReleased(ResolveInputKey(Key));
+			}
+		);
+
+		sol::table Game = Lua.create_named_table("game");
+		Game.set_function("set_score", [](const int32 num)
+			{
+				FGameHud::SetScore(num);
 			}
 		);
 	}
