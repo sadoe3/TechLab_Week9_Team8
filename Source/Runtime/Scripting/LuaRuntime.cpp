@@ -133,6 +133,7 @@ bool FLuaRuntime::LoadScript(
 	return CheckResult(Result, ScriptPath, "Load");
 }
 
+// 현재 coroutine 함수가 아닌 틱그룹 변경도 연결중임..
 void FLuaRuntime::BindCoroutineFunctions(sol::environment& Environment, UScriptComponent* Owner, const FString& ScriptPath)
 {
 	// 소유 컴포넌트의 비소유 참조
@@ -149,6 +150,44 @@ void FLuaRuntime::BindCoroutineFunctions(sol::environment& Environment, UScriptC
 
 			return CreateCoroutine(OwnerComponent, Function, ScriptPath);
 		});
+
+	// 환경별 컴포넌트 설정 함수
+	sol::table Script = Lua.create_table();
+	Script.set_function("set_tick_group",
+		[WeakOwner](const FString& GroupName)
+		{
+			UScriptComponent* OwnerComponent = WeakOwner.Get();
+			if (!OwnerComponent)
+			{
+				throw sol::error("Script component is unavailable");
+			}
+
+			ETickingGroup Group = ETickingGroup::Max;
+			if (GroupName == "PrePhysics")
+			{
+				Group = ETickingGroup::PrePhysics;
+			}
+			else if (GroupName == "DuringPhysics")
+			{
+				Group = ETickingGroup::DuringPhysics;
+			}
+			else if (GroupName == "PostPhysics")
+			{
+				Group = ETickingGroup::PostPhysics;
+			}
+			else if (GroupName == "PostUpdateWork")
+			{
+				Group = ETickingGroup::PostUpdateWork;
+			}
+			else
+			{
+				throw sol::error("Unsupported tick group: " + GroupName);
+			}
+
+			OwnerComponent->RequestInitialTickGroup(Group);
+		});
+
+	Environment["script"] = Script;
 }
 
 uint32 FLuaRuntime::CreateCoroutine(UScriptComponent* Owner, const sol::protected_function& Function, const FString& ScriptPath)

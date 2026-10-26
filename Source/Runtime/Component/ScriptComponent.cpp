@@ -54,12 +54,15 @@ void UScriptComponent::TickComponent(float DeltaTime)
 {
     Super::TickComponent(DeltaTime);
 
-	// 스크립트 변경 확인
-	CheckScriptChanges(DeltaTime);
-	if (!bScriptReady||!CanRunGameplay())
-	{
-		return;
-	}
+    // 변경 전 실행 준비 상태
+    const bool bWasScriptReady = bScriptReady;
+
+    // 스크립트 변경 확인
+    CheckScriptChanges(DeltaTime);
+    if (!bWasScriptReady || !bScriptReady || !CanRunGameplay())
+    {
+        return;
+    }
 
 	FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
 	assert(Runtime != nullptr);
@@ -145,7 +148,9 @@ bool UScriptComponent::TryLoadScript()
     FLuaRuntime* Runtime = OwnerWorld->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    
+    // 이번 시작 후보의 요청 초기화
+    RequestedTickGroup = ETickingGroup::Max;
+
     // 기존 실행 환경을 수정하지 않고 교체 후보를 만든다.
     sol::environment NewEnvironment = Runtime->CreateEnvironment(OwnerActor);
     Runtime->BindCoroutineFunctions(NewEnvironment, this, ScriptPath);
@@ -173,9 +178,12 @@ bool UScriptComponent::TryLoadScript()
     // 최초 시작에만 호출하며, 최초 로드 실패 후 재시도도 포함한다.
     if (bScriptReady == false && NewBeginPlayFunction.valid())
     {
+        bCallingInitialBeginPlay = true;
         sol::protected_function_result Result = NewBeginPlayFunction();
+        bCallingInitialBeginPlay = false;
         if (Result.valid() == false)
         {
+            RequestedTickGroup = ETickingGroup::Max;
             sol::error Error = Result;
             HTR_LOG(Error, "Lua BeginPlay failed ({}): {}", ScriptPath, Error.what());
             // 실패한 시작에서 생성한 작업 취소
@@ -187,6 +195,7 @@ bool UScriptComponent::TryLoadScript()
     // 후보 콜백의 종료·삭제 요청 반영
     if (!CanRunGameplay())
     {
+        RequestedTickGroup = ETickingGroup::Max;
         Runtime->CancelCoroutines(this);
         return false;
     }
@@ -206,6 +215,9 @@ bool UScriptComponent::TryLoadScript()
     EndOverlapFunction = NewEndOverlapFunction;
     HitFunction = NewHitFunction;
     bScriptReady = true;
+
+    // 환경 교체 성공 후 그룹 적용
+    ApplyInitialTickGroup();
 
     return true;
 }
@@ -363,4 +375,44 @@ void UScriptComponent::ResetScript()
 
     // Environment 해제
     ScriptEnvironment = sol::environment();
+
+    // 초기 Tick 요청 정리
+    bCallingInitialBeginPlay = false;
+    RequestedTickGroup = ETickingGroup::Max;
+}
+
+void UScriptComponent::RequestInitialTickGroup(ETickingGroup Group)
+{
+    // 초기 시작 범위 검증
+    if (!bCallingInitialBeginPlay || !CanRunGameplay())
+    {
+        throw sol::error("script.set_tick_group is only available during initial BeginPlay");
+    }
+    RequestedTickGroup = Group;
+}
+
+void UScriptComponent::ApplyInitialTickGroup()
+{
+    // 후보 요청 소비
+    const ETickingGroup NewGroup = RequestedTickGroup;
+    RequestedTickGroup = ETickingGroup::Max;
+
+    if (NewGroup == ETickingGroup::Max || PrimaryComponentTick.TickGroup == NewGroup)
+    {
+        return;
+    }
+
+    const bool bWasRegistered = PrimaryComponentTick.IsTickFunctionRegistered();
+    const bool bWasEnabled = PrimaryComponentTick.IsTickFunctionEnabled();
+
+    // 기존 그룹에서 해제 후 설정 변경
+    PrimaryComponentTick.UnRegisterTickFunction();
+    PrimaryComponentTick.TickGroup = NewGroup;
+
+    if (bWasRegistered)
+    {
+        // 최초 로드 재시도의 등록 상태 복원
+        PrimaryComponentTick.RegisterTickFunction(GetOwner()->GetWorld()->GetTickTaskManager());
+        PrimaryComponentTick.SetTickFunctionEnable(bWasEnabled);
+    }
 }
