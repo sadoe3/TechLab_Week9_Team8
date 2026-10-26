@@ -480,5 +480,10 @@ namespace LuaBindings
 				FGameHud::SetScore(num);
 			}
 		);
+		Game.set_function("set_countdown", [](const FString& Text)
+			{
+				FGameHud::SetCountdown(Text);
+			}
+		);
 	}
 }

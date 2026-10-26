@@ -24,10 +24,13 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	void HandleScoreChanged(int32 NewScore);
+	void HandleCountdownChanged(const FString& NewCountdown);
 
 	float GetMaxSpeed() const { return MaxSpeed; }
 
 	UTextRenderComponent* ScoreText = nullptr;
+
+	UTextRenderComponent* CountdownText = nullptr;
 
 	USceneComponent* SpeedNeedlePivot = nullptr;
 protected:

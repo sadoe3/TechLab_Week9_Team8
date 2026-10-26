@@ -5,6 +5,11 @@ local PlayerActorName = "ARacingCar_0"
 local CountdownSeconds = 3.0
 local CheckpointCount = 4
 
+-- 출발 신호, 딜레이 시간
+local GoText = "출발!"
+local GoDisplaySeconds = 1.0
+local GoDisplayRemaining = 0.0
+
 -- 체크포인트 Label과 통과 순번
 local CheckpointIndices = {
     Checkpoint_1 = 1,
@@ -64,6 +69,9 @@ function BeginPlay()
     Player.Velocity = Vector(0, 0, 0)
     game.set_score(0)
 
+    GoDisplayRemaining = 0.0
+    game.set_countdown(tostring(math.ceil(CountdownSeconds)))
+
     print(string.format("[Race] Countdown: %d", math.ceil(CountdownSeconds)))
 end
 
@@ -87,12 +95,24 @@ function Tick(DeltaTime)
 
         if CurrentNumber == 0 then
             Race.State = "Running"
+            GoDisplayRemaining = GoDisplaySeconds
+            game.set_countdown(GoText)
             print("[Race] Go")
         elseif CurrentNumber ~= PreviousNumber then
+            game.set_countdown(tostring(CurrentNumber))
             print(string.format("[Race] Countdown: %d", CurrentNumber))
         end
 
         return
+    end
+
+    -- 출발 문구 잠깐!
+    if GoDisplayRemaining > 0.0 then
+        GoDisplayRemaining = GoDisplayRemaining - DeltaTime
+        if GoDisplayRemaining <= 0.0 then
+            GoDisplayRemaining = 0.0
+            game.set_countdown("")
+        end
     end
 
     if Race.State == "Running" then
@@ -105,5 +125,7 @@ end
 
 -- 레이스 소유권 정리
 function EndPlay()
+    GoDisplayRemaining = 0.0
+    game.set_countdown("")
     Race.Stop()
 end
