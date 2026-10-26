@@ -13611,7 +13611,7 @@
                             "Name": "StaticMeshComponent",
                             "OverrideMaterials": [
                                 {
-                                    "Base": "CapsuleComponent",
+                                    "Base": "DefaultMaterial",
                                     "Instance": {
                                         "BaseColor": {
                                             "A": 1.0,
@@ -13651,9 +13651,9 @@
                                 "StaticMesh": "Cone",
                                 "Transform": {
                                     "Location": {
-                                        "X": 0.0,
-                                        "Y": 10.647099494934082,
-                                        "Z": 0.3297378420829773
+                                        "X": 0.005176194943487644,
+                                        "Y": 8.001547813415527,
+                                        "Z": -0.1820426881313324
                                     },
                                     "Rotation": {
                                         "Pitch": 88.3713150024414,
@@ -13677,29 +13677,52 @@
                             "Name": "CapsuleComponent",
                             "Parent": "StaticMeshComponent",
                             "Properties": {
-                                "CapsuleHalfHeight": 1.0,
-                                "CapsuleRadius": 0.5,
+                                "CapsuleHalfHeight": 0.699999988079071,
+                                "CapsuleRadius": 0.699999988079071,
                                 "CollisionEnabled": 1,
                                 "CollisionResponses.Pawn": 2,
                                 "CollisionResponses.WorldDynamic": 2,
                                 "CollisionResponses.WorldStatic": 2,
                                 "ObjectType": 2,
+                                "ShapeColor": {
+                                    "A": 255,
+                                    "B": 0,
+                                    "G": 255,
+                                    "R": 0
+                                },
                                 "Transform": {
                                     "Location": {
-                                        "X": 2.384185791015625e-07,
-                                        "Y": -7.62939453125e-06,
-                                        "Z": 0.0
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.4000000059604645
                                     },
                                     "Rotation": {
-                                        "Pitch": -88.3713150024414,
+                                        "Pitch": 0.0,
                                         "Roll": 0.0,
                                         "Yaw": 0.0
                                     },
                                     "Scale": {
-                                        "X": 28.893068313598633,
-                                        "Y": 13.276811599731445,
-                                        "Z": 2.0
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
                                     }
+                                },
+                                "bCastShadow": false,
+                                "bDrawOnlyIfSelected": false,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": false,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UMovementComponent",
+                            "Name": "MovementComponent",
+                            "Parent": "",
+                            "Properties": {
+                                "Velocity": {
+                                    "X": 0.0,
+                                    "Y": 0.0,
+                                    "Z": 0.0
                                 }
                             }
                         },
