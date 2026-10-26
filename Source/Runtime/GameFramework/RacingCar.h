@@ -6,6 +6,8 @@
 class UTextRenderComponent;
 class UPrimitiveComponent;
 class USceneComponent;
+class UStaticMeshComponent;
+class UCameraComponent;
 struct FHitResult;
 
 class ARacingCar : public ACharacter
@@ -29,6 +31,14 @@ public:
 
 	USceneComponent* SpeedNeedlePivot = nullptr;
 protected:
+	void UpdateHudForFieldOfView();
+
+	UCameraComponent* VehicleCamera = nullptr;
+	UStaticMeshComponent* SpeedDial = nullptr;
+
+	float BaseFieldOfView = 0.0f;
+	float LastAppliedFieldOfView = -1.0f;
+
 	float MaxSpeed = 6.0f;
 
 private:
