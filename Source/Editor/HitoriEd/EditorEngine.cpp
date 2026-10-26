@@ -2,6 +2,8 @@
 
 #include "Editor/HitoriEd/EditorEngine.h"
 
+#include "Audio/SoundManager.h"
+
 #include "Core/EngineStatics.h"
 #include "Core/EngineTimer.h"
 #include "Launch/LaunchEngineLoop.h"
@@ -343,13 +345,33 @@ bool UEditorEngine::Init()
 	Pause = { "Pause",  "Pause",			UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarPauseIcon), White, { EKeyCode::Pause } };
 
 	Pause.CanExecute = [this]()->bool {return !bIsPaused && PlayWorld; };
-	Pause.Execute = [this]() { bIsPaused = true; };
+	Pause.Execute = [this]()
+	{
+		// 오디오를 먼저 일시정지하고 성공하면 월드 Tick도 멈춥니다.
+		if (!GetSoundManager()->SetAllPaused(true))
+		{
+			HTR_LOG(Error, "Failed to pause PIE audio.");
+			return;
+		}
+
+		bIsPaused = true;
+	};
 
 
 	Resume = { "Resume", "Resume",          UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarPlayIcon),  White, { EKeyCode::Pause } };
 
 	Resume.CanExecute = [this]()->bool {return bIsPaused && PlayWorld; };
-	Resume.Execute = [this]() { bIsPaused = false; };
+	Resume.Execute = [this]()
+	{
+		// 마스터 그룹의 일시정지를 해제한 뒤 월드 Tick을 재개합니다.
+		if (!GetSoundManager()->SetAllPaused(false))
+		{
+			HTR_LOG(Error, "Failed to resume PIE audio.");
+			return;
+		}
+
+		bIsPaused = false;
+	};
 
 	StepFrame = { "Step", "Step One Frame", UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarStepIcon),  White, {} };
 
@@ -1292,6 +1314,18 @@ void UEditorEngine::StartPlayInEditorSession()
     PIEViewport->BeginPlay(MakeUnique<FGameViewportClient>(*PlayWorld));
     // BeginPlay는 입력을 차단한다. 아래 일반 프레임 갱신이 첫 World Tick 전에 한 번 허용한다.
 	OnActiveWorldChanged();
+
+	// 이전 PIE의 일시정지 상태를 BeginPlay의 음원 재생 전에 초기화합니다.
+	if (!GetSoundManager()->SetAllPaused(false))
+	{
+		HTR_LOG(Error, "Failed to reset PIE audio pause state.");
+		// 이미 생성한 PIE 월드와 뷰포트를 정리하고 시작을 취소합니다.
+		EndPlayMap();
+		return;
+	}
+
+	bIsPaused = false;
+	bStepRequested = false;
 	PlayWorld->BeginPlay();
 }
 
@@ -1335,6 +1369,13 @@ void UEditorEngine::EndPlayMap()
 	DestroyWorldContext(PlayWorld);
 	delete PlayWorld;
 	PlayWorld = nullptr;
+
+	// Actor 종료·삭제 과정에서 재생한 소리까지 모두 정지합니다.
+	if (!GetSoundManager()->StopAll())
+	{
+		HTR_LOG(Error, "Failed to stop PIE audio.");
+	}
+
 	bIsPaused = false;
 	bStepRequested = false;
 	OnActiveWorldChanged();

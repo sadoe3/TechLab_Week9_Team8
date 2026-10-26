@@ -8,6 +8,9 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Engine/Engine.h"
+#include "Audio/SoundManager.h"
+#include <cassert>
 
 namespace LuaBindings
 {
@@ -215,6 +218,83 @@ namespace LuaBindings
 				HTR_LOG(Info, "[Lua] {}", Message);
 			}
 		);
+
+		// 생략한 재생 옵션은 기본값으로 처리합니다.
+		sol::table Audio = Lua.create_named_table("audio");
+		auto PlaySound = [](const FString& FilePath, sol::optional<bool> bLoop, sol::optional<float> Volume) -> int64
+		{
+			assert(GEngine != nullptr);
+
+			FSoundManager* SoundManager = GEngine->GetSoundManager();
+			assert(SoundManager != nullptr);
+
+			const bool bShouldLoop = bLoop.value_or(false);
+			const float SoundVolume = Volume.value_or(1.0f);
+
+			// Lua에서 잘못된 볼륨을 전달하면 재생하지 않습니다.
+			if (!(SoundVolume >= 0.0f && SoundVolume <= 1.0f))
+			{
+				// 재생 실패는 음수로 반환합니다.
+				return -1;
+			}
+
+			return SoundManager->PlaySound(FilePath, bShouldLoop, SoundVolume);
+		};
+		Audio.set_function("play", PlaySound);
+
+		// 같은 파일의 다른 재생에는 영향을 주지 않습니다.
+		Audio.set_function("stop", [](int64 SoundId)
+		{
+			return GEngine->GetSoundManager()->StopSound(SoundId);
+		});
+
+		Audio.set_function("set_volume", [](int64 SoundId, float Volume)
+		{
+			// Lua에서 전달한 볼륨은 범위를 검사한 뒤 사용합니다.
+			if (!(Volume >= 0.0f && Volume <= 1.0f))
+			{
+				return false;
+			}
+
+			return GEngine->GetSoundManager()->SetSoundVolume(SoundId, Volume);
+		});
+
+		// BGM 볼륨을 생략하면 기본값 1.0을 사용합니다.
+		auto PlayBGM = [](const FString& FilePath, sol::optional<float> Volume)
+		{
+			const float SoundVolume = Volume.value_or(1.0f);
+			if (!(SoundVolume >= 0.0f && SoundVolume <= 1.0f))
+			{
+				return false;
+			}
+
+			return GEngine->GetSoundManager()->PlayBGM(FilePath, SoundVolume);
+		};
+		Audio.set_function("play_bgm", PlayBGM);
+
+		auto SetBGMVolume = [](float Volume)
+		{
+			// 범위를 벗어난 입력은 현재 볼륨을 변경하지 않습니다.
+			if (!(Volume >= 0.0f && Volume <= 1.0f))
+			{
+				return false;
+			}
+
+			return GEngine->GetSoundManager()->SetBGMVolume(Volume);
+		};
+		Audio.set_function("set_bgm_volume", SetBGMVolume);
+
+		// BGM 재생을 종료하고 음원 자원도 해제합니다.
+		Audio.set_function("stop_bgm", []()
+		{
+			GEngine->GetSoundManager()->StopBGM();
+		});
+
+		// true는 일시정지, false는 재개입니다.
+		Audio.set_function("pause_bgm", [](bool bPaused)
+		{
+			return GEngine->GetSoundManager()->SetBGMPaused(bPaused);
+		});
 
 		// 인풋 관련 함수 바인딩
 		sol::table Input = Lua.create_named_table("input");
