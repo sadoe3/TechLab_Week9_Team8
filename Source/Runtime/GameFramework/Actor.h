@@ -15,6 +15,7 @@ class AActor : public UObject
 {
 	DECLARE_CLASS(AActor, UObject)
 	REFLECT_START(ClassName)
+		PROPERTY(ActorLabel)
 		REFLECT_END()
 public:
 	AActor();
@@ -77,6 +78,18 @@ public:
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 	UActorComponent* FindComponentByName(FName Name) const;
+
+	// 미지정 시 내부 이름 표시
+	FString GetActorLabel() const
+	{
+		return ActorLabel.empty() ? GetName() : ActorLabel;
+	}
+
+	// 표시명 변경
+	void SetActorLabel(const FString& InLabel)
+	{
+		ActorLabel = InLabel;
+	}
 protected:
 	virtual void OnDefaultSubobjectCreated(UObject* Subobject) override;
 
@@ -87,6 +100,9 @@ protected:
 	UWorld* World = nullptr;
 	ULevel* Level = nullptr;
 private:
+	// 에디터 표시명
+	FString ActorLabel;
+
 	// World가 호출하는 공통 진입점
 	void DispatchBeginPlay();
 	void DispatchEndPlay();

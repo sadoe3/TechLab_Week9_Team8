@@ -24,6 +24,8 @@ void UCameraComponent::TickComponent(float DeltaTime)
 // 키 입력을 카메라의 전방·우측·상방 이동으로 변환한다.
 void UCameraComponent::UpdateMovement(float DeltaTime)
 {
+    if (!FInputSystem::IsMouseDown(EMouseButton::Right)) return;
+
     if (FInputSystem::IsKeyDown(EKeyCode::W)) Transform.Location += Transform.GetForward() * MoveSpeed * DeltaTime;
     if (FInputSystem::IsKeyDown(EKeyCode::S)) Transform.Location -= Transform.GetForward() * MoveSpeed * DeltaTime;
     if (FInputSystem::IsKeyDown(EKeyCode::A)) Transform.Location -= Transform.GetRight() * MoveSpeed * DeltaTime;

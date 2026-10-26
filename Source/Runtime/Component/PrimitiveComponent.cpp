@@ -4,7 +4,7 @@
 #include "Asset/AssetManager.h"
 #include "Render/RenderCommand.h"
 
-
+#include "Component/ScriptComponent.h"
 #include "Engine/PrimitiveSceneProxy.h"
 #include "Engine/Scene.h"
 #include "GameFramework/Actor.h"
@@ -80,6 +80,19 @@ void UPrimitiveComponent::DestroyPhysicsState()
 void UPrimitiveComponent::OnRegister()
 {
 	Super::OnRegister();
+	// 이미 시작한 소유 스크립트 연결
+	if (AActor* OwnerActor = GetOwner())
+	{
+		for (UActorComponent* Component : OwnerActor->GetComponents())
+		{
+			UScriptComponent* Script = Cast<UScriptComponent>(Component);
+			if (Script && Script->HasBegunPlay())
+			{
+				Script->BindPrimitive(this);
+			}
+		}
+	}
+
 	CreatePhysicsState();
 }
 
@@ -177,52 +190,25 @@ void UPrimitiveComponent::OnTransformDirty()
 		SceneProxy->GetScene()->MarkDirty(SceneProxy);
 }
 
-bool UPrimitiveComponent::MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit)
+bool UPrimitiveComponent::QueryMovement(const FVector& Start, const FVector& Delta, const FRotator& Rotation, FHitResult& OutHit, TArray<FHitResult>& OutOverlaps)
 {
-	if (IsPendingDestroy() || (GetOwner() && GetOwner()->IsPendingDestroy()))
-	{
-		if (Hit) *Hit = FHitResult();
-		return false;
-	}
-	TArray<FHitResult> PendingOverlaps;
-	const FVector Start = GetWorldLocation();
-	FHitResult MoveHit;
-	MoveHit.TraceStart = Start;
-	MoveHit.TraceEnd = Start + Delta;
-	MoveHit.Location = Start;
-	MoveHit.Distance = 0.0f;
-	if (Hit) *Hit = MoveHit;
-
 	UWorld* World = GetOwner() ? GetOwner()->GetWorld() : nullptr;
-	if (bSweep && World && GetCollisionEnabled() != ECollisionEnabled::NoCollision && GetCollisionShape().Type != ECollisionShapeType::None)
+	if (!World || GetCollisionEnabled() == ECollisionEnabled::NoCollision || GetCollisionShape().Type == ECollisionShapeType::None) return true;
+
+	TArray<FHitResult> Hits;
+	if (World->QueryComponentSweepMulti(*this, Start, Delta, Rotation, Hits, true) != ECollisionQueryStatus::Success) return false;
+	for (const FHitResult& CurrentHit : Hits)
 	{
-		TArray<FHitResult> Hits;
-		if (World->QueryComponentSweepMulti(*this, Start, Delta, NewRotation, Hits, true) != ECollisionQueryStatus::Success)
-			return false;
-
-		for (const FHitResult& CurrentHit : Hits)
+		if (!CurrentHit.bBlockingHit)
 		{
-			if (!CurrentHit.bBlockingHit)
-			{
-				PendingOverlaps.Add(CurrentHit);
-				continue;
-			}
-			MoveHit = CurrentHit;
-			break;
+			OutOverlaps.Add(CurrentHit);
+			continue;
 		}
+		OutHit = CurrentHit;
+		break;
 	}
-
-	const FVector NewLocation = Start + Delta * MoveHit.Time;
-	InternalSetWorldLocationAndRotation(NewLocation, NewRotation);
-	MoveHit.Location = GetWorldLocation();
-	MoveHit.Distance = (MoveHit.Location - Start).Size();
-	UpdateOverlaps(PendingOverlaps);
-	DispatchBlockingHit(MoveHit);
-	if (MoveHit.HitComponent && (MoveHit.HitComponent->IsPendingDestroy() || (MoveHit.HitComponent->GetOwner() && MoveHit.HitComponent->GetOwner()->IsPendingDestroy()))) MoveHit.HitComponent = nullptr;
-	if (Hit) *Hit = MoveHit;
 	return true;
 }
-
 bool UPrimitiveComponent::TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult)
 {
 	FBox MeshBox = Mesh.AABB.GetWorldAABB(WorldMatrix);
@@ -417,18 +403,20 @@ void UPrimitiveComponent::DispatchBlockingHit(const FHitResult& Hit)
 
 void UPrimitiveComponent::NotifyHit(UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
-	// TODO: Delegate 연결 시 OnComponentHit.Broadcast(this, OtherComponent, Hit);
 	HTR_LOG(Info, "OnComponentHit: {} [{}] -> {} [{}], Time={}, StartPenetrating={}", GetName(), GetUUID(), OtherComponent->GetName(), OtherComponent->GetUUID(), Hit.Time, Hit.bStartPenetrating);
+
+	OnComponentHit.Broadcast(this, OtherComponent, Hit);
 }
 
 void UPrimitiveComponent::NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// TODO: Delegate 연결 시 OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 	HTR_LOG(Info, "OnComponentBeginOverlap: {} [{}] -> {} [{}], FromSweep={}", GetName(), GetUUID(), Other->GetName(), Other->GetUUID(), bFromSweep);
+
+	OnComponentBeginOverlap.Broadcast(this, Other, bFromSweep, SweepResult);
 }
 
 void UPrimitiveComponent::NotifyEndOverlap(UPrimitiveComponent* Other)
 {
-	// TODO: Delegate 연결 시 OnComponentEndOverlap.Broadcast(this, Other);
 	HTR_LOG(Info, "OnComponentEndOverlap: {} [{}] -> {} [{}]", GetName(), GetUUID(), Other->GetName(), Other->GetUUID());
+	OnComponentEndOverlap.Broadcast(this, Other);
 }

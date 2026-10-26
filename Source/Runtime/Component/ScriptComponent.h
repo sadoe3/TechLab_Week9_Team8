@@ -6,13 +6,16 @@
 #include "ActorComponent.h"
 #include "Core/EngineString.h"
 
+class UPrimitiveComponent;
+struct FHitResult;
+
 class UScriptComponent : public UActorComponent
 {
     DECLARE_CLASS(UScriptComponent, UActorComponent)
 
     REFLECT_START(ClassName)
         PROPERTY(ScriptPath)
-        REFLECT_END()
+    REFLECT_END()
 
 public:
     UScriptComponent();
@@ -23,11 +26,18 @@ public:
 
     void OnBeginOverlap(AActor* otherActor);
     void OnEndOverlap(AActor* OtherActor);
-
+    void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
+    void BindPrimitive(UPrimitiveComponent* Primitive);
     // 후보 파일 실행 여부
     bool IsLoadingScript() const
     {
         return bLoadingScript;
+    }
+
+    // BeginPlay 전에 실행할 Lua 파일 경로를 지정합니다.
+    void SetScriptPath(const FString& InScriptPath)
+    {
+        ScriptPath = InScriptPath;
     }
 
 private:
@@ -35,9 +45,7 @@ private:
     void ResetScript();
 
     // 지정한 환경에 직접 정의된 콜백만 찾는다.
-    static sol::protected_function FindScriptFunction(
-        const sol::environment& Environment,
-        const char* FunctionName);
+    static sol::protected_function FindScriptFunction(const sol::environment& Environment, const char* FunctionName);
 
     // 새 환경과 콜백을 준비하고, 성공했을 때만 교체한다.
     bool TryLoadScript();
@@ -45,6 +53,11 @@ private:
     // 일정 간격으로 파일 수정 시각을 확인하고 재로드를 시도한다.
     void CheckScriptChanges(float DeltaTime);
 
+    void HandleComponentBeginOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, bool, const FHitResult& HIt);
+    void HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp);
+    void HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
+
+private:
     FString ScriptPath;
     sol::environment ScriptEnvironment;
 
@@ -53,12 +66,12 @@ private:
     sol::protected_function EndPlayFunction;
     sol::protected_function BeginOverlapFunction;
     sol::protected_function EndOverlapFunction;
+    sol::protected_function HitFunction;
     bool bScriptReady = false;
 
     // 실패한 수정본도 기록하여 같은 파일의 반복 로드를 막는다.
     std::filesystem::file_time_type LastAttemptedWriteTime{};
     bool bHasAttemptedWriteTime = false;
-
     float TimeSinceLastScriptCheck = 0.0f;
 
     // 최초 로드에 실패해도 수정 후 재시도할 수 있도록 유지한다.

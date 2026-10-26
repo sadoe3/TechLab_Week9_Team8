@@ -5,8 +5,10 @@
 #include "Component/ScriptComponent.h"
 #include "Containers/Array.h"
 #include "Engine/World.h"
+#include "Engine/Level.h"
 #include <algorithm>
 #include <cmath>
+#include "Engine/Engine.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -16,7 +18,13 @@ FLuaRuntime::FLuaRuntime()
 		sol::lib::math,
 		sol::lib::table,
 		sol::lib::string,
-		sol::lib::coroutine);
+		sol::lib::coroutine,
+		sol::lib::package);
+
+	// 프로젝트 모듈 경로 우선 검색
+	sol::table Package = Lua["package"];
+	const FString ExistingPath = Package["path"];
+	Package["path"] = FString("Assets/Scripts/?.lua;Assets/Scripts/?/init.lua;") + ExistingPath;
 
 	LuaBindings::Register(Lua);
 
@@ -41,6 +49,76 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 	sol::environment Environment(Lua, sol::create, Lua.globals());
 	Environment["_G"] = Environment;
 	Environment["obj"] = TWeakObjectPtr<AActor>(OwnerActor);
+
+	// 환경에 연결할 World의 비소유 참조
+	const TWeakObjectPtr<UWorld> WeakWorld(OwnerActor ? OwnerActor->GetWorld() : nullptr);
+
+	// 환경별 World API
+	sol::table WorldTable = Lua.create_table();
+	WorldTable.set_function("find_actor",
+		[WeakWorld](sol::this_state State, const FString& Name) -> sol::object
+		{
+			UWorld* World = WeakWorld.Get();
+			ULevel* Level = World ? World->GetPersistentLevel() : nullptr;
+			if (!Level)
+			{
+				return sol::make_object(State, sol::nil);
+			}
+
+			// 기존 FName 정책에 따른 배치 Actor 검색
+			const FName SearchName(Name);
+			for (AActor* Actor : Level->GetActors())
+			{
+				if (Actor && !Actor->IsPendingDestroy()	&& Actor->GetFName() == SearchName)
+				{
+					return sol::make_object(State, TWeakObjectPtr<AActor>(Actor));
+				}
+			}
+			return sol::make_object(State, sol::nil);
+		});
+	// 카메라를 가진 Actor로 게임 시점 변경
+	WorldTable.set_function("set_view_target",
+		[WeakWorld](sol::object Target) -> bool
+		{
+			UWorld* World = WeakWorld.Get();
+			if (!World || !World->AcceptsChanges())
+			{
+				return false;
+			}
+
+			// 명시적인 nil 요청은 내장 카메라로 복귀
+			if (Target.get_type() == sol::type::nil)
+			{
+				return World->SetViewTarget(nullptr);
+			}
+
+			// 기존 Actor 바인딩 타입 확인
+			if (!Target.is<TWeakObjectPtr<AActor>>())
+			{
+				return false;
+			}
+
+			// 소멸한 참조의 Fallback 전환 방지
+			AActor* TargetActor = Target.as<TWeakObjectPtr<AActor>>().Get();
+			return TargetActor && World->SetViewTarget(TargetActor);
+		});
+	// 다음 프레임 씬 전환 예약
+	WorldTable.set_function("change_scene",
+		[WeakWorld](const FString& ScenePath) -> bool
+		{
+			UWorld* World = WeakWorld.Get();
+			return GEngine && World && World->AcceptsChanges()
+				&& !ScenePath.empty()
+				&& GEngine->RequestSceneChange(World, ScenePath);
+		});
+
+	// Standalone 게임 종료 요청
+	WorldTable.set_function("quit",
+		[WeakWorld]() -> bool
+		{
+			return GEngine && GEngine->RequestExit(WeakWorld.Get());
+		});
+	Environment["world"] = WorldTable;
 	return Environment;
 }
 

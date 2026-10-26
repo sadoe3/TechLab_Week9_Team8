@@ -18,7 +18,7 @@ FEngineConfig UGameEngine::GetConfig() const
 	Desc.bBorderless = false;
 	Desc.SyncInterval = 0;   // 0 = VSync 끔 (FPS 측정용)
 	Desc.bCreateDepthBuffer = false;
-	Desc.bExitOnEscape = true;        
+	Desc.bExitOnEscape = false;        
 	return Desc;
 }
 
@@ -33,9 +33,15 @@ bool UGameEngine::Init()
 	GameWorld = UWorld::CreateWorld(EWorldType::Game, false);
 	CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(GameWorld);
 
+	
 	// 시작 씬 로드
+	/*
 	// TODO: 시작 씬을 게임의 시작씬으로 옮겨야함
 	const FString StartupScenePath = "Assets/Scenes/LinearColorTest.scene";
+	*/
+
+	// 메인메뉴 작성용 씬으로 시작.
+	const FString StartupScenePath = "Assets/Scenes/MainMenu.scene";
 	if (!FJsonArchive::LoadWorld(GameWorld, StartupScenePath))
 	{
 		HTR_LOG(Error, "Failed to load startup scene: {}", StartupScenePath);

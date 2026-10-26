@@ -190,6 +190,11 @@ void FRenderDevice::CreateStates()
 
 		Device->CreateRasterizerState(&Desc, RasterizerStates[(uint8)ERasterizerState::SolidBack].GetAddressOf());
 
+		// CSM은 보간 후 PS에서 near clamp하고, far는 SV_ClipDistance로 자른다.
+		Desc.DepthClipEnable = FALSE;
+		Device->CreateRasterizerState(&Desc, RasterizerStates[(uint8)ERasterizerState::ShadowNearClamp].GetAddressOf());
+		Desc.DepthClipEnable = TRUE;
+
 		Desc.CullMode = D3D11_CULL_NONE;
 		Device->CreateRasterizerState(&Desc, RasterizerStates[(uint8)ERasterizerState::SolidNone].GetAddressOf());
 

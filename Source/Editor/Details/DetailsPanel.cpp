@@ -29,9 +29,8 @@
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
 #include "UObject/UObjectHash.h"
-#include "Editor/HitoriEd/EditorFileUtils.h"
-#include "Editor/HitoriEd/LuaScriptEditorUtils.h"
 #include "Component/ScriptComponent.h"
+#include "Camera/CameraComponent.h"
 #include <algorithm>
 
 
@@ -1060,6 +1059,14 @@ namespace
 				ComponentNameInputBuf[0] = '\0';
 				ImGui::CloseCurrentPopup();
 			}
+			if (ImGui::MenuItem("Camera Component"))
+			{
+				OutSelectedComponent = Actor->AddComponent(
+					UCameraComponent::StaticClass(),
+					FString(ComponentNameInputBuf));
+				ComponentNameInputBuf[0] = '\0';
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 	}
@@ -1117,6 +1124,15 @@ void FDetailsPanel::OnRender()
 			ImGui::PushID(TargetComponent);
 			ImGui::SeparatorText("Component Properties");
 			DrawProperties(TargetComponent, CustomFont);
+			// 파티클 텍스처 선택
+			if (UParticleSubUVComponent* Particle = Cast<UParticleSubUVComponent>(TargetComponent))
+			{
+				ImGui::SeparatorText("Particle Texture");
+
+				UMaterial* Material = Particle->GetMaterial(0);
+				DrawTextureSlot(&Material, 0);
+				Particle->SetMaterial(0, Material);
+			}
             if (auto* Light = Cast<ULightComponent>(TargetComponent)) DrawShadowPreview(Light);
 
 			if(SelectCandidateComponent != TargetComponent)

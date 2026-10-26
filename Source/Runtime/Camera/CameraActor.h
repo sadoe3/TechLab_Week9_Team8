@@ -2,7 +2,7 @@
 
 #include "../GameFramework/Actor.h"
 #include "UObject/Class.h"
-
+#include "Component/BillboardComponent.h"
 #include "CameraComponent.h"
 
 //class UCameraComponent;
@@ -19,4 +19,5 @@ public:
 
 private:
 	UCameraComponent* CameraComponent;
+	UBillboardComponent* BillboardComponent = nullptr;
 };

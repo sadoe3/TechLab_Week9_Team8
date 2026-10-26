@@ -6,6 +6,10 @@
 #include "Engine/World.h"
 #include "Scripting/LuaRuntime.h"
 
+#include "UObject/Casts.h"
+#include "PrimitiveComponent.h"
+#include "UObject/WeakObjectPtr.h"
+
 UScriptComponent::UScriptComponent()
     : ScriptPath("Assets/Scripts/HotReloadTest.lua") // Assets/Script/LifeCycleTest.lua
 {
@@ -35,6 +39,15 @@ void UScriptComponent::BeginPlay()
     // 공통 검사 경로로 최초 로드
     TimeSinceLastScriptCheck = 0.5f;
     CheckScriptChanges(0.0f);
+
+    // 시작 중 생성된 Primitive까지 연결
+    for (UActorComponent* Component : OwnerActor->GetComponents())
+    {
+        if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+        {
+            BindPrimitive(Primitive);
+        }
+    }
 }
 
 void UScriptComponent::TickComponent(float DeltaTime)
@@ -83,6 +96,18 @@ void UScriptComponent::EndPlay()
     {
         assert(Runtime != nullptr);
         Runtime->Call(EndPlayFunction, ScriptPath, "EndPlay");
+    }
+
+    AActor* OwnerActor = GetOwner();
+    assert(OwnerActor != nullptr);
+
+    for (auto Comp : OwnerActor->GetComponents()) {
+        UPrimitiveComponent *comp = Cast <UPrimitiveComponent>(Comp);
+        if (comp == nullptr) continue;
+
+        comp->OnComponentBeginOverlap.RemoveAll(this);
+        comp->OnComponentEndOverlap.RemoveAll(this);
+        comp->OnComponentHit.RemoveAll(this);
     }
 
     ResetScript();
@@ -143,6 +168,7 @@ bool UScriptComponent::TryLoadScript()
     sol::protected_function NewEndPlayFunction = FindScriptFunction(NewEnvironment, "EndPlay");
     sol::protected_function NewBeginOverlapFunction = FindScriptFunction(NewEnvironment, "OnBeginOverlap");
     sol::protected_function NewEndOverlapFunction = FindScriptFunction(NewEnvironment, "OnEndOverlap");
+    sol::protected_function NewHitFunction = FindScriptFunction(NewEnvironment, "OnHit");
 
     // 최초 시작에만 호출하며, 최초 로드 실패 후 재시도도 포함한다.
     if (bScriptReady == false && NewBeginPlayFunction.valid())
@@ -178,6 +204,7 @@ bool UScriptComponent::TryLoadScript()
     EndPlayFunction = NewEndPlayFunction;
     BeginOverlapFunction = NewBeginOverlapFunction;
     EndOverlapFunction = NewEndOverlapFunction;
+    HitFunction = NewHitFunction;
     bScriptReady = true;
 
     return true;
@@ -222,11 +249,43 @@ void UScriptComponent::CheckScriptChanges(float DeltaTime)
     TryLoadScript();
 }
 
+void UScriptComponent::HandleComponentBeginOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, bool, const FHitResult& HIt)
+{
+    AActor* OtherActor = OtherComp->GetOwner();
+    if (OtherActor == nullptr) return;
+
+    assert(OtherComp != nullptr);
+
+    OnBeginOverlap(OtherActor);
+}
+
+void UScriptComponent::HandleComponentEndOverlap(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp)
+{
+    AActor* OtherActor = OtherComp->GetOwner();
+    if (OtherActor == nullptr) return;
+
+    assert(OtherComp != nullptr);
+
+    OnEndOverlap(OtherActor);
+}
+
+void UScriptComponent::HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit){
+    if (!OtherComp)
+    {
+        return;
+    }
+    AActor* OtherActor = OtherComp->GetOwner();
+    
+    if (OtherActor == nullptr) return;
+
+    OnHit(OtherActor, OtherComp, Hit);
+}
+
 void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
 
-    if (!bScriptReady || !BeginOverlapFunction.valid())
+    if (!bScriptReady || !CanRunGameplay() || !BeginOverlapFunction.valid())
     {
         return;
     }
@@ -235,14 +294,14 @@ void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(BeginOverlapFunction, ScriptPath, "OnBeginOverlap", OtherActor);
+    Runtime->Call(BeginOverlapFunction, ScriptPath, "OnBeginOverlap", TWeakObjectPtr<AActor>(OtherActor));
 }
 
 void UScriptComponent::OnEndOverlap(AActor* OtherActor)
 {
     assert(OtherActor != nullptr);
 
-    if (!bScriptReady || !EndOverlapFunction.valid())
+    if (!bScriptReady || !CanRunGameplay() || !EndOverlapFunction.valid())
     {
         return;
     }
@@ -251,7 +310,45 @@ void UScriptComponent::OnEndOverlap(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", OtherActor);
+    Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", TWeakObjectPtr<AActor>(OtherActor));
+}
+
+void UScriptComponent::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit)
+{
+    assert(OtherActor != nullptr);
+    assert(OtherComp != nullptr);
+    if (!bScriptReady || !CanRunGameplay() || !HitFunction.valid())
+    {
+        return;
+    }
+
+    // 겹침 종료 콜백 실행
+    FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
+    assert(Runtime != nullptr);
+
+    // 결과 값 복사와 상대 컴포넌트의 약한 참조 전달
+    Runtime->Call(HitFunction, ScriptPath, "OnHit",
+        TWeakObjectPtr<AActor>(OtherActor), FHitResult(Hit),
+        TWeakObjectPtr<UPrimitiveComponent>(OtherComp));
+}
+
+void UScriptComponent::BindPrimitive(UPrimitiveComponent* Primitive)
+{
+    // 실행 가능한 동일 Actor의 컴포넌트 확인
+    if (!CanRunGameplay() || !Primitive || Primitive->GetOwner() != GetOwner() || !Primitive->CanRunGameplay())
+    {
+        return;
+    }
+
+    // 기존 구독 제거와 중복 연결 방지
+    Primitive->OnComponentBeginOverlap.RemoveAll(this);
+    Primitive->OnComponentEndOverlap.RemoveAll(this);
+    Primitive->OnComponentHit.RemoveAll(this);
+
+    // 충돌 이벤트 구독
+    Primitive->OnComponentBeginOverlap.AddRaw(this, &UScriptComponent::HandleComponentBeginOverlap);
+    Primitive->OnComponentEndOverlap.AddRaw(this, &UScriptComponent::HandleComponentEndOverlap);
+    Primitive->OnComponentHit.AddRaw(this, &UScriptComponent::HandleComponentHit);
 }
 
 void UScriptComponent::ResetScript()
@@ -262,6 +359,7 @@ void UScriptComponent::ResetScript()
     EndPlayFunction = sol::protected_function();
     BeginOverlapFunction = sol::protected_function();
     EndOverlapFunction = sol::protected_function();
+    HitFunction = sol::protected_function();
 
     // Environment 해제
     ScriptEnvironment = sol::environment();

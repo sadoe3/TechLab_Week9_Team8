@@ -35,6 +35,8 @@ public:
 		ObjectUUID = 0;
 	}
 
+	bool IsStale() const { return ObjectUUID != 0 && Get() == nullptr; }
+
 	// 생존 여부 판정
 	explicit operator bool() const
 	{

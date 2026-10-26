@@ -38,6 +38,16 @@ class UParticleSubUVComponent : public UBillboardComponent
 		PROPERTY(ColSize)
 		PROPERTY(RowSize)
 		PROPERTY(FrameRate)
+		PROPERTY(bLooping)
+		PROPERTY(ParticleCount)
+		PROPERTY(MinLifeTime)
+		PROPERTY(MaxLifeTime)
+		PROPERTY(StartScale)
+		PROPERTY(EndScale)
+		PROPERTY(FadeStart)
+		PROPERTY(MinBurstSpeed)
+		PROPERTY(MaxBurstSpeed)
+		PROPERTY(BurstSpreadAngle)
 	REFLECT_END()
 
 public:
@@ -47,6 +57,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime) override;
 	virtual void OnRegister() override;
+	virtual void PostEditChangeProperty(const FProperty& Property) override;
+	using Super::Serialize;
+	virtual void Serialize(FStructuredArchive::FRecord Record) override;
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue) override;
 	// SceneRenderer가 View별 거리 정렬 입력을 만들 수 있도록 현재 파티클 배열을 읽기 전용으로 제공한다.
 	const TArray<FParticle>& GetParticlesForView() const { return Particles; }
@@ -60,9 +73,16 @@ public:
 	void SetSubUVSize(uint32 Cols, uint32 Rows);
 	void SetFrameRate(float InFrameRate);
 
+	// 월드 위치의 일회성 입자 방출
+	int32 EmitBurst(const FVector& Position, const FVector& Direction, int32 Count);
+	// 활성 입자 정리
+	void ClearParticles();
+	// 활성 입자를 포함하는 월드 경계
+	virtual FBox CalcBounds() const override;
 private:
 	void RespawnParticle(FParticle& Particle);
-
+	// 재생 설정에 따른 슬롯 초기화
+	void InitializeParticles();
 	// Todo: Move to util class
 	float GetRandomNumberBetween(float start, float end) const;
 	float Lerp(float first, float second, float alpha) const;
@@ -74,7 +94,7 @@ private:
 	// ---- 튜닝 값 ----
 	// 방출은 수명이 끝난 파티클이 무작위 시점에 리스폰되는 방식이다.
 	// 초당 평균 방출량 ≈ ParticleCount / 평균 수명. 수명 범위가 넓을수록 방출 간격이 더 불규칙해진다.
-	int32 ParticleCount = 10;           // 동시에 존재하는 파티클 수 (생성자에서만 반영)
+	int32 ParticleCount = 10;           // 동시에 존재하는 파티클 수 
 
 	float MinLifeTime = 6.0f;           // 수명 최소값(초)
 	float MaxLifeTime = 8.0f;          // 수명 최대값(초)
@@ -86,6 +106,12 @@ private:
 	float EndScale = 1.5f;              // 수명이 끝날 때 크기
 
 	float FadeStart = 0.8f;             // 수명 비율이 이 값을 넘으면 페이드아웃 시작 (0~1)
+	
+	bool bLooping = true;				// 반복 재생 여부
+	float MinBurstSpeed = 3.0f;			// Burst 방출 속도 최소값(초)
+	float MaxBurstSpeed = 6.0f;			// Burst 방출 속도 최대값(초)
+	
+	float BurstSpreadAngle = 35.0f;		// 방출 축 기준 최대 분산각
 
 	TArray<FSubUVConstants> Constants;
 

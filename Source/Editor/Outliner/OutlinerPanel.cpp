@@ -94,7 +94,7 @@ void FOutlinerPanel::DrawActorNode(AActor* Actor)
     if (!Actor)
         return;
 
-    const FString& ActorName = Actor->GetName();
+    const FString& ActorName = Actor->GetActorLabel();
 
     //ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_None;
     ImGuiTreeNodeFlags Flags = 
