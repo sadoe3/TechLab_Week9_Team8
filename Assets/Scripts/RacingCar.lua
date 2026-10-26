@@ -8,6 +8,8 @@ local WallParticleOffset = 0.03
 local WallHitInterval = 0.1
 local WallHitCooldown = 0.0
 
+local score = 0
+
 function Tick(DeltaTime)
     WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
     local MoveAxis = 0.0
@@ -64,5 +66,20 @@ function OnHit(OtherActor, Hit, OtherComponent)
 
     if emitted > 0 then
         WallHitCooldown = WallHitInterval
+    end
+end
+
+local CoinParticleComponentName = "CoinParticles"
+local CoinParticleCount = 4
+
+-- 코인 획득 / 점수 처리 / 파티클 설정
+function OnBeginOverlap(OtherActor)
+    if(OtherActor.Label == "Coin")
+    then
+    local position = OtherActor.Location
+    score = score + 5
+    print("Score " .. score)
+    OtherActor:Destroy()
+    obj:EmitParticleBurst(CoinParticleComponentName, position, Vector(0, 0, 1), CoinParticleCount)
     end
 end
