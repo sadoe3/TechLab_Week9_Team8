@@ -13,6 +13,8 @@
 #include "GameFramework/Actor/SpotLightActor.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/RacingCar.h"
+#include "GameFramework/Coin.h"
+#include "GameFramework/Wall.h"
 #include "Camera/CameraActor.h"
 class FViewportsPanel;
 
@@ -35,8 +37,8 @@ public:
 
 	int32 SelectedIndex = 0;
 
-	const char* Items[12] ={"Actor", "StaticMesh","Particle","Text","ExponentialHeightFog",
-		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar","Camera"};
+	const char* Items[14] ={"Actor", "StaticMesh","Particle","Text","ExponentialHeightFog",
+		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar","Camera","Coin","Wall"};
 
 	FGizmo* Gizmo = nullptr;
 	int32 GizmoSelectedIndex = 0;
@@ -58,7 +60,9 @@ public:
 		ASpotLightActor::StaticClass(),
 		ACharacter::StaticClass(),
 		ARacingCar::StaticClass(),
-		ACameraActor::StaticClass()
+		ACameraActor::StaticClass(),
+		ACoin::StaticClass(),
+		AWall::StaticClass()
 	};
 
     void SetViewportsPanel(FViewportsPanel* InPanel) { ViewportsPanel = InPanel; }
