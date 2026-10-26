@@ -34,7 +34,6 @@ void ACharacter::BeginPlay()
 		// 이동은 Character의 DuringPhysics Tick에서만 실행한다.
 		Movement->PrimaryComponentTick.UnRegisterTickFunction();
 		Movement->PrimaryComponentTick.bCanEverTick = false;
-		Movement->UpdateComponentVelocity();
 	}
 }
 
@@ -56,7 +55,6 @@ void ACharacter::Tick(float DeltaTime)
 		const float VelocityIntoSurface = FVector::Dot(Movement->Velocity, Hit.Normal);
 		if (VelocityIntoSurface < 0.0f) Movement->Velocity -= Hit.Normal * VelocityIntoSurface;
 	}
-	Movement->UpdateComponentVelocity();
 }
 
 UCapsuleComponent* ACharacter::GetCapsuleComponent() const
@@ -86,6 +84,5 @@ void ACharacter::SetVelocity(const FVector& NewVelocity)
 	if (UMovementComponent* Movement = GetMovementComponent())
 	{
 		Movement->Velocity = NewVelocity;
-		Movement->UpdateComponentVelocity();
 	}
 }
