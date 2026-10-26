@@ -4,7 +4,7 @@
 #include "Engine/Viewport.h"
 #include "Render/GammaEncodeRenderer.h"
 #include "Render/SceneRenderer.h"
-
+#include "Render/FogRenderer.h"
 class UGameEngine : public UEngine
 {
 	DECLARE_CLASS(UGameEngine, UEngine)
@@ -35,4 +35,5 @@ private:
 	TUniquePtr<FViewport> GameViewport;
 	TUniquePtr<FGammaEncodeRenderer> GammaEncodeRenderer;
 	FSceneRenderer SceneRenderer;
+	TUniquePtr<FFogRenderer> FogRenderer;
 };
