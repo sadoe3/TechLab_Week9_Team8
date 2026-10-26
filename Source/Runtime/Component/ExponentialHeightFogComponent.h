@@ -7,6 +7,7 @@ class UExponentialHeightFogComponent final : public USceneComponent
 {
 	DECLARE_CLASS(UExponentialHeightFogComponent, USceneComponent)
 	REFLECT_START(UExponentialHeightFogComponent)
+		PROPERTY(bFogEnabled)
 		PROPERTY(FogDensity)
 		PROPERTY(FogHeightFalloff)
 		PROPERTY(StartDistance)
@@ -23,6 +24,8 @@ public:
 	UExponentialHeightFogComponent& operator=(const UExponentialHeightFogComponent&) = delete;
 
 	FFogInfo GetFogInfo() const;
+	bool IsFogEnabled() const { return bFogEnabled; }
+	void SetFogEnabled(bool bEnabled);
 
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
 	virtual void OnTransformDirty() override;
@@ -31,6 +34,7 @@ protected:
 	virtual void DestroyRenderState() override;
 private:
 	void UpdateSceneFogInfo();
+	bool bFogEnabled = true;
 
 	//포그의 밀도, 높이에 따른 감소율, 시작 거리, 최대 불투명도, 색상 등을 설정하는 변수들
 	float    FogDensity = 0.02f;

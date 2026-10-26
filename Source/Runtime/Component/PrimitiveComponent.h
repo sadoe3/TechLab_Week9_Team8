@@ -117,10 +117,9 @@ public:
 
 	virtual void OnTransformDirty() override;
 
-	// Delta/NewRotation은 world 기준. 질의 실패 시 false와 위치 유지, 막힘 여부는 Hit로 반환한다.
-	virtual bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit = nullptr) override;
-
 protected:
+	virtual bool QueryMovement(const FVector& Start, const FVector& Delta, const FRotator& Rotation, FHitResult& OutHit, TArray<FHitResult>& OutOverlaps) override;
+	virtual void DispatchBlockingHit(const FHitResult& Hit) override;
 	virtual void OnRegister() override;
 	virtual void OnUnregister() override;
 	virtual void NotifyBeginOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
@@ -141,7 +140,6 @@ protected:
 	FCollisionResponseContainer CollisionResponses;
 
 private:
-	void DispatchBlockingHit(const FHitResult& Hit);
 	bool CanGenerateOverlap(const UPrimitiveComponent* Other) const;
 	void BeginComponentOverlap(UPrimitiveComponent* Other, bool bFromSweep, const FHitResult& SweepResult);
 	void EndComponentOverlap(UPrimitiveComponent* Other, bool bNotify);

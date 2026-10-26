@@ -63,7 +63,10 @@ public:
 	void SetWorldScale3D(FVector NewScale);	
 	void SetWorldTransform(const FMatrix& InWorldMatrix, bool bSweep);
 
+	// 자신을 충돌 검사 대상으로 이동할 때 호출한다.
 	virtual bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit = nullptr);
+	// 충돌 검사 대상을 지정해서 이동할 때 호출한다. nullptr이면 충돌 질의 없이 이동한다.
+	bool MoveComponent(const FVector& Delta, const FRotator& NewRotation, bool bSweep, FHitResult* Hit, USceneComponent* CollisionComponent);
 
 	void MarkTransformDirty();
 	virtual void OnTransformDirty() {};
@@ -71,11 +74,14 @@ public:
 
 	using Super::Serialize;
 	virtual void Serialize(FStructuredArchive::FRecord Record) override;
-public:
-	FVector ComponentVelocity;
-
 protected:
-	void InternalSetWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
+	virtual bool QueryMovement(const FVector& Start, const FVector& Delta, const FRotator& Rotation, FHitResult& OutHit, TArray<FHitResult>& OutOverlaps) { return true; }
+	virtual void DispatchBlockingHit(const FHitResult& Hit) {}
+private:
+	// 충돌 질의 후 확정된 Transform만 적용하기 위해 분리했다. SetWorldLocationAndRotation을 호출하면 이동 처리에 재진입하므로,
+	// 이 함수에서는 Transform과 관련 상태만 갱신하고 Overlap/Hit 처리는 MoveComponent에서 이어서 수행한다.
+	void ApplyWorldLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
+protected:
 	bool bTransformDirty;
 	FTransform Transform;
 

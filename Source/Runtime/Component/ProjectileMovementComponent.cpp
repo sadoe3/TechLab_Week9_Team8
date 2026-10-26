@@ -42,7 +42,6 @@ void UProjectileMovementComponent::InitializeComponent()
 
 		}
 
-		UpdateComponentVelocity();
 	}
 
 }
@@ -130,7 +129,6 @@ void UProjectileMovementComponent::TickComponent(float DeltaTime)
 		}
 	}
 
-	UpdateComponentVelocity();
 }
 
 void UProjectileMovementComponent::SetVelocityInLocalSpace(FVector NewVelocity)

@@ -4,10 +4,15 @@
 #include "GameFramework/Character.h"
 
 class UTextRenderComponent;
+class UPrimitiveComponent;
+struct FHitResult;
 
 class ARacingCar : public ACharacter
 {
 	DECLARE_CLASS(ARacingCar, ACharacter)
+	REFLECT_START(ARacingCar)
+		PROPERTY(MaxSpeed)
+	REFLECT_END()
 
 public:
 	ARacingCar();
@@ -16,5 +21,12 @@ public:
 	
 	void HandleScoreChanged(int32 NewScore);
 
+	float GetMaxSpeed() const { return MaxSpeed; }
+
 	UTextRenderComponent* ScoreText = nullptr;
+protected:
+	float MaxSpeed = 6.0f;
+
+private:
+	void HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
 };
