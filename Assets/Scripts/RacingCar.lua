@@ -2,9 +2,11 @@
 local Acceleration = 4.0
 local SteeringSpeed = 90.0
 local FullSteeringSpeed = 2.0
-local CoastingDamping = 2.0
-local BrakeDamping = 20.0
+local CoastingDamping = 0.5
+local BrakeDamping = 1.5
 local StopSpeed = 0.01
+local SwampMaxSpeed = 2.0
+local SwampOverlapCount = 0
 local BaseFOV = 60.0
 local SpeedFOVIncrease = 30.0
 local FOVInterpSpeed = 20.0
@@ -76,7 +78,8 @@ function Tick(DeltaTime)
     end
 
     local MaxSpeed = math.max(0.0, obj.MaxSpeed)
-    Speed = math.max(-MaxSpeed, math.min(Speed, MaxSpeed))
+    local SpeedLimit = SwampOverlapCount > 0 and math.min(MaxSpeed, SwampMaxSpeed) or MaxSpeed
+    Speed = math.max(-SpeedLimit, math.min(Speed, SpeedLimit))
     if (IsBraking or Throttle == 0.0) and math.abs(Speed) < StopSpeed then
         Speed = 0.0
     end
@@ -89,8 +92,8 @@ function Tick(DeltaTime)
             SpeedRatio = math.min(math.abs(Speed) / MaxSpeed, 1.0)
         end
 
-        -- 현재 설정대로 볼륨은 0.1 ~ 0.4로 변화합니다.
-        local TargetVolume = 0.1 + (0.3 * SpeedRatio)
+        -- 현재 설정대로 볼륨은 0.2 ~ 0.5로 변화합니다.
+        local TargetVolume = 0.2 + (0.3 * SpeedRatio)
 
         -- 피치는 정지 시 1.0, 최고 속력에서 2.0이 됩니다.
         local TargetPitch = 1.0 + (1.0 * SpeedRatio)
@@ -161,12 +164,17 @@ local CoinSoundVolume = 1.0
 
 -- 코인 획득 / 점수 처리 / 파티클 설정
 function OnBeginOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = SwampOverlapCount + 1
+        return
+    end
     if Race.State ~= "Running" or not OtherActor:IsValid() then
         return
     end
     if(OtherActor.Label == "Coin") then
         local position = OtherActor.Location
         score = score + 5
+        Race.CoinCount = Race.CoinCount + 1
         print("Score " .. score)
         game.set_score(score)
 
@@ -175,6 +183,12 @@ function OnBeginOverlap(OtherActor)
         audio.play(CoinSoundPath, false, CoinSoundVolume)
         
         obj:EmitParticleBurst(CoinParticleComponentName, position, Vector(0, 0, 1), CoinParticleCount)
+    end
+end
+
+function OnEndOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = math.max(0, SwampOverlapCount - 1)
     end
 end
 

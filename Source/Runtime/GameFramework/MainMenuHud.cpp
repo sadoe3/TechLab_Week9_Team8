@@ -26,6 +26,7 @@ AMainMenuHud::AMainMenuHud()
 	PrimaryActorTick.bCanEverTick = true;
 
 	camera = CreateDefaultSubobject<UCameraComponent>("MenuCamera");
+
 	billboard = CreateDefaultSubobject<UBillboardComponent>("Billboard");
 	billboard->SetHiddenInGame(false);
 	billboard->SetTexture(MenuTextures[0]);

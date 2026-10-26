@@ -5,6 +5,29 @@ local PlayerActorName = "ARacingCar_0"
 local CountdownSeconds = 3.0
 local CheckpointCount = 4
 
+local TotalCoinCount = 20
+local TargetTime = 10.0     -- 만점 시간
+local TimeLimit = 50.0      -- 시간 점수 0점 
+local CoinWeight = 0.6      -- 코인:시간 = 6:4
+local TimeWeight = 0.4      
+local MaxScore = 10000
+
+local function Clamp01(Value)
+    if Value < 0.0 then return 0.0 end
+    if Value > 1.0 then return 1.0 end
+    return Value
+end
+
+local function BuildFinalScore(FinishTime, CoinCount)
+    local CoinRatio = Clamp01(CoinCount / TotalCoinCount)
+    local TimeRatio = Clamp01((TimeLimit - FinishTime) / (TimeLimit - TargetTime))
+
+    local CoinPoints = math.floor(MaxScore * CoinWeight * CoinRatio)
+    local TimePoints = math.floor(MaxScore * TimeWeight * TimeRatio)
+
+    return CoinPoints + TimePoints, CoinPoints, TimePoints
+end
+
 -- 출발 신호, 딜레이 시간
 local GoText = "출발!"
 local GoDisplaySeconds = 1.0
@@ -39,13 +62,50 @@ local function ProcessPendingTriggers()
 
             elseif Label == "Finish" then
                 if Race.LastCheckpoint == Race.CheckpointCount then
-                    -- 완주 상태와 기록 확정
+                    -- 주행을 종료하고 이번 점수와 시간을 확정합니다.
                     Race.State = "Finished"
+                    Race.FinishScore = game.get_score()
                     Race.FinishTime = Race.ElapsedTime
                     Race.Player.Velocity = Vector(0, 0, 0)
 
-                    print(string.format("[Race] Finished: %.2f seconds",
+                    -- 주행 중 넓어진 시야를 기본 FOV로 복원합니다.
+                    -- RacingCar.lua의 BaseFOV(60.0)와 같은 값을 사용합니다.
+                    Race.Player.CameraFOV = 60.0
+
+                    -- 최고 기록을 각각 갱신하고 파일에 저장합니다.
+                    local BestScore, BestFinishTime, SaveSucceeded =
+                        game.update_best_records(
+                            Race.FinishScore,
+                            Race.FinishTime)
+
+                    Race.BestScore = BestScore
+                    Race.BestFinishTime = BestFinishTime
+
+                    if not SaveSucceeded then
+                        print("[Race] Failed to save leaderboard records")
+                    end
+
+                    -- UI에서 읽을 기록을 C++에 전달한 뒤 완주 UI를 요청합니다.
+                    game.set_race_result(
+                        Race.FinishScore,
+                        Race.FinishTime,
+                        Race.BestScore,
+                        Race.BestFinishTime)
+                    game.show_finish_ui()
+
+                    print(string.format(
+                        "[Race] Finished: score=%d, time=%.2f seconds",
+                        Race.FinishScore,
                         Race.FinishTime))
+
+                    local FinalScore, CoinPoints, TimePoints =
+                        BuildFinalScore(Race.FinishTime, Race.CoinCount)
+
+                    print(string.format("[Score] Coin  %d/%d -> %d",
+                        Race.CoinCount, TotalCoinCount, CoinPoints))
+                    print(string.format("[Score] Time  %.2fs (target %.0f / limit %.0f) -> %d",
+                        Race.FinishTime, TargetTime, TimeLimit, TimePoints))
+                    print(string.format("[Score] Final %d / %d", FinalScore, MaxScore))
                 else
                     print(string.format("[Race] Checkpoints required: %d/%d",
                         Race.LastCheckpoint, Race.CheckpointCount))
@@ -57,6 +117,8 @@ end
 
 -- 출발 상태 초기화
 function BeginPlay()
+    -- 새 주행에는 이전 결과 화면이 남지 않도록 합니다.
+    game.reset_result_ui()
     script.set_tick_group("PostPhysics")
 
     local Player = world.find_actor(PlayerActorName)
@@ -71,6 +133,7 @@ function BeginPlay()
 
     GoDisplayRemaining = 0.0
     game.set_countdown(tostring(math.ceil(CountdownSeconds)))
+    game.set_race_time(0.0)
 
     print(string.format("[Race] Countdown: %d", math.ceil(CountdownSeconds)))
 end
@@ -118,6 +181,8 @@ function Tick(DeltaTime)
     if Race.State == "Running" then
         -- 이번 이동 프레임의 시간 누적
         Race.ElapsedTime = Race.ElapsedTime + DeltaTime
+        -- 주행 시간 
+        game.set_race_time(Race.ElapsedTime)
         -- 이번 이동에서 수신한 통과 알림 처리
         ProcessPendingTriggers()
     end
@@ -125,6 +190,8 @@ end
 
 -- 레이스 소유권 정리
 function EndPlay()
+    -- C++에 보관된 결과 화면 상태를 씬 종료 시 정리합니다.
+    game.reset_result_ui()
     GoDisplayRemaining = 0.0
     game.set_countdown("")
     Race.Stop()
