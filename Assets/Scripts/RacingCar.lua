@@ -5,6 +5,9 @@ local FullSteeringSpeed = 2.0
 local CoastingDamping = 2.0
 local BrakeDamping = 20.0
 local StopSpeed = 0.01
+local BaseFOV = 60.0
+local SpeedFOVIncrease = 30.0
+local FOVInterpSpeed = 20.0
 local WallParticleComponentName = "WallParticles"
 local WallParticleCount = 8
 local WallParticleOffset = 0.03
@@ -109,6 +112,10 @@ function Tick(DeltaTime)
     obj.Velocity = Vector(math.cos(Yaw) * Speed, math.sin(Yaw) * Speed, Velocity.z)
 
 
+    local SpeedRatio = MaxSpeed > 0.0 and math.min(math.abs(Speed) / MaxSpeed, 1.0) or 0.0
+    local TargetFOV = math.max(1.0, math.min(BaseFOV + SpeedFOVIncrease * SpeedRatio, 179.0))
+    local Alpha = 1.0 - math.exp(-FOVInterpSpeed * math.max(0.0, DeltaTime))
+    obj.CameraFOV = obj.CameraFOV + (TargetFOV - obj.CameraFOV) * Alpha
 end
 
 -- 측면 Blocking Hit의 파티클 재생
