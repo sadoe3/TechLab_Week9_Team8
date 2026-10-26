@@ -174,6 +174,7 @@ function OnBeginOverlap(OtherActor)
     if(OtherActor.Label == "Coin") then
         local position = OtherActor.Location
         score = score + 5
+        Race.CoinCount = Race.CoinCount + 1
         print("Score " .. score)
         game.set_score(score)
 

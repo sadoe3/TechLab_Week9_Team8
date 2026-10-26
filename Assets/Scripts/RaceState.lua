@@ -11,6 +11,7 @@ local Race = {
     -- 리더보드에 표시할 역대 최고 점수와 최단 완주 시간
     BestScore = 0,
     BestFinishTime = 0.0,
+    CoinCount = 0,
     PendingTriggers = {}
 }
 
@@ -24,6 +25,7 @@ function Race.Reset(Player, CountdownSeconds, CheckpointCount)
     Race.LastCheckpoint = 0
     Race.FinishTime = 0.0
     Race.FinishScore = 0
+    Race.CoinCount = 0
     Race.PendingTriggers = {}
 end
 
