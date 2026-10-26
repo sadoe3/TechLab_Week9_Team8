@@ -9,6 +9,8 @@
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
 #include "Component/ParticleSubUVComponent.h"
+#include "Collision/HitResult.h"
+#include "Component/PrimitiveComponent.h"
 
 namespace LuaBindings
 {
@@ -85,7 +87,65 @@ namespace LuaBindings
 			"yaw", &FRotator::Yaw,
 			"roll", &FRotator::Roll
 		);
+		// FHitResult 바인딩
+		// 현재는 모든 필드에 대해 읽기/복사본 읽기만 가능.
+		Lua.new_usertype<FHitResult>("HitResult",
+			sol::no_constructor,
+			"FaceIndex", sol::readonly(&FHitResult::FaceIndex),
+			"Time", sol::readonly(&FHitResult::Time),
+			"Distance", sol::readonly(&FHitResult::Distance),
+			"PenetrationDepth", sol::readonly(&FHitResult::PenetrationDepth),
+			"bBlockingHit", sol::readonly(&FHitResult::bBlockingHit),
+			"bStartPenetrating", sol::readonly(&FHitResult::bStartPenetrating),
+			"Location", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.Location;
+				}),
+			"ImpactPoint", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.ImpactPoint;
+				}),
+			"Normal", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.Normal;
+				}),
+			"ImpactNormal", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.ImpactNormal;
+				}),
+			"TraceStart", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.TraceStart;
+				}),
+			"TraceEnd", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.TraceEnd;
+				})
+		);
+		// 충돌 상대 컴포넌트 WeakPtr 바인딩
+		// 현재는 Name, IsValid 읽기만 가능
+		Lua.new_usertype<TWeakObjectPtr<UPrimitiveComponent>>("PrimitiveComponent",
+			sol::no_constructor,
+			"Name", sol::property(
+				[](const TWeakObjectPtr<UPrimitiveComponent>& Reference) -> FString
+				{
+					UPrimitiveComponent* Component = Reference.Get();
+					if (!Component)
+					{
+						throw sol::error("Primitive component has been destroyed");
+					}
 
+					return Component->GetName();
+				}),
+			"IsValid", [](const TWeakObjectPtr<UPrimitiveComponent>& Reference) -> bool
+			{
+				UPrimitiveComponent* Component = Reference.Get();
+				AActor* Owner = Component ? Component->GetOwner() : nullptr;
+
+				return Component && !Component->IsPendingDestroy() &&
+					Owner && !Owner->IsPendingDestroy();
+			}
+		);
 		// AActor 바인딩
 		Lua.new_usertype<TWeakObjectPtr<AActor>>("Actor",
 			sol::no_constructor,

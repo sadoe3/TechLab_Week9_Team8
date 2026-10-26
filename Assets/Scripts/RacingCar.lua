@@ -2,8 +2,14 @@
 -- 회전 속도는 초당 각도입니다.
 local MovementSpeed = 2.0
 local RotationSpeed = 90.0
+local WallParticleComponentName = "WallParticles"
+local WallParticleCount = 8
+local WallParticleOffset = 0.03
+local WallHitInterval = 0.1
+local WallHitCooldown = 0.0
 
 function Tick(DeltaTime)
+    WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
     local MoveAxis = 0.0
     local TurnAxis = 0.0
 
@@ -38,4 +44,25 @@ function Tick(DeltaTime)
 
     -- Character의 Sweep 이동용 속도 설정
     obj.Velocity = Forward * (MoveAxis * MovementSpeed)
+end
+
+-- 측면 Blocking Hit의 파티클 재생
+function OnHit(OtherActor, Hit, OtherComponent)
+    if WallHitCooldown > 0.0 or not OtherActor:IsValid() or
+        not OtherComponent:IsValid() or not Hit.bBlockingHit then
+        return
+    end
+
+    -- 바닥·천장 방향 충돌 제외
+    if math.abs(Hit.ImpactNormal.z) > 0.5 then
+        return
+    end
+
+    local position = Hit.ImpactPoint + Hit.ImpactNormal * WallParticleOffset
+    local emitted = obj:EmitParticleBurst(
+        WallParticleComponentName, position, Hit.ImpactNormal, WallParticleCount)
+
+    if emitted > 0 then
+        WallHitCooldown = WallHitInterval
+    end
 end

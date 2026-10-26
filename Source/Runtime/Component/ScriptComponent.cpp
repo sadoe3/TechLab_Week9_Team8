@@ -270,12 +270,15 @@ void UScriptComponent::HandleComponentEndOverlap(UPrimitiveComponent* thisComp, 
 }
 
 void UScriptComponent::HandleComponentHit(UPrimitiveComponent* thisComp, UPrimitiveComponent* OtherComp, const FHitResult& Hit){
+    if (!OtherComp)
+    {
+        return;
+    }
     AActor* OtherActor = OtherComp->GetOwner();
+    
     if (OtherActor == nullptr) return;
 
-    assert(OtherComp != nullptr);
-
-    OnHit(OtherActor);
+    OnHit(OtherActor, OtherComp, Hit);
 }
 
 void UScriptComponent::OnBeginOverlap(AActor* OtherActor)
@@ -310,10 +313,10 @@ void UScriptComponent::OnEndOverlap(AActor* OtherActor)
     Runtime->Call(EndOverlapFunction, ScriptPath, "OnEndOverlap", TWeakObjectPtr<AActor>(OtherActor));
 }
 
-void UScriptComponent::OnHit(AActor* OtherActor)
+void UScriptComponent::OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit)
 {
     assert(OtherActor != nullptr);
-
+    assert(OtherComp != nullptr);
     if (!bScriptReady || !CanRunGameplay() || !HitFunction.valid())
     {
         return;
@@ -323,7 +326,10 @@ void UScriptComponent::OnHit(AActor* OtherActor)
     FLuaRuntime* Runtime = GetOwner()->GetWorld()->GetLuaRuntime();
     assert(Runtime != nullptr);
 
-    Runtime->Call(HitFunction, ScriptPath, "OnHit", TWeakObjectPtr<AActor>(OtherActor));
+    // 결과 값 복사와 상대 컴포넌트의 약한 참조 전달
+    Runtime->Call(HitFunction, ScriptPath, "OnHit",
+        TWeakObjectPtr<AActor>(OtherActor), FHitResult(Hit),
+        TWeakObjectPtr<UPrimitiveComponent>(OtherComp));
 }
 
 void UScriptComponent::BindPrimitive(UPrimitiveComponent* Primitive)
