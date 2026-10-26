@@ -102,6 +102,9 @@ public:
 		MarkRenderStateDirty();
 	}
 
+	bool IsHudElement() const { return bHudElement; }
+	void SetHudElement(bool bInHudElement) { bHudElement = bInHudElement; }
+
 
 	virtual bool LineTraceComponent(const FRay& WorldRay, FHitResult& OutHit);
 	virtual bool LineTraceComponentLocal(const FRay& LocalRay, float& OutT);
@@ -128,6 +131,7 @@ protected:
 	bool TraceMesh(const FRay& WorldRay, const FStaticMeshData& Mesh, const FMatrix& WorldMatrix, FHitResult& OutResult);
 	bool TraceMeshLocal(const FRay& LocalRay, const FStaticMeshData& Mesh, float& OutT);
 	bool bVisible = true;
+	bool bHudElement = false;
 	bool bCastShadow = true;
 	bool bReceiveShadow = true;
 	bool bGenerateOverlapEvents = true;

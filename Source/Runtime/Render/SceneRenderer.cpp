@@ -478,7 +478,11 @@ void FSceneRenderer::BuildRenderQueue(const FSceneView& View, FSceneRenderData& 
     }
     SelectLODs(LODInputs, LODContext, SelectedLODs);
     for (uint32 I = 0; I < static_cast<uint32>(PendingStaticMeshes.Num()); ++I)
-        PendingStaticMeshes[I]->SubmitToRenderQueue(OutQueue, SelectedLODs[I]);
+    {
+        UStaticMeshComponent* StaticComponent = PendingStaticMeshes[I];
+        FRenderQueue& TargetQueue = StaticComponent->IsHudElement() ? Data.HudRenderQueue : OutQueue;
+        StaticComponent->SubmitToRenderQueue(TargetQueue, SelectedLODs[I]);
+    }
 }
 
 void FSceneRenderer::BuildShadowRequests(const FScene& Scene, FShadowFrameData& OutData, std::initializer_list<ELightType> LightTypes)

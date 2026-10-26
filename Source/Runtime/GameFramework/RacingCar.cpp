@@ -26,7 +26,7 @@ namespace
 
 	constexpr float DialHubOffset = DialSize * 0.077f;
 
-	constexpr float DialDepthGap = 0.05f;
+	constexpr float DialPushBack = 1.25f;
 
 	const FVector ScoreTextBase(3.0f, -1.5f, 0.8f);
 	constexpr float ScoreTextSize = 0.3f;
@@ -54,14 +54,16 @@ ARacingCar::ARacingCar()
 	ScoreText->SetupAttachment(Camera);
 	ScoreText->SetRelativeLocation(ScoreTextBase);
 	ScoreText->SetTextSize(ScoreTextSize);
+	ScoreText->SetDrawOnTop(true);
 
 	// 눈금판
 	SpeedDial = CreateDefaultSubobject<UStaticMeshComponent>("SpeedDial");
 	SpeedDial->SetupAttachment(Camera);
 	SpeedDial->SetStaticMesh(UAssetManager::GetAssetByPath<UStaticMesh>("UIQuad"));
-	SpeedDial->SetRelativeLocation(
-		DialCenter + FVector(DialDepthGap, 0.0f, DialHubOffset));
-	SpeedDial->SetRelativeScale3D(FVector(1.0f, DialSize, DialSize));
+	SpeedDial->SetRelativeLocation((DialCenter + FVector(0.0f, 0.0f, DialHubOffset)) * DialPushBack);
+	SpeedDial->SetRelativeScale3D(FVector(1.0f, DialSize * DialPushBack, DialSize * DialPushBack));
+	SpeedDial->SetHudElement(true);
+	SpeedDial->SetCastShadow(false);
 
 	if (UMaterial* BaseMaterial = UAssetManager::GetAssetByPath<UMaterial>("DefaultMaterial"))
 	{
@@ -86,6 +88,15 @@ ARacingCar::ARacingCar()
 	SpeedNeedle->SetStaticMesh(UAssetManager::GetAssetByPath<UStaticMesh>("Cube"));
 	SpeedNeedle->SetRelativeLocation(FVector(0.0f, 0.0f, 0.15f));
 	SpeedNeedle->SetRelativeScale3D(FVector(0.025f, 0.025f, 0.30f));
+	SpeedNeedle->SetHudElement(true);
+	SpeedNeedle->SetCastShadow(false);
+
+	if (UMaterial* BaseMaterial = UAssetManager::GetAssetByPath<UMaterial>("DefaultMaterial"))
+	{
+		UMaterial* NeedleMaterial = UMaterial::CreateInstance(BaseMaterial);
+		NeedleMaterial->SetBlendState(EBlendState::AlphaBlend);
+		SpeedNeedle->SetMaterial(0, NeedleMaterial);
+	}
 }
 
 void ARacingCar::BeginPlay()
@@ -102,8 +113,12 @@ void ARacingCar::BeginPlay()
 	GetWorld()->SetViewTarget(this);
 	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
+	if (ScoreText) ScoreText->SetDrawOnTop(true);
 	SpeedNeedlePivot = Cast<USceneComponent>(FindComponentByName("SpeedNeedlePivot"));
 	SpeedDial = Cast<UStaticMeshComponent>(FindComponentByName("SpeedDial"));
+	if (SpeedDial) SpeedDial->SetHudElement(true);
+	if (UStaticMeshComponent* SpeedNeedle = Cast<UStaticMeshComponent>(FindComponentByName("SpeedNeedle")))
+		SpeedNeedle->SetHudElement(true);
 	VehicleCamera = Cast<UCameraComponent>(FindComponentByName("VehicleCamera"));
 
 	BaseFieldOfView = VehicleCamera ? VehicleCamera->GetFieldOfView() : 0.0f;
@@ -136,10 +151,11 @@ void ARacingCar::UpdateHudForFieldOfView()
 
 	if (SpeedDial)
 	{
-		const FVector DialBase = DialCenter + FVector(DialDepthGap, 0.0f, DialHubOffset);
+		const FVector DialBase = (DialCenter + FVector(0.0f, 0.0f, DialHubOffset)) * DialPushBack;
+		const float DialScale = DialSize * DialPushBack * Scale;
 		SpeedDial->SetRelativeLocation(
 			FVector(DialBase.X, DialBase.Y * Scale, DialBase.Z * Scale));
-		SpeedDial->SetRelativeScale3D(FVector(1.0f, DialSize * Scale, DialSize * Scale));
+		SpeedDial->SetRelativeScale3D(FVector(1.0f, DialScale, DialScale));
 	}
 
 	if (SpeedNeedlePivot)

@@ -31,8 +31,9 @@ public:
 	void OnRender(const FString& Text, const FMatrix& WorldMatrix, float TextSize,
 		const UFont& Atlas, UCameraComponent* CameraComponent);
 	// View별 ViewProjection을 직접 사용해 텍스트를 해당 View에 렌더한다.
+	// bIgnoreDepth면 벽 뒤에 있어도 화면 위에 그리기!
 	void OnRender(const FString& Text, const FMatrix& WorldMatrix, float TextSize,
-		const UFont& Atlas, const FMatrix& ViewProjection);
+		const UFont& Atlas, const FMatrix& ViewProjection, bool bIgnoreDepth = false);
 
 	// 항상 카메라를 향하게 그린다 (에디터 UUID 라벨 등)
 	void OnRenderBillboard(const FString& Text, const FVector& WorldPos, float TextSize,
