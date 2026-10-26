@@ -6,6 +6,16 @@
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
 
+#include "Component/TextRenderComponent.h"
+#include "Core/GameHud.h"
+
+void ARacingCar::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (!ScoreText) return;
+	ScoreText->SetText(std::to_string(FGameHud::GetScore()));
+}
+
 ARacingCar::ARacingCar()
 {
 	// Character 기본 메시 재사용
@@ -25,6 +35,10 @@ ARacingCar::ARacingCar()
 	UScriptComponent* VehicleScript = CreateDefaultSubobject<UScriptComponent>("VehicleScript");
 	VehicleScript->SetScriptPath("Assets/Scripts/RacingCar.lua");
 
+	ScoreText = CreateDefaultSubobject<UTextRenderComponent>("ScoreText");
+	ScoreText->SetupAttachment(Camera);
+	ScoreText->SetRelativeLocation({ 3.0, -1.5, 0.8 });
+	ScoreText->SetTextSize(0.3f);
 }
 
 void ARacingCar::BeginPlay()
@@ -33,4 +47,5 @@ void ARacingCar::BeginPlay()
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
 	GetWorld()->SetViewTarget(this);
+	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
 }

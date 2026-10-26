@@ -8,6 +8,7 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Core/GameHud.h"
 
 namespace LuaBindings
 {
@@ -243,6 +244,13 @@ namespace LuaBindings
 		Input.set_function("is_released", [](const FString& Key)
 			{
 				return FInputSystem::IsKeyReleased(ResolveInputKey(Key));
+			}
+		);
+
+		sol::table Game = Lua.create_named_table("game");
+		Game.set_function("set_score", [](const int32 num)
+			{
+				FGameHud::SetScore(num);
 			}
 		);
 	}

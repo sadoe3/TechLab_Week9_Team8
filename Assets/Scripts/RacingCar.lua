@@ -47,6 +47,7 @@ function OnBeginOverlap(OtherActor)
     then
         score = score + 5;
         print("Score " .. score)
+        game.set_score(score);
         OtherActor:Destroy()
     end
 end
