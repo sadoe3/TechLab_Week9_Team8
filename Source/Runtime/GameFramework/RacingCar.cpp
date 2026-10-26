@@ -28,11 +28,31 @@ namespace
 
 	constexpr float DialPushBack = 1.25f;
 
-	const FVector ScoreTextBase(3.0f, -1.5f, 0.8f);
+	const FVector ScoreTextBase(2.0f, -1.5f, 0.8f);
 	constexpr float ScoreTextSize = 0.3f;
 
 	const FVector CountdownTextBase(3.0f, 0.0f, 0.0f);
 	constexpr float CountdownTextSize = 1.2f;
+
+	const FVector RaceTimeTextBase(2.0f, 1.35f, 0.8f);
+	constexpr float RaceTimeTextSize = 0.3f;
+
+	FString FormatRaceTime(float Seconds)
+	{
+		if (Seconds < 0.0f) Seconds = 0.0f;
+
+		const int32 TotalHundredths = static_cast<int32>(Seconds * 100.0f);
+		const int32 Minutes = TotalHundredths / 6000;
+		const int32 RemainSeconds = (TotalHundredths / 100) % 60;
+		const int32 Hundredths = TotalHundredths % 100;
+
+		FString Label = std::to_string(Minutes) + ":";
+		if (RemainSeconds < 10) Label += "0";
+		Label += std::to_string(RemainSeconds) + ".";
+		if (Hundredths < 10) Label += "0";
+		Label += std::to_string(Hundredths);
+		return Label;
+	}
 }
 
 ARacingCar::ARacingCar()
@@ -65,6 +85,12 @@ ARacingCar::ARacingCar()
 	CountdownText->SetTextSize(CountdownTextSize);
 	CountdownText->SetDrawOnTop(true);
 	CountdownText->SetText("");
+
+	RaceTimeText = CreateDefaultSubobject<UTextRenderComponent>("RaceTimeText");
+	RaceTimeText->SetupAttachment(Camera);
+	RaceTimeText->SetRelativeLocation(RaceTimeTextBase);
+	RaceTimeText->SetTextSize(RaceTimeTextSize);
+	RaceTimeText->SetDrawOnTop(true);
 
 	// 눈금판
 	SpeedDial = CreateDefaultSubobject<UStaticMeshComponent>("SpeedDial");
@@ -124,6 +150,12 @@ void ARacingCar::BeginPlay()
 	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
 	if (ScoreText) ScoreText->SetDrawOnTop(true);
+	RaceTimeText = Cast<UTextRenderComponent>(FindComponentByName("RaceTimeText"));
+	if (RaceTimeText) RaceTimeText->SetDrawOnTop(true);
+	LastRaceTimeLabel.clear();
+	FGameHud::SetRaceTime(0.0f);
+	UpdateRaceTimeText();
+
 	CountdownText = Cast<UTextRenderComponent>(FindComponentByName("CountdownText"));
 	if (CountdownText)
 	{
@@ -174,6 +206,13 @@ void ARacingCar::UpdateHudForFieldOfView()
 		CountdownText->SetRelativeScale3D(FVector(Scale, Scale, Scale));
 	}
 
+	if (RaceTimeText)
+	{
+		RaceTimeText->SetRelativeLocation(
+			FVector(RaceTimeTextBase.X, RaceTimeTextBase.Y * Scale, RaceTimeTextBase.Z * Scale));
+		RaceTimeText->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+	}
+
 	if (SpeedDial)
 	{
 		const FVector DialBase = (DialCenter + FVector(0.0f, 0.0f, DialHubOffset)) * DialPushBack;
@@ -192,10 +231,22 @@ void ARacingCar::UpdateHudForFieldOfView()
 	}
 }
 
+void ARacingCar::UpdateRaceTimeText()
+{
+	if (!RaceTimeText) return;
+
+	FString Label = FormatRaceTime(FGameHud::GetRaceTime());
+	if (Label == LastRaceTimeLabel) return;
+
+	LastRaceTimeLabel = Label;
+	RaceTimeText->SetText(Label);
+}
+
 void ARacingCar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	UpdateHudForFieldOfView();
+	UpdateRaceTimeText();
 	if (!SpeedNeedlePivot) return;
 
 	const float Limit = MaxSpeed > 0.0f ? MaxSpeed : 1.0f;

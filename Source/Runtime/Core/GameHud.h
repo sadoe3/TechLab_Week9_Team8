@@ -27,7 +27,11 @@ public:
 
 	inline static CountdownUpdate OnCountdownChanged;
 
+	static float GetRaceTime() { return RaceTime; }
+	static void SetRaceTime(float inRaceTime) { RaceTime = inRaceTime; }
+
 private:
 	inline static int32 Score = 0;
 	inline static FString Countdown;
+	inline static float RaceTime = 0.0f;
 };

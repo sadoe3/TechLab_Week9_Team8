@@ -485,5 +485,10 @@ namespace LuaBindings
 				FGameHud::SetCountdown(Text);
 			}
 		);
+		Game.set_function("set_race_time", [](const float Seconds)
+			{
+				FGameHud::SetRaceTime(Seconds);
+			}
+		);
 	}
 }

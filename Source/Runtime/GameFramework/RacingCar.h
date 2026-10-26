@@ -32,9 +32,14 @@ public:
 
 	UTextRenderComponent* CountdownText = nullptr;
 
+	UTextRenderComponent* RaceTimeText = nullptr;
+
 	USceneComponent* SpeedNeedlePivot = nullptr;
 protected:
 	void UpdateHudForFieldOfView();
+
+	void UpdateRaceTimeText();
+	FString LastRaceTimeLabel;
 
 	UCameraComponent* VehicleCamera = nullptr;
 	UStaticMeshComponent* SpeedDial = nullptr;

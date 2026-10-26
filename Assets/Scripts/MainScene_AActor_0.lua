@@ -71,6 +71,7 @@ function BeginPlay()
 
     GoDisplayRemaining = 0.0
     game.set_countdown(tostring(math.ceil(CountdownSeconds)))
+    game.set_race_time(0.0)
 
     print(string.format("[Race] Countdown: %d", math.ceil(CountdownSeconds)))
 end
@@ -118,6 +119,8 @@ function Tick(DeltaTime)
     if Race.State == "Running" then
         -- 이번 이동 프레임의 시간 누적
         Race.ElapsedTime = Race.ElapsedTime + DeltaTime
+        -- 주행 시간 
+        game.set_race_time(Race.ElapsedTime)
         -- 이번 이동에서 수신한 통과 알림 처리
         ProcessPendingTriggers()
     end
