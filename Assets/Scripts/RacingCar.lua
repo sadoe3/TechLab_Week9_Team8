@@ -38,6 +38,10 @@ end
 
 function Tick(DeltaTime)
     WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
+    if Race.State == "Finished" and EngineSoundId >= 0 then
+        audio.stop(EngineSoundId)
+        EngineSoundId = -1
+    end
     if Race.State ~= "Running" then
         obj.Velocity = Vector(0, 0, 0)
         return
