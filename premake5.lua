@@ -21,6 +21,7 @@ IncludeDir["stb"]   = "Source/ThirdParty/stb"
 IncludeDir["json"]  = "Source/ThirdParty/json"
 IncludeDir["Lua"] = "Source/ThirdParty/Lua/src"
 IncludeDir["sol2"] = "Source/ThirdParty/sol2/include"
+IncludeDir["FMOD"] = "Source/ThirdParty/FMOD/inc"
 -- premake의 filter는 project()를 만나면 초기화된다.
 -- 두 프로젝트가 같은 런타임(/MDd vs /MD)으로 컴파일되지 않으면 링크가 실패하므로
 -- 공통 설정을 함수로 묶어 각 프로젝트에서 호출한다.
@@ -171,6 +172,7 @@ project "HitoriEngine"
 		"%{IncludeDir.json}",
 		"%{IncludeDir.Lua}",
 		"%{IncludeDir.sol2}",
+		"%{IncludeDir.FMOD}",
 	}
 
 	-- Lua 라이브러리 연결
@@ -185,6 +187,14 @@ project "HitoriEditor"
 	location "Source/Editor"
 	kind     "WindowedApp"
 	CommonSettings()
+
+	libdirs { "Source/ThirdParty/FMOD/lib/x64" }
+	links { "fmod_vc.lib", "ole32.lib" }
+	postbuildcommands
+	{
+		'{COPYFILE} "%{wks.location}/Source/ThirdParty/FMOD/lib/x64/fmod.dll" '
+			.. '"%{cfg.targetdir}/fmod.dll"',
+	}
 
 	pchheader "EnginePCH.h"
 	pchsource "Source/Editor/EditorPCH.cpp"
@@ -211,6 +221,7 @@ project "HitoriEditor"
 		"%{IncludeDir.json}",
 		"%{IncludeDir.Lua}",
 		"%{IncludeDir.sol2}",
+		"%{IncludeDir.FMOD}",
 	}
 
 	links
@@ -238,6 +249,14 @@ project "HitoriGame"
 	kind "WindowedApp"
 	CommonSettings()
 
+	libdirs { "Source/ThirdParty/FMOD/lib/x64" }
+	links { "fmod_vc.lib", "ole32.lib" }
+	postbuildcommands
+	{
+		'{COPYFILE} "%{wks.location}/Source/ThirdParty/FMOD/lib/x64/fmod.dll" '
+			.. '"%{cfg.targetdir}/fmod.dll"',
+	}
+
 	-- 게임 프로젝트 PCH
 	pchheader "EnginePCH.h"
 	pchsource "Source/Game/GamePCH.cpp"
@@ -255,6 +274,7 @@ project "HitoriGame"
 		"%{IncludeDir.json}",
 		"%{IncludeDir.Lua}",
 		"%{IncludeDir.sol2}",
+		"%{IncludeDir.FMOD}",
 	}
 
 	links

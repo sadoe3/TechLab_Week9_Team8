@@ -15,6 +15,11 @@ bool UEngine::Init()
  	return true;
 }
 
+FSoundManager* UEngine::GetSoundManager() const
+{
+	return EngineLoop->GetSoundManager();
+}
+
 FWorldContext& UEngine::CreateNewWorldContext(EWorldType WorldType)
 {
 	FWorldContext* NewWorldContext = new FWorldContext();

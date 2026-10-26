@@ -10,6 +10,7 @@ class FRenderDevice;
 class FRenderer;
 class FSwapchain;
 class FTexture2D;
+class FSoundManager;
 
 // 프레임 시간 통계. FPS는 표시가 흔들리지 않게 일정 구간마다 평균을 낸다.
 struct FFrameStats
@@ -44,6 +45,8 @@ public:
 	FSwapchain* GetSwapchain() const { return Swapchain.get(); }
 	// 백버퍼 패스의 깊이 버퍼. 기즈모처럼 장면 위에 항상 보여야 하는 것을 그리기 전에 지울 때 쓴다.
 	FTexture2D* GetDepthBuffer() const { return DepthBuffer.get(); }
+	// 관리자의 소유권은 엔진 루프에 유지합니다.
+	FSoundManager* GetSoundManager() const { return SoundManager.get(); }
 
 	uint32 GetViewportWidth() const;
 	uint32 GetViewportHeight() const;
@@ -62,6 +65,8 @@ private:
 	TUniquePtr<FWindow> MainWindow;
 	TUniquePtr<FSwapchain> Swapchain;
 	TUniquePtr<FTexture2D> DepthBuffer = nullptr;
+	// 관리자 객체는 이 루프가 소유하고 Exit()에서 명시적으로 종료합니다.
+	TUniquePtr<FSoundManager> SoundManager;
 
 	FEngineConfig Config;
 
