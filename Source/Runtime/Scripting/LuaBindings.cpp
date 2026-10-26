@@ -8,6 +8,10 @@
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Core/GameHud.h"
+#include "GameFramework/RacingCar.h"
+#include "GameFramework/Swamp.h"
+#include "Component/ExponentialHeightFogComponent.h"
 #include "Component/ParticleSubUVComponent.h"
 #include "Collision/HitResult.h"
 #include "Component/PrimitiveComponent.h"
@@ -30,6 +34,10 @@ namespace LuaBindings
 		if (Key == "Escape")
 		{
 			return EKeyCode::Escape;
+		}
+		if (Key == "Space")
+		{
+			return EKeyCode::Space;
 		}
 
 		throw sol::error("Unsupported input key: " + Key);
@@ -286,6 +294,29 @@ namespace LuaBindings
 					}
 
 					Character->SetVelocity(Velocity);
+				}),
+			"FogEnabled", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent()) throw sol::error("FogEnabled requires a Swamp with a Fog component");
+					return Swamp->GetFogComponent()->IsFogEnabled();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, bool bEnabled)
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent() || Swamp->GetFogComponent()->IsPendingDestroy()) throw sol::error("Swamp Fog component is unavailable");
+					Swamp->GetFogComponent()->SetFogEnabled(bEnabled);
+				}),
+			"MaxSpeed", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> float
+				{
+					ARacingCar* Car = Cast<ARacingCar>(Reference.Get());
+					if (!Car)
+					{
+						throw sol::error("MaxSpeed requires a RacingCar actor");
+					}
+					return Car->GetMaxSpeed();
 				})
 		);
 
@@ -335,6 +366,13 @@ namespace LuaBindings
 		Input.set_function("is_released", [](const FString& Key)
 			{
 				return FInputSystem::IsKeyReleased(ResolveInputKey(Key));
+			}
+		);
+
+		sol::table Game = Lua.create_named_table("game");
+		Game.set_function("set_score", [](const int32 num)
+			{
+				FGameHud::SetScore(num);
 			}
 		);
 	}

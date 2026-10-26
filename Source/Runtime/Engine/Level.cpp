@@ -109,7 +109,7 @@ void ULevel::Serialize(FStructuredArchive::FRecord Record)
 			for (UActorComponent* Component : Actor->GetComponents())
 			{
 				if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
-					OwningWorld->GetScene().UpdateFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
+					Fog->SetFogEnabled(Fog->IsFogEnabled());
 				else if (ULightComponentBase* Light = Cast<ULightComponentBase>(Component))
 					Light->MarkSceneProxyDirty();
 			}
