@@ -3,14 +3,21 @@
 #include "Math/Vector.h"
 #include "GameFramework/Actor.h"
 #include "UObject/WeakObjectPtr.h"
-#include <format>
 #include "Component/SceneComponent.h"
 #include "Input/InputSystem.h"
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
+#include "Core/GameHud.h"
+#include "GameFramework/RacingCar.h"
+#include "GameFramework/Swamp.h"
+#include "Component/ExponentialHeightFogComponent.h"
+#include "Component/ParticleSubUVComponent.h"
+#include "Collision/HitResult.h"
+#include "Component/PrimitiveComponent.h"
 #include "Engine/Engine.h"
 #include "Audio/SoundManager.h"
 #include <cassert>
+#include <format>
 
 namespace LuaBindings
 {
@@ -31,10 +38,29 @@ namespace LuaBindings
 		{
 			return EKeyCode::Escape;
 		}
+		if (Key == "Space")
+		{
+			return EKeyCode::Space;
+		}
 
 		throw sol::error("Unsupported input key: " + Key);
 	}
 
+	// Actor 소유 파티클 컴포넌트 조회
+	static UParticleSubUVComponent* ResolveParticleComponent(const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName)
+	{
+		AActor* Actor = Reference.Get();
+		UParticleSubUVComponent* Component = Actor ? 
+			Cast<UParticleSubUVComponent>(Actor->FindComponentByName(FName(ComponentName)))
+			: nullptr;
+
+		if (!Component)
+		{
+			throw sol::error("Particle component is unavailable: " + ComponentName);
+		}
+
+		return Component;
+	}
 	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
 	// TODO : 다른 공통 타입들도 바인딩해야함.
 	void Register(sol::state_view Lua)
@@ -72,7 +98,65 @@ namespace LuaBindings
 			"yaw", &FRotator::Yaw,
 			"roll", &FRotator::Roll
 		);
+		// FHitResult 바인딩
+		// 현재는 모든 필드에 대해 읽기/복사본 읽기만 가능.
+		Lua.new_usertype<FHitResult>("HitResult",
+			sol::no_constructor,
+			"FaceIndex", sol::readonly(&FHitResult::FaceIndex),
+			"Time", sol::readonly(&FHitResult::Time),
+			"Distance", sol::readonly(&FHitResult::Distance),
+			"PenetrationDepth", sol::readonly(&FHitResult::PenetrationDepth),
+			"bBlockingHit", sol::readonly(&FHitResult::bBlockingHit),
+			"bStartPenetrating", sol::readonly(&FHitResult::bStartPenetrating),
+			"Location", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.Location;
+				}),
+			"ImpactPoint", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.ImpactPoint;
+				}),
+			"Normal", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.Normal;
+				}),
+			"ImpactNormal", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.ImpactNormal;
+				}),
+			"TraceStart", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.TraceStart;
+				}),
+			"TraceEnd", sol::property([](const FHitResult& Hit) -> FVector
+				{
+					return Hit.TraceEnd;
+				})
+		);
+		// 충돌 상대 컴포넌트 WeakPtr 바인딩
+		// 현재는 Name, IsValid 읽기만 가능
+		Lua.new_usertype<TWeakObjectPtr<UPrimitiveComponent>>("PrimitiveComponent",
+			sol::no_constructor,
+			"Name", sol::property(
+				[](const TWeakObjectPtr<UPrimitiveComponent>& Reference) -> FString
+				{
+					UPrimitiveComponent* Component = Reference.Get();
+					if (!Component)
+					{
+						throw sol::error("Primitive component has been destroyed");
+					}
 
+					return Component->GetName();
+				}),
+			"IsValid", [](const TWeakObjectPtr<UPrimitiveComponent>& Reference) -> bool
+			{
+				UPrimitiveComponent* Component = Reference.Get();
+				AActor* Owner = Component ? Component->GetOwner() : nullptr;
+
+				return Component && !Component->IsPendingDestroy() &&
+					Owner && !Owner->IsPendingDestroy();
+			}
+		);
 		// AActor 바인딩
 		Lua.new_usertype<TWeakObjectPtr<AActor>>("Actor",
 			sol::no_constructor,
@@ -98,6 +182,18 @@ namespace LuaBindings
 					}
 
 					return Actor->GetName();
+				}),
+			// Label 이름 조회
+			"Label", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> FString
+				{
+					AActor* Actor = Reference.Get();
+					if (!Actor)
+					{
+						throw sol::error("Actor has been destroyed");
+					}
+
+					return Actor->GetActorLabel();
 				}),
 			// 삭제 예약 상태를 포함한 유효성 판정
 			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
@@ -158,6 +254,22 @@ namespace LuaBindings
 
 					return Root->SetWorldRotation(Rotation,false);
 				}),
+			// 파티클 관련 바인딩
+			// 지정한 컴포넌트의 Burst 재생
+			"EmitParticleBurst", [](
+				const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName,
+				const FVector& Position, const FVector& Direction, int32 Count) -> int32
+			{
+				return ResolveParticleComponent(Reference, ComponentName)
+					->EmitBurst(Position, Direction, Count);
+			},
+
+			// 지정한 컴포넌트의 활성 입자 정리
+			"ClearParticles", [](
+				const TWeakObjectPtr<AActor>& Reference, const FString& ComponentName)
+			{
+				ResolveParticleComponent(Reference, ComponentName)->ClearParticles();
+			},
 			// Character 관련 바인딩
 			// AActor상속받는 구조->바인딩된 obj에 대해 Character인지 확인하는 절차를 거침.
 			"Velocity", sol::property(
@@ -185,6 +297,29 @@ namespace LuaBindings
 					}
 
 					Character->SetVelocity(Velocity);
+				}),
+			"FogEnabled", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent()) throw sol::error("FogEnabled requires a Swamp with a Fog component");
+					return Swamp->GetFogComponent()->IsFogEnabled();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, bool bEnabled)
+				{
+					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
+					if (!Swamp || !Swamp->GetFogComponent() || Swamp->GetFogComponent()->IsPendingDestroy()) throw sol::error("Swamp Fog component is unavailable");
+					Swamp->GetFogComponent()->SetFogEnabled(bEnabled);
+				}),
+			"MaxSpeed", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> float
+				{
+					ARacingCar* Car = Cast<ARacingCar>(Reference.Get());
+					if (!Car)
+					{
+						throw sol::error("MaxSpeed requires a RacingCar actor");
+					}
+					return Car->GetMaxSpeed();
 				})
 		);
 
@@ -311,6 +446,13 @@ namespace LuaBindings
 		Input.set_function("is_released", [](const FString& Key)
 			{
 				return FInputSystem::IsKeyReleased(ResolveInputKey(Key));
+			}
+		);
+
+		sol::table Game = Lua.create_named_table("game");
+		Game.set_function("set_score", [](const int32 num)
+			{
+				FGameHud::SetScore(num);
 			}
 		);
 	}

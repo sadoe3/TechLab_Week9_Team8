@@ -11,15 +11,26 @@ cbuffer PerObjectConstants : register(b2)
     matrix World;
     matrix NormalMatrix;
 };
-float4 mainVS(float3 Position : POSITION) : SV_POSITION
+struct VSOutput
+{
+    float4 Position : SV_POSITION;
+    noperspective float Depth : TEXCOORD0;
+    float FarClipDistance : SV_ClipDistance0;
+};
+VSOutput mainVS(float3 Position : POSITION)
 {
     float4 WorldPosition = mul(float4(Position, 1.0f), World);
     float4 ClipPosition = mul(WorldPosition, ViewProjection);
-    // D3D [0,1] 깊이. far와 가로·세로 clipping은 그대로 유지한다.
-    if (ClipPosition.z < 0.0f)
-        ClipPosition.z = 1.0e-6f * ClipPosition.w;
-    return ClipPosition;
+    VSOutput Output;
+    // 정점의 z는 유지한다. near를 가로지르는 삼각형도 원래 평면 깊이로 보간한다.
+    Output.Position = ClipPosition;
+    Output.Depth = ClipPosition.z / ClipPosition.w;
+    // CSM 전용 rasterizer는 z clipping을 끄므로 far 평면은 명시적으로 유지한다.
+    Output.FarClipDistance = ClipPosition.w - ClipPosition.z;
+    return Output;
 }
-void mainPS()
+float mainPS(VSOutput Input) : SV_DEPTH
 {
+    // 직교 CSM의 원래 깊이를 보간한 뒤 near 앞의 픽셀만 붙인다.
+    return Input.Depth < 0.0f ? 1.0e-6f : Input.Depth;
 }

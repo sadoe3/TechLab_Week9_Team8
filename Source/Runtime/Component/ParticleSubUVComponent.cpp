@@ -6,8 +6,10 @@
 #include "Camera/CameraComponent.h"
 
 #include "BillboardComponent.h"
-
+#include "UObject/Property.h"
+#include <algorithm>
 #include "Engine/World.h"
+#include <cmath>
 
 const float UParticleSubUVComponent::MAX_NORMALIZED_VALUE = 1.0f;
 
@@ -34,6 +36,7 @@ UParticleSubUVComponent::UParticleSubUVComponent()
 void UParticleSubUVComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	InitializeParticles();
 }
 
 // 열·행 개수가 양수인지 검사해 SubUV 분할 수를 설정한다.
@@ -56,16 +59,30 @@ void UParticleSubUVComponent::TickComponent(float DeltaTime)
 {
 	Super::TickComponent(DeltaTime);
 	const uint32 TotalFrames = ColSize * RowSize;
+	// 입자 경계 변경 여부
+	bool bBoundsChanged = false;
 
 	for (FParticle& Particle : Particles)
 	{
+		// 비활성 슬롯 제외
+		if (!Particle.bAlive)
+		{
+			continue;
+		}
+		bBoundsChanged = true;
 		Particle.Location += Particle.Velocity * DeltaTime;
 		Particle.Age += DeltaTime;
 
 		if (Particle.Age >= Particle.LifeTime)
 		{
-			RespawnParticle(Particle);
-
+			if (bLooping)
+			{
+				RespawnParticle(Particle);
+			}
+			else
+			{
+				Particle.bAlive = false;
+			}
 			continue;
 		}
 
@@ -94,6 +111,10 @@ void UParticleSubUVComponent::TickComponent(float DeltaTime)
 			Particle.SubUVFrame %= TotalFrames;
 		}
 	}
+	if (bBoundsChanged)
+	{
+		MarkTransformDirty();
+	}
 }
 
 // 파티클 에셋과 배열을 준비하고 초기 상태를 채운다.
@@ -104,29 +125,53 @@ void UParticleSubUVComponent::OnRegister()
 		Material = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
 	}
 	Super::OnRegister();
+	InitializeParticles();
+}
 
-	// 재등록시 중첩을 막기위한 리셋
+// 재생 설정에 따른 파티클 슬롯 초기화
+void UParticleSubUVComponent::InitializeParticles()
+{
+	// 배열·Atlas 크기와 프레임 속도 보정
+	ParticleCount = std::max(0, ParticleCount);
+	ColSize = std::max(1u, ColSize);
+	RowSize = std::max(1u, RowSize);
+	SetFrameRate(FrameRate);
+	// 공개 튜닝 범위 보정
+	MinLifeTime = std::max(0.001f, MinLifeTime);
+	MaxLifeTime = std::max(MinLifeTime, MaxLifeTime);
+	StartScale = std::max(0.0f, StartScale);
+	EndScale = std::max(0.0f, EndScale);
+	FadeStart = std::clamp(FadeStart, 0.0f, 1.0f);
+	MinBurstSpeed = std::max(0.0f, MinBurstSpeed);
+	MaxBurstSpeed = std::max(MinBurstSpeed, MaxBurstSpeed);
+	BurstSpreadAngle = std::clamp(BurstSpreadAngle, 0.0f, 90.0f);
 	Particles.Reset();
 	Particles.Reserve(ParticleCount);
-	for (int32 i = 0; i < ParticleCount; ++i)
+
+	const uint32 TotalFrames = ColSize * RowSize;
+	for (int32 Index = 0; Index < ParticleCount; ++Index)
 	{
-		FParticle Particle;
-		RespawnParticle(Particle);
+		// 비활성 슬롯의 전체 필드 초기화
+		FParticle Particle{};
 
-		Particle.Age = GetRandomNumberBetween(0.0f, Particle.LifeTime);
-		Particle.Location.Z += Particle.Velocity.Z * Particle.Age;
+		if (bLooping)
+		{
+			// 기존 Loop의 분산된 초기 상태 유지
+			RespawnParticle(Particle);
+			Particle.Age = GetRandomNumberBetween(0.0f, Particle.LifeTime);
+			Particle.Location.Z += Particle.Velocity.Z * Particle.Age;
 
-		const float LifeRatio = Particle.Age / Particle.LifeTime;
-		Particle.Scale = Lerp(StartScale, EndScale, LifeRatio);
+			const float LifeRatio = Particle.Age / Particle.LifeTime;
+			Particle.Scale = Lerp(StartScale, EndScale, LifeRatio);
 
-		const float ElapsedFrames = Particle.Age * FrameRate;
-		Particle.SubUVFrame = static_cast<uint32>(ElapsedFrames) % (ColSize * RowSize);
+			const float ElapsedFrames = Particle.Age * FrameRate;
+			Particle.SubUVFrame = static_cast<uint32>(ElapsedFrames) % TotalFrames;
+		}
 
 		Particles.Add(Particle);
 	}
+	MarkTransformDirty();
 }
-
-
 
 // 기본 카메라 기준으로 파티클 상수와 렌더 패킷을 구성한다.
 void UParticleSubUVComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue)
@@ -316,4 +361,139 @@ void UParticleSubUVComponent::SubmitParticleToRenderQueue(
 bool UParticleSubUVComponent::UsesOpaqueMaterial() const
 {
     return Material && Material->BlendState == EBlendState::Opaque;
+}
+
+// 저장된 재생 설정에 따른 슬롯 초기화
+void UParticleSubUVComponent::Serialize(FStructuredArchive::FRecord Record)
+{
+	Super::Serialize(Record);
+
+	if (Record.GetUnderlyingArchive().IsLoading())
+	{
+		InitializeParticles();
+	}
+}
+
+// 에디터 재생 설정 변경 반영
+void UParticleSubUVComponent::PostEditChangeProperty(const FProperty& Property)
+{
+	Super::PostEditChangeProperty(Property);
+
+	if (Property.Name == "bLooping" || Property.Name == "ParticleCount" ||
+		Property.Name == "ColSize" || Property.Name == "RowSize" ||
+		Property.Name == "FrameRate" || Property.Name == "MinLifeTime" ||
+		Property.Name == "MaxLifeTime" || Property.Name == "StartScale" ||
+		Property.Name == "EndScale" || Property.Name == "FadeStart" ||
+		Property.Name == "MinBurstSpeed" || Property.Name == "MaxBurstSpeed" ||
+		Property.Name == "BurstSpreadAngle")
+	{
+		InitializeParticles();
+	}
+}
+
+// 비활성 슬롯을 재사용한 원뿔 방향 방출
+int32 UParticleSubUVComponent::EmitBurst(const FVector& Position, const FVector& Direction, int32 Count)
+{
+	if (bLooping || Count <= 0 || !CanRunGameplay())
+	{
+		return 0;
+	}
+
+	const FVector Axis = Direction.GetSafeNormal();
+	if (Axis.SizeSquared() == 0.0f)
+	{
+		return 0;
+	}
+
+	// 방출 축의 직교 기저
+	const FVector Reference = std::abs(Axis.Z) < 0.999f ? FVector(0, 0, 1) : FVector(0, 1, 0);
+	const FVector Tangent = FVector::Cross(Reference, Axis).GetSafeNormal();
+	const FVector Bitangent = FVector::Cross(Axis, Tangent);
+	const float MinimumCosine = std::cos(FMath::DegreesToRadians(BurstSpreadAngle));
+
+	int32 EmittedCount = 0;
+	for (FParticle& Particle : Particles)
+	{
+		if (Particle.bAlive)
+		{
+			continue;
+		}
+
+		// 기존 입자 초기화 재사용
+		RespawnParticle(Particle);
+
+		const float Cosine = GetRandomNumberBetween(MinimumCosine, 1.0f);
+		const float Sine = std::sqrt(std::max(0.0f, 1.0f - Cosine * Cosine));
+		const float Angle = GetRandomNumberBetween(0.0f, 2.0f * PI);
+		const FVector VelocityDirection = Axis * Cosine + Tangent * (Sine * std::cos(Angle)) +
+			Bitangent * (Sine * std::sin(Angle));
+
+		Particle.Location = Position;
+		Particle.Velocity = VelocityDirection *	GetRandomNumberBetween(MinBurstSpeed, MaxBurstSpeed);
+		Particle.SubUVFrame = 0;
+
+		++EmittedCount;
+		if (EmittedCount >= Count)
+		{
+			break;
+		}
+	}
+
+	if (EmittedCount > 0)
+	{
+		MarkTransformDirty();
+	}
+
+	return EmittedCount;
+}
+
+// 슬롯 용량을 유지한 활성 입자 정리
+void UParticleSubUVComponent::ClearParticles()
+{
+	for (FParticle& Particle : Particles)
+	{
+		Particle.bAlive = false;
+		Particle.Alpha = 0.0f;
+	}
+
+	MarkTransformDirty();
+}
+
+// 활성 입자와 Billboard 크기를 포함하는 월드 경계
+FBox UParticleSubUVComponent::CalcBounds() const
+{
+	float QuadRadius = 1.0f;
+	if (const FStaticMeshData* MeshData = GetMeshData())
+	{
+		const FBox& LocalBounds = MeshData->AABB;
+		const float HalfWidth =	std::max(std::abs(LocalBounds.Min.Y), std::abs(LocalBounds.Max.Y));
+		const float HalfHeight = std::max(std::abs(LocalBounds.Min.Z), std::abs(LocalBounds.Max.Z));
+		QuadRadius = std::sqrt(HalfWidth * HalfWidth + HalfHeight * HalfHeight);
+	}
+
+	FBox Bounds{};
+	bool bHasAliveParticle = false;
+
+	for (const FParticle& Particle : Particles)
+	{
+		if (!Particle.bAlive)
+		{
+			continue;
+		}
+
+		const FVector Extent(QuadRadius * std::abs(Particle.Scale));
+		const FBox ParticleBounds{Particle.Location - Extent, Particle.Location + Extent};
+
+		if (!bHasAliveParticle)
+		{
+			Bounds = ParticleBounds;
+			bHasAliveParticle = true;
+		}
+		else
+		{
+			Bounds.Expand(ParticleBounds);
+		}
+	}
+
+	return bHasAliveParticle ? Bounds : FBox{ GetWorldLocation(), GetWorldLocation() };
 }

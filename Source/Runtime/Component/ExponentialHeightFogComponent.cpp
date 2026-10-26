@@ -17,9 +17,23 @@ FFogInfo UExponentialHeightFogComponent::GetFogInfo() const
 	return FogInfo;
 }
 
+void UExponentialHeightFogComponent::SetFogEnabled(bool bEnabled)
+{
+	bFogEnabled = bEnabled;
+	if (!IsRegistered()) return;
+	FScene& Scene = GetOwner()->GetWorld()->GetScene();
+	Scene.RemoveFogInfo(GetUUID());
+	if (bFogEnabled) Scene.AddFogInfo(GetUUID(), GetFogInfo());
+}
+
 void UExponentialHeightFogComponent::PostEditChangeProperty(const FProperty& Property)
 {
 	Super::PostEditChangeProperty(Property);
+	if (Property.Name == "bFogEnabled")
+	{
+		SetFogEnabled(bFogEnabled);
+		return;
+	}
 	UpdateSceneFogInfo();
 }
 
@@ -33,7 +47,7 @@ void UExponentialHeightFogComponent::CreateRenderState()
 {
 	Super::CreateRenderState();
 
-	GetOwner()->GetWorld()->GetScene().AddFogInfo(GetUUID(), GetFogInfo());
+	if (bFogEnabled) GetOwner()->GetWorld()->GetScene().AddFogInfo(GetUUID(), GetFogInfo());
 }
 
 void UExponentialHeightFogComponent::DestroyRenderState()

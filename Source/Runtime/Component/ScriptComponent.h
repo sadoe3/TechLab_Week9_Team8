@@ -26,7 +26,7 @@ public:
 
     void OnBeginOverlap(AActor* otherActor);
     void OnEndOverlap(AActor* OtherActor);
-    void OnHit(AActor* OtherActor);
+    void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
     void BindPrimitive(UPrimitiveComponent* Primitive);
     // 후보 파일 실행 여부
     bool IsLoadingScript() const
