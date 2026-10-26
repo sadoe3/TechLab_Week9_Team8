@@ -38225,12 +38225,12 @@
                                     "Location": {
                                         "X": 0.0,
                                         "Y": 0.0,
-                                        "Z": 0.4000000059604645
+                                        "Z": -0.5277161598205566
                                     },
                                     "Rotation": {
-                                        "Pitch": 90.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
+                                        "Pitch": 89.97203826904297,
+                                        "Roll": -0.0005838387878611684,
+                                        "Yaw": 0.003055764362215996
                                     },
                                     "Scale": {
                                         "X": 1.0,
@@ -38347,7 +38347,7 @@
                                         "R": 0.0
                                     },
                                     "Textures": [
-                                        "Assets/Textures/Racing/Effects/ImpactSpark.png"
+                                        "Assets/Textures/StarParticle.png"
                                     ],
                                     "UVScrollSpeed": [
                                         0.0,
@@ -38360,7 +38360,7 @@
                             "Parent": "StaticMeshComponent",
                             "Properties": {
                                 "BurstSpreadAngle": 35.0,
-                                "ColSize": 1,
+                                "ColSize": 8,
                                 "CollisionEnabled": 0,
                                 "CollisionResponses.Pawn": 2,
                                 "CollisionResponses.WorldDynamic": 2,
@@ -38374,7 +38374,7 @@
                                 "MinLifeTime": 0.15000000596046448,
                                 "ObjectType": 1,
                                 "ParticleCount": 64,
-                                "RowSize": 1,
+                                "RowSize": 8,
                                 "StartScale": 0.07999999821186066,
                                 "Transform": {
                                     "Location": {
@@ -38422,7 +38422,7 @@
                                         "R": 0.0
                                     },
                                     "Textures": [
-                                        "Assets/Textures/Racing/Effects/CoinSpark.png"
+                                        "Assets/Textures/StarParticle.png"
                                     ],
                                     "UVScrollSpeed": [
                                         0.0,
@@ -38434,8 +38434,8 @@
                             "Name": "CoinParticles",
                             "Parent": "StaticMeshComponent",
                             "Properties": {
-                                "BurstSpreadAngle": 35.0,
-                                "ColSize": 1,
+                                "BurstSpreadAngle": 90.0,
+                                "ColSize": 8,
                                 "CollisionEnabled": 0,
                                 "CollisionResponses.Pawn": 2,
                                 "CollisionResponses.WorldDynamic": 2,
@@ -38449,7 +38449,7 @@
                                 "MinLifeTime": 0.4000000059604645,
                                 "ObjectType": 1,
                                 "ParticleCount": 32,
-                                "RowSize": 1,
+                                "RowSize": 8,
                                 "StartScale": 0.1599999964237213,
                                 "Transform": {
                                     "Location": {
@@ -40396,8 +40396,8 @@
                             "Properties": {
                                 "Transform": {
                                     "Location": {
-                                        "X": -42.0,
-                                        "Y": -25.0,
+                                        "X": -41.92952346801758,
+                                        "Y": -24.882951736450195,
                                         "Z": -1.159999966621399
                                     },
                                     "Rotation": {
@@ -40407,7 +40407,7 @@
                                     },
                                     "Scale": {
                                         "X": 9.699999809265137,
-                                        "Y": 9.699999809265137,
+                                        "Y": 14.230696678161621,
                                         "Z": 9.699999809265137
                                     }
                                 }
