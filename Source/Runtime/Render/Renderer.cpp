@@ -781,7 +781,7 @@ bool FRenderer::DrawShadowDepth(const FShadowRequestPerLight& Request, const FSh
     RenderCommand::BindShaderProgram(Shader);
     RenderCommand::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     // Bias는 Pass 2에서만 적용한다. 기존 SolidBack의 rasterizer bias는 0이다.
-    RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
+    RenderCommand::SetRasterizerState(Shader == ShadowNearClampShader ? ERasterizerState::ShadowNearClamp : ERasterizerState::SolidBack);
     RenderCommand::SetBlendState(EBlendState::NoColorWrite);
     RenderCommand::SetDepthStencilState(EDepthStencilState::Default);
     RenderCommand::BindConstantBuffer(0, ShadowDepthPassCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
