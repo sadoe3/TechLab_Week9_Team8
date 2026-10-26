@@ -40,8 +40,8 @@ bool UGameEngine::Init()
 	const FString StartupScenePath = "Assets/Scenes/LinearColorTest.scene";
 	*/
 
-	// 차량 카메라와 주행 Lua가 연결된 테스트 씬으로 시작합니다.
-	const FString StartupScenePath = "Assets/Scenes/Racing.scene";
+	// 메인메뉴 작성용 씬으로 시작.
+	const FString StartupScenePath = "Assets/Scenes/MainMenu.scene";
 	if (!FJsonArchive::LoadWorld(GameWorld, StartupScenePath))
 	{
 		HTR_LOG(Error, "Failed to load startup scene: {}", StartupScenePath);

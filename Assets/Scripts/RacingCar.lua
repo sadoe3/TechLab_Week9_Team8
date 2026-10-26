@@ -36,8 +36,6 @@ function Tick(DeltaTime)
     local YawRadians = math.rad(Rotation.yaw)
     local Forward = Vector(math.cos(YawRadians), math.sin(YawRadians), 0.0)
 
-    -- W는 전진, S는 후진합니다. 차량 루트에 붙은 메시와 카메라도 함께 따라갑니다.
-    -- 현재 위치 변경은 충돌 검사 없이 수행됩니다.
-    local MovementDelta = Forward * (MoveAxis * MovementSpeed * DeltaTime)
-    obj.Location = obj.Location + MovementDelta
+    -- Character의 Sweep 이동용 속도 설정
+    obj.Velocity = Forward * (MoveAxis * MovementSpeed)
 end

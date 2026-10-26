@@ -15910,6 +15910,137 @@
                 {
                     "Class": "ARacingCar",
                     "Components": [
+                      {
+                        "Class": "UCapsuleComponent",
+                        "Name": "CapsuleComponent",
+                        "Parent": "",
+                        "Properties": {
+                          "Transform": {
+                            "Location": {
+                              "X": 0.0,
+                              "Y": 10.647099494934082,
+                              "Z": 0.3297378420829773
+                            },
+                            "Rotation": {
+                              "Pitch": 0.0,
+                              "Roll": 0.0,
+                              "Yaw": 0.0
+                            },
+                            "Scale": {
+                              "X": 2.607020616531372,
+                              "Y": 1.4204120635986328,
+                              "Z": 0.8648902773857117
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "Class": "UStaticMeshComponent",
+                        "Name": "StaticMeshComponent",
+                        "OverrideMaterials": [
+                          {
+                            "Base": "CapsuleComponent",
+                            "Instance": {
+                              "BaseColor": {
+                                "A": 1.0,
+                                "B": 0.0,
+                                "G": 0.0,
+                                "R": 1.0
+                              },
+                              "BlendState": "Opaque",
+                              "Properties": {},
+                              "SamplerState": "LinearWrap",
+                              "Shininess": 32.0,
+                              "SpecularColor": {
+                                "A": 1.0,
+                                "B": 0.5,
+                                "G": 0.5,
+                                "R": 0.5
+                              },
+                              "Textures": [
+                                "WhiteTexture",
+                                ""
+                              ],
+                              "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                              ],
+                              "bFlipNormalGreen": false
+                            }
+                          }
+                        ],
+                        "Parent": "DefaultSceneRoot",
+                        "Properties": {
+                          "CollisionEnabled": 0,
+                          "CollisionResponses.Pawn": 2,
+                          "CollisionResponses.WorldDynamic": 2,
+                          "CollisionResponses.WorldStatic": 2,
+                          "ObjectType": 1,
+                          "StaticMesh": "Cone",
+                          "Transform": {
+                            "Location": {
+                              "X": 0.0,
+                              "Y": 0.0,
+                              "Z": 0.0
+                            },
+                            "Rotation": {
+                              "Pitch": 88.3713150024414,
+                              "Roll": 0.0,
+                              "Yaw": 0.0
+                            },
+                            "Scale": {
+                              "X": 0.03461037576198578,
+                              "Y": 0.07531929016113281,
+                              "Z": 0.5
+                            }
+                          },
+                          "bCastShadow": true,
+                          "bGenerateOverlapEvents": true,
+                          "bReceiveShadow": true,
+                          "bVisible": true
+                        }
+                      },
+                      {
+                        "Class": "UCameraComponent",
+                        "Name": "VehicleCamera",
+                        "Parent": "CapsuleComponent",
+                        "Properties": {
+                          "Transform": {
+                            "Location": {
+                              "X": -4.0,
+                              "Y": 0.0,
+                              "Z": 2.0
+                            },
+                            "Rotation": {
+                              "Pitch": 15.000003814697266,
+                              "Roll": 0.0,
+                              "Yaw": 0.0
+                            },
+                            "Scale": {
+                              "X": 1.0,
+                              "Y": 1.0,
+                              "Z": 1.0
+                            }
+                          }
+                        }
+                      },
+                        {
+                            "Class": "UScriptComponent",
+                            "Name": "VehicleScript",
+                            "Parent": "",
+                            "Properties": {
+                                "ScriptPath": "Assets/Scripts/RacingCar.lua"
+                            }
+                        }
+                    ],
+                    "Name": "ARacingCar_1",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
+                },
+                {
+                    "Class": "AAmbientLightActor",
+                    "Components": [
                         {
                             "Class": "USceneComponent",
                             "Name": "DefaultSceneRoot",
@@ -15918,101 +16049,11 @@
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
-                                        "Y": 10.647099494934082,
-                                        "Z": 0.3297378420829773
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 2.607020616531372,
-                                        "Y": 1.4204120635986328,
-                                        "Z": 0.8648902773857117
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "Class": "UStaticMeshComponent",
-                            "Name": "VehicleMesh",
-                            "OverrideMaterials": [
-                                {
-                                    "Base": "DefaultMaterial",
-                                    "Instance": {
-                                        "BaseColor": {
-                                            "A": 1.0,
-                                            "B": 0.0,
-                                            "G": 0.0,
-                                            "R": 1.0
-                                        },
-                                        "BlendState": "Opaque",
-                                        "Properties": {},
-                                        "SamplerState": "LinearWrap",
-                                        "Shininess": 32.0,
-                                        "SpecularColor": {
-                                            "A": 1.0,
-                                            "B": 0.5,
-                                            "G": 0.5,
-                                            "R": 0.5
-                                        },
-                                        "Textures": [
-                                            "WhiteTexture",
-                                            ""
-                                        ],
-                                        "UVScrollSpeed": [
-                                            0.0,
-                                            0.0
-                                        ],
-                                        "bFlipNormalGreen": false
-                                    }
-                                }
-                            ],
-                            "Parent": "DefaultSceneRoot",
-                            "Properties": {
-                                "CollisionEnabled": 0,
-                                "CollisionResponses.Pawn": 2,
-                                "CollisionResponses.WorldDynamic": 2,
-                                "CollisionResponses.WorldStatic": 2,
-                                "ObjectType": 1,
-                                "StaticMesh": "Cone",
-                                "Transform": {
-                                    "Location": {
-                                        "X": 0.0,
                                         "Y": 0.0,
                                         "Z": 0.0
                                     },
                                     "Rotation": {
-                                        "Pitch": 88.3713150024414,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 0.03461037576198578,
-                                        "Y": 0.07531929016113281,
-                                        "Z": 0.5
-                                    }
-                                },
-                                "bCastShadow": true,
-                                "bGenerateOverlapEvents": true,
-                                "bReceiveShadow": true,
-                                "bVisible": true
-                            }
-                        },
-                        {
-                            "Class": "UCameraComponent",
-                            "Name": "VehicleCamera",
-                            "Parent": "DefaultSceneRoot",
-                            "Properties": {
-                                "Transform": {
-                                    "Location": {
-                                        "X": -4.0,
-                                        "Y": 0.0,
-                                        "Z": 2.0
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 15.000003814697266,
+                                        "Pitch": 0.0,
                                         "Roll": 0.0,
                                         "Yaw": 0.0
                                     },
@@ -16025,15 +16066,101 @@
                             }
                         },
                         {
-                            "Class": "UScriptComponent",
-                            "Name": "VehicleScript",
+                            "Class": "UAmbientLightComponent",
+                            "Name": "UAmbientLightComponent",
                             "Parent": "",
                             "Properties": {
-                                "ScriptPath": "Assets/Scripts/RacingCar.lua"
+                                "Intensity": 1.0,
+                                "LightColor": {
+                                    "A": 255,
+                                    "B": 255,
+                                    "G": 255,
+                                    "R": 255
+                                },
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UBillboardComponent",
+                            "Material": {
+                                "Base": "BillboardMaterial",
+                                "Instance": {
+                                    "BaseColor": {
+                                        "A": 1.0,
+                                        "B": 1.0,
+                                        "G": 1.0,
+                                        "R": 1.0
+                                    },
+                                    "BlendState": "AlphaBlend",
+                                    "Properties": {},
+                                    "SamplerState": "LinearClamp",
+                                    "Shininess": 32.0,
+                                    "SpecularColor": {
+                                        "A": 1.0,
+                                        "B": 0.5,
+                                        "G": 0.5,
+                                        "R": 0.5
+                                    },
+                                    "Textures": [
+                                        "Resources/Icons/SkyLight.png"
+                                    ],
+                                    "UVScrollSpeed": [
+                                        0.0,
+                                        0.0
+                                    ],
+                                    "bFlipNormalGreen": false
+                                }
+                            },
+                            "Name": "UBillboardComponent",
+                            "Parent": "UAmbientLightComponent",
+                            "Properties": {
+                                "CollisionEnabled": 0,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 1,
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": true,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": true,
+                                "bVisible": true
                             }
                         }
                     ],
-                    "Name": "ARacingCar_1",
+                    "Name": "AAmbientLightActor_1",
                     "Properties": {
                         "ActorLabel": ""
                     }
