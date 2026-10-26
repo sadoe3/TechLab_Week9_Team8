@@ -189,6 +189,28 @@ bool FSoundManager::SetSoundVolume(int64 SoundId, float Volume)
 	return Result == FMOD_OK;
 }
 
+bool FSoundManager::SetSoundPitch(int64 SoundId, float Pitch)
+{
+	// 재생 ID에 연결된 채널을 찾습니다.
+	FMOD::Channel* Channel = ActiveSoundChannels.FindRef(SoundId);
+	if (Channel == nullptr)
+	{
+		return false;
+	}
+
+	// 범위를 벗어난 값은 중단하지 않고 가장 가까운 경계값으로 보정합니다.
+	const float ClampedPitch = FMath::Clamp(Pitch, 0.5f, 2.0f);
+	const FMOD_RESULT Result = Channel->setPitch(ClampedPitch);
+	if (Result == FMOD_ERR_INVALID_HANDLE ||
+		Result == FMOD_ERR_CHANNEL_STOLEN)
+	{
+		// Update() 전에 무효화된 채널도 관리 목록에서 제거합니다.
+		ActiveSoundChannels.Remove(SoundId);
+	}
+
+	return Result == FMOD_OK;
+}
+
 bool FSoundManager::SetAllPaused(bool bPaused)
 {
 	assert(SoundSystem != nullptr);

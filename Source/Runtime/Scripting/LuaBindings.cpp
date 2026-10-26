@@ -9,6 +9,7 @@
 #include "GameFramework/Character.h"
 #include "Core/GameHud.h"
 #include "GameFramework/RacingCar.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/Swamp.h"
 #include "Component/ExponentialHeightFogComponent.h"
 #include "Component/ParticleSubUVComponent.h"
@@ -63,6 +64,15 @@ namespace LuaBindings
 	}
 	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
 	// TODO : 다른 공통 타입들도 바인딩해야함.
+	static UCameraComponent* ResolveVehicleCamera(const TWeakObjectPtr<AActor>& Reference)
+	{
+		ARacingCar* Car = Cast<ARacingCar>(Reference.Get());
+		UCameraComponent* Camera = Car ? Cast<UCameraComponent>(Car->FindComponentByName("VehicleCamera")) : nullptr;
+		if (!Car || !Car->CanRunGameplay() || !Camera || Camera->IsPendingDestroy())
+			throw sol::error("CameraFOV requires a RacingCar with an available VehicleCamera");
+		return Camera;
+	}
+
 	void Register(sol::state_view Lua)
 	{
 		// FVector 바인딩
@@ -311,6 +321,15 @@ namespace LuaBindings
 					if (!Swamp || !Swamp->GetFogComponent() || Swamp->GetFogComponent()->IsPendingDestroy()) throw sol::error("Swamp Fog component is unavailable");
 					Swamp->GetFogComponent()->SetFogEnabled(bEnabled);
 				}),
+			"CameraFOV", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> float
+				{
+					return ResolveVehicleCamera(Reference)->GetFieldOfView();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, float FieldOfView)
+				{
+					ResolveVehicleCamera(Reference)->SetFieldOfView(FieldOfView);
+				}),
 			"MaxSpeed", sol::property(
 				[](const TWeakObjectPtr<AActor>& Reference) -> float
 				{
@@ -392,6 +411,12 @@ namespace LuaBindings
 			}
 
 			return GEngine->GetSoundManager()->SetSoundVolume(SoundId, Volume);
+		});
+
+		Audio.set_function("set_pitch", [](int64 SoundId, float Pitch)
+		{
+			// 피치 범위 보정은 사운드 매니저에서 C++ 호출과 동일하게 처리합니다.
+			return GEngine->GetSoundManager()->SetSoundPitch(SoundId, Pitch);
 		});
 
 		// BGM 볼륨을 생략하면 기본값 1.0을 사용합니다.
