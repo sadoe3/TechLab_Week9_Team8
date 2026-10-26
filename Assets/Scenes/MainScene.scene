@@ -36579,7 +36579,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-silver.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -36675,7 +36675,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-bronze.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -37059,7 +37059,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-silver.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -37155,7 +37155,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-bronze.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -37539,7 +37539,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-silver.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -37635,7 +37635,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-bronze.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -38019,7 +38019,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-silver.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
@@ -38115,7 +38115,7 @@
                                 "CollisionResponses.WorldDynamic": 1,
                                 "CollisionResponses.WorldStatic": 1,
                                 "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/PlatformerKit/coin-bronze.obj",
+                                "StaticMesh": "Models/Racing/PlatformerKit/coin-gold.obj",
                                 "Transform": {
                                     "Location": {
                                         "X": 0.0,
