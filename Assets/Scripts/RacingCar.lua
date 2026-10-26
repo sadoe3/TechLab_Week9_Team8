@@ -3,6 +3,8 @@
 local MovementSpeed = 2.0
 local RotationSpeed = 90.0
 
+local score = 0
+
 function Tick(DeltaTime)
     local MoveAxis = 0.0
     local TurnAxis = 0.0
@@ -38,4 +40,13 @@ function Tick(DeltaTime)
 
     -- Character의 Sweep 이동용 속도 설정
     obj.Velocity = Forward * (MoveAxis * MovementSpeed)
+end
+
+function OnBeginOverlap(OtherActor)
+    if(OtherActor.Label == "Coin")
+    then
+        score = score + 5;
+        print("Score " .. score)
+        OtherActor:Destroy()
+    end
 end

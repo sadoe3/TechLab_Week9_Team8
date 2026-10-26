@@ -13301,7 +13301,7 @@
                     ],
                     "Name": "AStaticMeshActor_253",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -13438,7 +13438,7 @@
                     ],
                     "Name": "AStaticMeshActor_254",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -13575,7 +13575,7 @@
                     ],
                     "Name": "AStaticMeshActor_255",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -13712,7 +13712,7 @@
                     ],
                     "Name": "AStaticMeshActor_256",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -13849,7 +13849,7 @@
                     ],
                     "Name": "AStaticMeshActor_257",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -13986,7 +13986,7 @@
                     ],
                     "Name": "AStaticMeshActor_258",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14123,7 +14123,7 @@
                     ],
                     "Name": "AStaticMeshActor_259",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14260,7 +14260,7 @@
                     ],
                     "Name": "AStaticMeshActor_260",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14397,7 +14397,7 @@
                     ],
                     "Name": "AStaticMeshActor_261",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14534,7 +14534,7 @@
                     ],
                     "Name": "AStaticMeshActor_262",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14671,7 +14671,7 @@
                     ],
                     "Name": "AStaticMeshActor_263",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14808,7 +14808,7 @@
                     ],
                     "Name": "AStaticMeshActor_264",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -14945,7 +14945,7 @@
                     ],
                     "Name": "AStaticMeshActor_265",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15082,7 +15082,7 @@
                     ],
                     "Name": "AStaticMeshActor_266",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15219,7 +15219,7 @@
                     ],
                     "Name": "AStaticMeshActor_267",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15356,7 +15356,7 @@
                     ],
                     "Name": "AStaticMeshActor_268",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15493,7 +15493,7 @@
                     ],
                     "Name": "AStaticMeshActor_269",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15630,7 +15630,7 @@
                     ],
                     "Name": "AStaticMeshActor_270",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15767,7 +15767,7 @@
                     ],
                     "Name": "AStaticMeshActor_271",
                     "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -15904,138 +15904,7 @@
                     ],
                     "Name": "AStaticMeshActor_272",
                     "Properties": {
-                        "ActorLabel": ""
-                    }
-                },
-                {
-                    "Class": "ARacingCar",
-                    "Components": [
-                      {
-                        "Class": "UCapsuleComponent",
-                        "Name": "CapsuleComponent",
-                        "Parent": "",
-                        "Properties": {
-                          "Transform": {
-                            "Location": {
-                              "X": 0.0,
-                              "Y": 10.647099494934082,
-                              "Z": 0.3297378420829773
-                            },
-                            "Rotation": {
-                              "Pitch": 0.0,
-                              "Roll": 0.0,
-                              "Yaw": 0.0
-                            },
-                            "Scale": {
-                              "X": 2.607020616531372,
-                              "Y": 1.4204120635986328,
-                              "Z": 0.8648902773857117
-                            }
-                          }
-                        }
-                      },
-                      {
-                        "Class": "UStaticMeshComponent",
-                        "Name": "StaticMeshComponent",
-                        "OverrideMaterials": [
-                          {
-                            "Base": "CapsuleComponent",
-                            "Instance": {
-                              "BaseColor": {
-                                "A": 1.0,
-                                "B": 0.0,
-                                "G": 0.0,
-                                "R": 1.0
-                              },
-                              "BlendState": "Opaque",
-                              "Properties": {},
-                              "SamplerState": "LinearWrap",
-                              "Shininess": 32.0,
-                              "SpecularColor": {
-                                "A": 1.0,
-                                "B": 0.5,
-                                "G": 0.5,
-                                "R": 0.5
-                              },
-                              "Textures": [
-                                "WhiteTexture",
-                                ""
-                              ],
-                              "UVScrollSpeed": [
-                                0.0,
-                                0.0
-                              ],
-                              "bFlipNormalGreen": false
-                            }
-                          }
-                        ],
-                        "Parent": "DefaultSceneRoot",
-                        "Properties": {
-                          "CollisionEnabled": 0,
-                          "CollisionResponses.Pawn": 2,
-                          "CollisionResponses.WorldDynamic": 2,
-                          "CollisionResponses.WorldStatic": 2,
-                          "ObjectType": 1,
-                          "StaticMesh": "Cone",
-                          "Transform": {
-                            "Location": {
-                              "X": 0.0,
-                              "Y": 0.0,
-                              "Z": 0.0
-                            },
-                            "Rotation": {
-                              "Pitch": 88.3713150024414,
-                              "Roll": 0.0,
-                              "Yaw": 0.0
-                            },
-                            "Scale": {
-                              "X": 0.03461037576198578,
-                              "Y": 0.07531929016113281,
-                              "Z": 0.5
-                            }
-                          },
-                          "bCastShadow": true,
-                          "bGenerateOverlapEvents": true,
-                          "bReceiveShadow": true,
-                          "bVisible": true
-                        }
-                      },
-                      {
-                        "Class": "UCameraComponent",
-                        "Name": "VehicleCamera",
-                        "Parent": "CapsuleComponent",
-                        "Properties": {
-                          "Transform": {
-                            "Location": {
-                              "X": -4.0,
-                              "Y": 0.0,
-                              "Z": 2.0
-                            },
-                            "Rotation": {
-                              "Pitch": 15.000003814697266,
-                              "Roll": 0.0,
-                              "Yaw": 0.0
-                            },
-                            "Scale": {
-                              "X": 1.0,
-                              "Y": 1.0,
-                              "Z": 1.0
-                            }
-                          }
-                        }
-                      },
-                        {
-                            "Class": "UScriptComponent",
-                            "Name": "VehicleScript",
-                            "Parent": "",
-                            "Properties": {
-                                "ScriptPath": "Assets/Scripts/RacingCar.lua"
-                            }
-                        }
-                    ],
-                    "Name": "ARacingCar_1",
-                    "Properties": {
-                        "ActorLabel": ""
+                        "ActorLabel": "Coin"
                     }
                 },
                 {
@@ -16161,6 +16030,160 @@
                         }
                     ],
                     "Name": "AAmbientLightActor_1",
+                    "Properties": {
+                        "ActorLabel": ""
+                    }
+                },
+                {
+                    "Class": "ARacingCar",
+                    "Components": [
+                        {
+                            "Class": "USceneComponent",
+                            "Name": "DefaultSceneRoot",
+                            "Parent": "",
+                            "Properties": {
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UCapsuleComponent",
+                            "Name": "CapsuleComponent",
+                            "Parent": "",
+                            "Properties": {
+                                "CapsuleHalfHeight": 1.0,
+                                "CapsuleRadius": 0.5,
+                                "CollisionEnabled": 1,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 2,
+                                "ShapeColor": {
+                                    "A": 255,
+                                    "B": 0,
+                                    "G": 255,
+                                    "R": 0
+                                },
+                                "Transform": {
+                                    "Location": {
+                                        "X": -3.261664867401123,
+                                        "Y": 8.389034271240234,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                },
+                                "bCastShadow": false,
+                                "bDrawOnlyIfSelected": false,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": false,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UStaticMeshComponent",
+                            "Name": "StaticMeshComponent",
+                            "OverrideMaterials": [],
+                            "Parent": "CapsuleComponent",
+                            "Properties": {
+                                "CollisionEnabled": 0,
+                                "CollisionResponses.Pawn": 2,
+                                "CollisionResponses.WorldDynamic": 2,
+                                "CollisionResponses.WorldStatic": 2,
+                                "ObjectType": 1,
+                                "StaticMesh": "Cube",
+                                "Transform": {
+                                    "Location": {
+                                        "X": 0.0,
+                                        "Y": 0.0,
+                                        "Z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 0.0,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 0.5
+                                    }
+                                },
+                                "bCastShadow": true,
+                                "bGenerateOverlapEvents": true,
+                                "bReceiveShadow": true,
+                                "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UMovementComponent",
+                            "Name": "MovementComponent",
+                            "Parent": "",
+                            "Properties": {
+                                "Velocity": {
+                                    "X": 0.0,
+                                    "Y": 0.0,
+                                    "Z": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UCameraComponent",
+                            "Name": "VehicleCamera",
+                            "Parent": "CapsuleComponent",
+                            "Properties": {
+                                "Transform": {
+                                    "Location": {
+                                        "X": -4.0,
+                                        "Y": 0.0,
+                                        "Z": 2.0
+                                    },
+                                    "Rotation": {
+                                        "Pitch": 15.000003814697266,
+                                        "Roll": 0.0,
+                                        "Yaw": 0.0
+                                    },
+                                    "Scale": {
+                                        "X": 1.0,
+                                        "Y": 1.0,
+                                        "Z": 1.0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "Class": "UScriptComponent",
+                            "Name": "VehicleScript",
+                            "Parent": "",
+                            "Properties": {
+                                "ScriptPath": "Assets/Scripts/RacingCar.lua"
+                            }
+                        }
+                    ],
+                    "Name": "ARacingCar_0",
                     "Properties": {
                         "ActorLabel": ""
                     }
