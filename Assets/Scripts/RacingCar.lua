@@ -97,6 +97,7 @@ function OnBeginOverlap(OtherActor)
     local position = OtherActor.Location
     score = score + 5
     print("Score " .. score)
+    game.set_score(score)
     OtherActor:Destroy()
     obj:EmitParticleBurst(CoinParticleComponentName, position, Vector(0, 0, 1), CoinParticleCount)
     end
