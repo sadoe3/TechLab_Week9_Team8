@@ -1124,6 +1124,15 @@ void FDetailsPanel::OnRender()
 			ImGui::PushID(TargetComponent);
 			ImGui::SeparatorText("Component Properties");
 			DrawProperties(TargetComponent, CustomFont);
+			// 파티클 텍스처 선택
+			if (UParticleSubUVComponent* Particle = Cast<UParticleSubUVComponent>(TargetComponent))
+			{
+				ImGui::SeparatorText("Particle Texture");
+
+				UMaterial* Material = Particle->GetMaterial(0);
+				DrawTextureSlot(&Material, 0);
+				Particle->SetMaterial(0, Material);
+			}
             if (auto* Light = Cast<ULightComponent>(TargetComponent)) DrawShadowPreview(Light);
 
 			if(SelectCandidateComponent != TargetComponent)
