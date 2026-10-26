@@ -1,0 +1,30 @@
+{
+  "Creator": "Kenney",
+  "Pack": "RacingKit",
+  "SourcePage": "https://kenney.nl/assets/racing-kit",
+  "DownloadUrl": "https://kenney.nl/media/pages/assets/racing-kit/933b8fd9fd-1677580949/kenney_racing-kit.zip",
+  "License": "CC0-1.0",
+  "OriginalArchiveSHA256": "8A71EA16219315A01D00D5A90C4F6B5C090FADDBC56D80ECF727E2B3B853C6C0",
+  "SourceSubfolder": "Models/OBJ format",
+  "Files": [
+    "bannerTowerRed.mtl",
+    "bannerTowerRed.obj",
+    "barrierRed.mtl",
+    "barrierRed.obj",
+    "barrierWhite.mtl",
+    "barrierWhite.obj",
+    "fenceStraight.mtl",
+    "fenceStraight.obj",
+    "flagCheckers.mtl",
+    "flagCheckers.obj",
+    "grandStandCovered.mtl",
+    "grandStandCovered.obj",
+    "License.txt",
+    "pitsGarage.mtl",
+    "pitsGarage.obj",
+    "Textures/checkers.png",
+    "Textures/net.png",
+    "Textures/tankco.png"
+  ],
+  "InstallScope": "Representative runtime meshes only; complete original ZIP retained in Build/Validation/RacingAssetScene20261026/MeshDownloads"
+}

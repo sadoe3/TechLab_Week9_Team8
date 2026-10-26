@@ -1,0 +1,5 @@
+{
+  "Source": "../CarKit/sedan-sports.obj",
+  "License": "CC0-1.0",
+  "Changes": "Yaw 180, scale 1.2, engine Z -1.92; preserve actor root/collision transforms"
+}

@@ -1,0 +1,6 @@
+{
+  "Geometry": "Generated tiled boxes; Barrier preserves original Kenney box bounds",
+  "Textures": "../../../Textures/Racing/",
+  "License": "CC0-1.0",
+  "Scene": "Assets/Scenes/LargeRaceTrack_AssetShowcase.scene"
+}

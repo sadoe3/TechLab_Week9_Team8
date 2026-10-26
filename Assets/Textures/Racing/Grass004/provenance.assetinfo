@@ -1,0 +1,34 @@
+{
+  "Name": "Grass004",
+  "Provider": "ambientCG",
+  "SourcePage": "https://ambientcg.com/view?id=Grass004",
+  "DownloadUrl": "https://ambientcg.com/get?file=Grass004_1K-PNG.zip",
+  "ZipSHA256": "9BDB8A28536F437E910824096DD8A3D8276D5186A27AD067DEA4E2E762A6981B",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://docs.ambientcg.com/license/",
+  "LegalcodeUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/Grass004/Albedo.png",
+      "OriginalName": "Grass004_1K-PNG_Color.png",
+      "Size": 2233725,
+      "SHA256": "1C504B956E5550FEDD8822E7E2135FE45F513BC1212F72ED67885DE1002FABB6",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 8,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/Grass004/NormalDX.png",
+      "OriginalName": "Grass004_1K-PNG_NormalDX.png",
+      "Size": 5987259,
+      "SHA256": "9C09B8E57B2E83CEBC93562DE979F498C041B609BE5E000700D9FBEE9D93BD0E",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

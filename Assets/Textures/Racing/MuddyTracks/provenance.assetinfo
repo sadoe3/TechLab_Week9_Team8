@@ -1,0 +1,36 @@
+{
+  "Name": "MuddyTracks",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/muddy_tracks",
+  "MetadataUrl": "https://api.polyhaven.com/files/muddy_tracks",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/MuddyTracks/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/muddy_tracks/muddy_tracks_diff_1k.png",
+      "OriginalName": "muddy_tracks_diff_1k.png",
+      "Size": 6250390,
+      "SHA256": "182823DAF6D36D0BCB92B1129E7402AD83BA77E54AAF997849191DCC351862C9",
+      "OfficialMD5": "942e4b4d551c912211ab02aebd17cb0a",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 6
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/MuddyTracks/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/muddy_tracks/muddy_tracks_nor_dx_1k.png",
+      "OriginalName": "muddy_tracks_nor_dx_1k.png",
+      "Size": 6893174,
+      "SHA256": "4DFC274669FBC322CE58D081CBA8EEE7F96550256EB4411C8DFCF5E451C509F1",
+      "OfficialMD5": "fdc1c1188d6b7d0dbdeec1ada04c13fb",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 6
+    }
+  ]
+}

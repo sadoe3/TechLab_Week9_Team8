@@ -1,0 +1,36 @@
+{
+  "Name": "PaintedConcrete02",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/painted_concrete_02",
+  "MetadataUrl": "https://api.polyhaven.com/files/painted_concrete_02",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/PaintedConcrete02/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_concrete_02/painted_concrete_02_diff_1k.png",
+      "OriginalName": "painted_concrete_02_diff_1k.png",
+      "Size": 5160320,
+      "SHA256": "CEFB9B6D544159114011BC4D437DA43DEBDA61B0C44E7CC6A3198460279FED03",
+      "OfficialMD5": "bd777775ea3dd6075bc526527dc857f9",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/PaintedConcrete02/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_concrete_02/painted_concrete_02_nor_dx_1k.png",
+      "OriginalName": "painted_concrete_02_nor_dx_1k.png",
+      "Size": 5399070,
+      "SHA256": "2A2A9CA530F75B7BC05E20FCD11F2B6416068E016CE25771B9DE7CBFD0BA7A26",
+      "OfficialMD5": "0daaf7a050e28876da02c6b868cc6eb7",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

@@ -10,11 +10,21 @@ local WallParticleCount = 8
 local WallParticleOffset = 0.03
 local WallHitInterval = 0.1
 local WallHitCooldown = 0.0
-
+local Race = require("RaceState")
 local score = 0
+
+function BeginPlay()
+    script.set_tick_group("PrePhysics")
+    WallHitCooldown = 0.0
+    score = 0
+end
 
 function Tick(DeltaTime)
     WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
+    if Race.State ~= "Running" then
+        obj.Velocity = Vector(0, 0, 0)
+        return
+    end
     local MoveAxis = 0.0
     local TurnAxis = 0.0
     -- W/S는 추진력, A/D는 조향만 담당합니다. 동시 입력은 S와 A가 우선합니다.
@@ -22,7 +32,7 @@ function Tick(DeltaTime)
     if input.is_down("S") then
         Throttle = -1.0
     elseif input.is_down("W") then
-        Throttle = 1.0
+       Throttle = 1.0
     end
 
     local Steering = 0.0
@@ -68,6 +78,9 @@ end
 
 -- 측면 Blocking Hit의 파티클 재생
 function OnHit(OtherActor, Hit, OtherComponent)
+    if Race.State ~= "Running" then
+        return
+    end
     if WallHitCooldown > 0.0 or not OtherActor:IsValid() or
         not OtherComponent:IsValid() or not Hit.bBlockingHit then
         return
@@ -92,6 +105,9 @@ local CoinParticleCount = 4
 
 -- 코인 획득 / 점수 처리 / 파티클 설정
 function OnBeginOverlap(OtherActor)
+    if Race.State ~= "Running" or not OtherActor:IsValid() then
+        return
+    end
     if(OtherActor.Label == "Coin")
     then
     local position = OtherActor.Location

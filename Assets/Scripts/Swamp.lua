@@ -1,4 +1,4 @@
-local SlowDownMultiplier = 0.5
+local SlowDownMultiplier = 0.2
 local MinSlowDownSpeed = 2.0
 local OverlapCount = 0
 

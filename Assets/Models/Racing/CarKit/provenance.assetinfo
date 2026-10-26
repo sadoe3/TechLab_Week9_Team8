@@ -1,0 +1,22 @@
+{
+  "Creator": "Kenney",
+  "Pack": "CarKit",
+  "SourcePage": "https://kenney.nl/assets/car-kit",
+  "DownloadUrl": "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip",
+  "License": "CC0-1.0",
+  "OriginalArchiveSHA256": "FAC7DACAC5C7874348CF19729AF3EF205F3D366493EDAF0A827D93F4FDF3D0C4",
+  "SourceSubfolder": "Models/OBJ format",
+  "Files": [
+    "cone.mtl",
+    "cone.obj",
+    "hatchback-sports.mtl",
+    "hatchback-sports.obj",
+    "License.txt",
+    "sedan-sports.mtl",
+    "sedan-sports.obj",
+    "suv.mtl",
+    "suv.obj",
+    "Textures/colormap.png"
+  ],
+  "InstallScope": "Representative runtime meshes only; complete original ZIP retained in Build/Validation/RacingAssetScene20261026/MeshDownloads"
+}
