@@ -19,6 +19,15 @@ namespace
 	const char* HelpTexture = "Assets/UI/menu_help.png";
 
 	const char* RaceScenePath = "Assets/Scenes/MainScene.scene";
+
+	const char* BackgroundTexture = "Assets/UI/menu_background.png";
+
+	// 메뉴 그림(거리 17)보다 멀리 둬야 반투명 정렬에서 먼저 그려져 뒤에 깔린다.
+	constexpr float BackgroundDistance = 25.0f;
+	// FOV 60에서 화면 높이는 거리의 약 1.155배다. 어떤 창 비율에서도 빈 데가 없도록
+	// 그보다 넉넉히 잡고, 가로세로 비는 원본 그림(2206x1332)에 맞춘다.
+	constexpr float BackgroundHeight = 35.0f;
+	constexpr float BackgroundWidth = 58.0f;
 }
 
 AMainMenuHud::AMainMenuHud()
@@ -26,6 +35,13 @@ AMainMenuHud::AMainMenuHud()
 	PrimaryActorTick.bCanEverTick = true;
 
 	camera = CreateDefaultSubobject<UCameraComponent>("MenuCamera");
+
+	backgroundBillboard = CreateDefaultSubobject<UBillboardComponent>("BackgroundBillboard");
+	backgroundBillboard->SetHiddenInGame(false);
+	backgroundBillboard->SetTexture(BackgroundTexture);
+	backgroundBillboard->SetRelativeLocation(FVector(BackgroundDistance, 0, 0));
+	backgroundBillboard->SetRelativeScale3D(FVector(1, BackgroundWidth, BackgroundHeight));
+
 	billboard = CreateDefaultSubobject<UBillboardComponent>("Billboard");
 	billboard->SetHiddenInGame(false);
 	billboard->SetTexture(MenuTextures[0]);
@@ -33,6 +49,7 @@ AMainMenuHud::AMainMenuHud()
 	billboard->SetRelativeScale3D(FVector(1, 17.32f, 20.55f));
 
 	SetRootComponent(camera);
+	backgroundBillboard->SetupAttachment(camera);
 	billboard->SetupAttachment(camera);
 }
 
