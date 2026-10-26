@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "Launch/LaunchEngineLoop.h"
 
+#include "Audio/SoundManager.h"
 #include "Asset/AssetManager.h"
 #include "Core/EngineTimer.h"
 #include "Core/Window.h"
@@ -109,6 +110,17 @@ bool FEngineLoop::PreInit(HINSTANCE hInstance, UClass* EngineClass)
 
 	FSplashScreen::SetText(L"Initializing Engine...");
 	FSplashScreen::SetProgress(0.8f);
+	// 게임 World의 BeginPlay() 전에 오디오를 준비합니다.
+	SoundManager = MakeUnique<FSoundManager>();
+	if (!SoundManager->Init())
+	{
+		// 실패 시 자원 정리는 Init()이 수행하므로 객체만 삭제합니다.
+		SoundManager.reset();
+		HTR_LOG(Error, "FMOD initialization failed.");
+		FSplashScreen::Hide();
+		return false;
+	}
+
 	// 초기화 중 종료 요청 보존
 	bIsRunning = true;
 	if (!GEngine->Init())
@@ -155,6 +167,8 @@ bool FEngineLoop::Tick()
 	// 최소화 중에는 그릴 대상이 없다.
 	if (MainWindow->GetWidth() == 0 || MainWindow->GetHeight() == 0)
 	{
+		// 최소화되어 게임 갱신을 건너뛰어도 FMOD는 갱신합니다.
+		SoundManager->Update();
 		return true;
 	}
 
@@ -167,6 +181,8 @@ bool FEngineLoop::Tick()
 		// 렌더 참조 정리 후 종료 요청 처리
 		Renderer->ReleaseSceneReferences();
 		GEngine->PostTick(DeltaTime);
+		// 게임의 재생 요청과 삭제 처리가 끝난 뒤 오디오를 갱신합니다.
+		SoundManager->Update();
 	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_Present);
@@ -221,6 +237,13 @@ void FEngineLoop::Exit()
 	if (RenderDevice)
 	{
 		RenderDevice->Shutdown();
+	}
+
+	if (SoundManager)
+	{
+		// World와 Actor 정리가 끝난 뒤 성공한 오디오 초기화를 종료합니다.
+		SoundManager->Shutdown();
+		SoundManager.reset();
 	}
 }
 

@@ -17,6 +17,7 @@
 #include "GameFramework/Wall.h"
 #include "GameFramework/Swamp.h"
 #include "GameFramework/MainMenuHud.h"
+#include "GameFramework/TrackPiece.h"
 #include "Camera/CameraActor.h"
 class FViewportsPanel;
 
@@ -40,7 +41,7 @@ public:
 	int32 SelectedIndex = 0;
 
 	const char* Items[16] ={"Actor", "StaticMesh","Particle","Text","ExponentialHeightFog",
-		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar","Camera","Coin","Wall","Swamp", "MainMenuHud"};
+		"AmbientLight","DirectionalLight","PointLight","SpotLight","Character","RacingCar","Camera","Coin","Wall","Swamp", "TrackPiece", "MainMenuHud"};
 
 	FGizmo* Gizmo = nullptr;
 	int32 GizmoSelectedIndex = 0;
@@ -66,7 +67,8 @@ public:
 		ACoin::StaticClass(),
 		AWall::StaticClass(),
 		ASwamp::StaticClass(),
-		AMainMenuHud::StaticClass()
+		AMainMenuHud::StaticClass(),
+		ATrackPiece::StaticClass()
 	};
 
     void SetViewportsPanel(FViewportsPanel* InPanel) { ViewportsPanel = InPanel; }

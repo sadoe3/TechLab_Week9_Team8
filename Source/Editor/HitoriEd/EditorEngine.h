@@ -68,7 +68,11 @@ public:
 
 	//Play 버튼을 눌렀을때 Play Session 실행을 요청한다.
 	inline void RequestPlaySession() { bPlaySessionRequested = true; }
-	inline void RequestEndPlayMap() { bRequestEndPlayMapQueued = true; bIsPaused = false; }
+	inline void RequestEndPlayMap()
+	{
+		// 실제 종료까지 월드와 오디오의 일시정지 상태를 유지합니다.
+		bRequestEndPlayMapQueued = true;
+	}
 
 	//실제 PIE 를 실행
 	void StartPlayInEditorSession();

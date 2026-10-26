@@ -41,6 +41,7 @@ private:
 };
 
 class FEngineLoop;
+class FSoundManager;
 
 // 엔진 모드별 실행 설정. UE에서는 ini가 맡는 부분이다.
 // Width·Height가 0이면 주 모니터 해상도를 쓴다.
@@ -91,6 +92,9 @@ public:
 	
 	// 게임 종료 요청
 	bool RequestExit(UWorld* World);
+
+	// 엔진 루프가 소유한 사운드 매니저를 반환합니다.
+	FSoundManager* GetSoundManager() const;
 
 	UAssetManager* AssetManager;
 protected:
