@@ -5,6 +5,8 @@ local FullSteeringSpeed = 2.0
 local CoastingDamping = 2.0
 local BrakeDamping = 20.0
 local StopSpeed = 0.01
+local SwampMaxSpeed = 2.0
+local SwampOverlapCount = 0
 local BaseFOV = 60.0
 local SpeedFOVIncrease = 30.0
 local FOVInterpSpeed = 20.0
@@ -76,7 +78,8 @@ function Tick(DeltaTime)
     end
 
     local MaxSpeed = math.max(0.0, obj.MaxSpeed)
-    Speed = math.max(-MaxSpeed, math.min(Speed, MaxSpeed))
+    local SpeedLimit = SwampOverlapCount > 0 and math.min(MaxSpeed, SwampMaxSpeed) or MaxSpeed
+    Speed = math.max(-SpeedLimit, math.min(Speed, SpeedLimit))
     if (IsBraking or Throttle == 0.0) and math.abs(Speed) < StopSpeed then
         Speed = 0.0
     end
@@ -161,6 +164,10 @@ local CoinSoundVolume = 1.0
 
 -- 코인 획득 / 점수 처리 / 파티클 설정
 function OnBeginOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = SwampOverlapCount + 1
+        return
+    end
     if Race.State ~= "Running" or not OtherActor:IsValid() then
         return
     end
@@ -175,6 +182,12 @@ function OnBeginOverlap(OtherActor)
         audio.play(CoinSoundPath, false, CoinSoundVolume)
         
         obj:EmitParticleBurst(CoinParticleComponentName, position, Vector(0, 0, 1), CoinParticleCount)
+    end
+end
+
+function OnEndOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = math.max(0, SwampOverlapCount - 1)
     end
 end
 

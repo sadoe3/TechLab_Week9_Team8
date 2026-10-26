@@ -205,6 +205,10 @@ namespace LuaBindings
 
 					return Actor->GetActorLabel();
 				}),
+			"IsSwamp", [](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					return Cast<ASwamp>(Reference.Get()) != nullptr;
+				},
 			// 삭제 예약 상태를 포함한 유효성 판정
 			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
 				{
