@@ -9,13 +9,6 @@
 #include "Component/TextRenderComponent.h"
 #include "Core/GameHud.h"
 
-void ARacingCar::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (!ScoreText) return;
-	ScoreText->SetText(std::to_string(FGameHud::GetScore()));
-}
-
 ARacingCar::ARacingCar()
 {
 	// Character 기본 메시 재사용
@@ -47,5 +40,19 @@ void ARacingCar::BeginPlay()
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
 	GetWorld()->SetViewTarget(this);
+	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
+	FGameHud::OnScoreChanged.AddRaw(this, &ARacingCar::HandleScoreChanged);
+	FGameHud::SetScore(0);
+}
+
+void ARacingCar::EndPlay()
+{
+	FGameHud::OnScoreChanged.RemoveAll(this);
+	Super::EndPlay();
+}
+
+void ARacingCar::HandleScoreChanged(int32 NewScore)
+{
+	ScoreText->SetText(std::to_string(NewScore));
 }
