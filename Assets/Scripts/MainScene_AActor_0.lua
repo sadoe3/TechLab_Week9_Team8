@@ -5,6 +5,29 @@ local PlayerActorName = "ARacingCar_0"
 local CountdownSeconds = 3.0
 local CheckpointCount = 4
 
+local TotalCoinCount = 20
+local TargetTime = 10.0     -- 만점 시간
+local TimeLimit = 50.0      -- 시간 점수 0점 
+local CoinWeight = 0.6      -- 코인:시간 = 6:4
+local TimeWeight = 0.4      
+local MaxScore = 10000
+
+local function Clamp01(Value)
+    if Value < 0.0 then return 0.0 end
+    if Value > 1.0 then return 1.0 end
+    return Value
+end
+
+local function BuildFinalScore(FinishTime, CoinCount)
+    local CoinRatio = Clamp01(CoinCount / TotalCoinCount)
+    local TimeRatio = Clamp01((TimeLimit - FinishTime) / (TimeLimit - TargetTime))
+
+    local CoinPoints = math.floor(MaxScore * CoinWeight * CoinRatio)
+    local TimePoints = math.floor(MaxScore * TimeWeight * TimeRatio)
+
+    return CoinPoints + TimePoints, CoinPoints, TimePoints
+end
+
 -- 출발 신호, 딜레이 시간
 local GoText = "출발!"
 local GoDisplaySeconds = 1.0
@@ -46,6 +69,15 @@ local function ProcessPendingTriggers()
 
                     print(string.format("[Race] Finished: %.2f seconds",
                         Race.FinishTime))
+
+                    local FinalScore, CoinPoints, TimePoints =
+                        BuildFinalScore(Race.FinishTime, Race.CoinCount)
+
+                    print(string.format("[Score] Coin  %d/%d -> %d",
+                        Race.CoinCount, TotalCoinCount, CoinPoints))
+                    print(string.format("[Score] Time  %.2fs (target %.0f / limit %.0f) -> %d",
+                        Race.FinishTime, TargetTime, TimeLimit, TimePoints))
+                    print(string.format("[Score] Final %d / %d", FinalScore, MaxScore))
                 else
                     print(string.format("[Race] Checkpoints required: %d/%d",
                         Race.LastCheckpoint, Race.CheckpointCount))
