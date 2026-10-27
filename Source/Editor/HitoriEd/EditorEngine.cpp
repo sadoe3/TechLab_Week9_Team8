@@ -1064,35 +1064,20 @@ void UEditorEngine::StartPlayInEditorSession()
 
 	if (PlayWorld)
 	{
-		// 1. 카메라 컴포넌트가 있는 첫 배치 액터를 시점 대상으로 선택합니다.
-		bool bFoundCamera = false;
-		if (PlayWorld->GetPersistentLevel())
+		// todo
+		// 현재는 게임 코드가 BeginPlay에서 ViewTarget을 지정한다. 미지정 시 에디터 시점의 Fallback을 사용한다.
+		// 나중에 GameMode가 만들어지고, PlayerController 및 Default Pawn Class를 지정하게 되면, 이 로직은 개선되어야한다.
+		const int32 SourceViewIndex = ViewportsPanel->GetEditorViewIndex();
+		const FEditorCameraState& EditorCam = ViewportsPanel->GetEditorClient(SourceViewIndex)->GetCamera();
+		if (UCameraComponent* GameCam = PlayWorld->GetMainCamera())
 		{
-			for (AActor* Actor : PlayWorld->GetPersistentLevel()->GetActors())
-			{
-				if (Actor && PlayWorld->SetViewTarget(Actor))
-				{
-					bFoundCamera = true;
-					break;
-				}
-			}
-		}
-
-		if (!bFoundCamera)
-		{
-			// 2. 배치된 카메라가 없으면 현재 활성 에디터 뷰포트 시점에서 시작
-			const int32 SourceViewIndex = ViewportsPanel->GetEditorViewIndex();
-			const FEditorCameraState& EditorCam = ViewportsPanel->GetEditorClient(SourceViewIndex)->GetCamera();
-			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera())
-			{
-				GameCam->SetRelativeLocation(EditorCam.Location);
-				GameCam->SetRelativeRotation(EditorCam.Rotation.ToFRotator());
-				GameCam->SetFieldOfView(EditorCam.Projection.FovDegrees);
-				GameCam->SetNearZ(EditorCam.Projection.NearClip);
-				GameCam->SetFarZ(EditorCam.Projection.FarClip);
-				GameCam->SetIsOrthogonal(EditorCam.Projection.Mode == EProjectionMode::Orthographic);
-				GameCam->SetOrthoWidth(EditorCam.Projection.OrthoWidth);
-			}
+			GameCam->SetRelativeLocation(EditorCam.Location);
+			GameCam->SetRelativeRotation(EditorCam.Rotation.ToFRotator());
+			GameCam->SetFieldOfView(EditorCam.Projection.FovDegrees);
+			GameCam->SetNearZ(EditorCam.Projection.NearClip);
+			GameCam->SetFarZ(EditorCam.Projection.FarClip);
+			GameCam->SetIsOrthogonal(EditorCam.Projection.Mode == EProjectionMode::Orthographic);
+			GameCam->SetOrthoWidth(EditorCam.Projection.OrthoWidth);
 		}
 	}
 

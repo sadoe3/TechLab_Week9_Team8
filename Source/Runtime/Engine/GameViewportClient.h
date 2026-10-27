@@ -12,7 +12,7 @@ public:
 	explicit FGameViewportClient(UWorld& InWorld) : World(&InWorld) {}
 	UWorld* GetWorld() const override { return World; }
 	UCameraComponent* GetCamera() const;
-	bool HasCamera() const override { return GetCamera() != nullptr; }
+	bool HasCamera() const override;
 	void SetInputEnabled(bool bEnabled) override;
 	void UpdateInput(const FViewportInput& Input, FVector2 OutputSize) override { SetInputEnabled(Input.bEnabled); }
 	FSceneView CreateSceneView(FVector2 OutputSize) const override;
