@@ -13,6 +13,8 @@ class UWorld;
 class FScene;
 class UPrimitiveComponent;
 class FDirectionalLightSceneProxy;
+class FRenderer;
+class FViewport;
 
 // Light별 Caster 컬링에 필요한 값. Light별 준비 함수가 채운다.
 struct FShadowCasterCullContext
@@ -54,6 +56,12 @@ struct FLightShadowSetup
 class FSceneRenderer
 {
 public:
+    // 공통 그림자 지원 조건
+    static bool SupportsShadows(const FSceneView& View, const FSceneViewRenderSettings& Settings);
+
+    // View별 공통 장면 패스 실행
+    void RenderView(FRenderer& Renderer, FViewport& Viewport, UWorld& World, const FSceneView& View, 
+        uint32 ShadowResourceIndex, const FSceneViewRenderSettings& Settings, FShadowFrameData& DirectionalFrame);
     void BeginFrame();
     uint64 GetFrameNumber() const { return FrameNumber; }
     // 설정은 보존하고, View 기반 caster 컬링의 캐시 제한은 각 준비 경로에서 적용한다.

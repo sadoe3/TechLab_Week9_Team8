@@ -13,6 +13,9 @@
 #include <cassert>
 #include <cfloat>
 #include <cstring>
+#include "Render/Renderer.h"
+#include "Engine/Viewport.h"
+
 
 namespace
 {
@@ -290,6 +293,91 @@ float ComputeCasterTexels(const FAABB& Bounds, const FShadowCasterCullContext& C
     if (Distance <= BoundsRadius) return FLT_MAX;
     return 2.0f * BoundsRadius * Context.TexelsPerUnit / Distance;
 }
+}
+
+bool FSceneRenderer::SupportsShadows(const FSceneView& View, const FSceneViewRenderSettings& Settings)
+{
+    // 조명 패스의 그림자 지원 조건
+    return Settings.bDrawPrimitives
+        && !Settings.bDepthView
+        && !Settings.bVisualizeTileLightCount
+        && View.RenderMode.ViewMode == EViewMode::Lit
+        && View.RenderMode.ShadingModel == EShadingModel::Phong;
+}
+
+void FSceneRenderer::RenderView(FRenderer& Renderer, FViewport& Viewport, UWorld& World,
+    const FSceneView& View, uint32 ShadowResourceIndex, const FSceneViewRenderSettings& Settings,
+    FShadowFrameData& DirectionalFrame)
+{
+    FSceneRenderData& Data = Viewport.GetSceneRenderData();
+    const uint64 CurrentFrame = GetFrameNumber();
+    const bool bSupportsShadows = SupportsShadows(View, Settings);
+    const FShadowFrameData* ShadowFrame = nullptr;
+    DirectionalFrame.ResetFrame();
+
+    // World별 로컬 그림자·View별 방향광 그림자 준비
+    if (bSupportsShadows)
+    {
+        ShadowFrame = Renderer.RenderWorldShadows(ShadowResourceIndex, World, *this);
+
+        Renderer.RenderDirectionalShadow(Viewport, World, *this, View, DirectionalFrame);
+    }
+    else
+    {
+        Viewport.GetDirectionalShadow().ResetFrame();
+    }
+
+    // 현재 프레임의 그림자 바인딩
+    const bool bLocalShadowReady = Renderer.BindWorldShadows(ShadowResourceIndex, CurrentFrame, bSupportsShadows);
+    const bool bDirectionalShadowReady = Renderer.BindDirectionalShadow(Viewport, CurrentFrame, bSupportsShadows);
+
+    const TArray<FShadowRequestPerLight>* LocalShadowRequests = nullptr;
+    if (bLocalShadowReady && ShadowFrame)
+    {
+        LocalShadowRequests = &ShadowFrame->ShadowRequestsPerLight;
+    }
+
+    const TArray<FShadowRequestPerLight>* DirectionalShadowRequests = nullptr;
+    if (bDirectionalShadowReady)
+    {
+        DirectionalShadowRequests = &DirectionalFrame.ShadowRequestsPerLight;
+    }
+
+    // 준비된 그림자를 포함한 조명 자료 구성
+    FLightingConstants Lighting{};
+    World.GetScene().BuildLightingConstants(Lighting, LocalShadowRequests, DirectionalShadowRequests);
+    World.GetScene().BuildStructuredLight(Data.PointLights, Data.SpotLights, Data.CullingLights,
+        View.ViewMatrix, LocalShadowRequests);
+
+    Lighting.bReadyForShading = bLocalShadowReady ? 1u : 0u;
+    Lighting.NumShadowInfos = bLocalShadowReady ? Renderer.GetShadowResources(ShadowResourceIndex)->NumShadowInfos : 0u;
+
+    Renderer.SetLighting(Lighting, Data.PointLights, Data.SpotLights);
+
+    // 깊이·조명 컬링·불투명·반투명 출력
+    Renderer.RenderGeometryPass(Viewport, View, Settings, Lighting.Directional);
+
+    // 장면 출력 이후 그림자 입력 해제
+    Renderer.BindWorldShadows(InvalidShadowResourceIndex, CurrentFrame, false);
+    Renderer.BindDirectionalShadow(Viewport, CurrentFrame, false);
+
+    if (Settings.bDepthView)
+    {
+        // 깊이 시각화 출력
+        Renderer.RenderOutputPass(Viewport, View, Settings);
+        return;
+    }
+
+    if (Settings.bExponentialHeightFog && !View.IsOrthographic()
+        && !IsDataVisualization(View.RenderMode.ViewMode))
+    {
+        // 원근 장면 안개 합성
+        Renderer.RenderFogPass(World, Viewport.GetSceneRenderingInfo(), View);
+    }
+
+    // HUD·표시용 색 변환·후처리 출력
+    Renderer.RenderHudPass(Viewport, View);
+    Renderer.RenderOutputPass(Viewport, View, Settings);
 }
 
 void FSceneRenderer::BeginFrame()

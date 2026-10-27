@@ -369,8 +369,7 @@ void FRenderer::RenderOutputPass(
 
 	// 장면 색상의 톤매핑·sRGB 인코딩
 	RenderCommand::BeginRenderPass(PassInfo);
-	RenderCommand::BindSamplerState(
-		0, ESamplerState::LinearClamp, EShaderBindFlagBits::Pixel);
+	RenderCommand::BindSamplerState(0, ESamplerState::LinearClamp, EShaderBindFlagBits::Pixel);
 
 	GammaEncodeRenderer->OnRender(
 		SceneInfo.ColorRenderTargets[0].Texture,
@@ -395,6 +394,7 @@ void FRenderer::RenderOutputPass(
 		RenderCommand::CopyTexture(OutputColor, FxaaTarget);
 	}
 }
+
 // 필요한 칸 수가 용량을 넘을 때만 두 배씩 키워 재할당을 드물게 한다.
 void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 {

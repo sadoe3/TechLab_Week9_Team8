@@ -11,26 +11,28 @@ class FViewportsPanel;
 
 class UWorld;
 
-struct FEditorSettings
+// TODO : 클래스화. 구조체에서 상속 사용하는건 좀 범죄적인 코드인거같음.
+// 주석처리된 필드는 상속받아서 처리됨
+struct FEditorSettings : FSceneViewRenderSettings 
 {
 	// 에디터 렌더 옵션과 편집 Quad 레이아웃의 영구 설정을 한곳에 담는다.
 	// Show: 화면에 무엇을 그릴지
-	bool bDrawPrimitives = true;
+	//bool bDrawPrimitives = true;
 	bool bDrawBoundingBox = false;
 	bool bShowUUID = false;
 	bool bDrawGrid = true;
-	bool bExponentialHeightFog = true;
-	bool bVisualizeTileLightCount = false;
+	//bool bExponentialHeightFog = true;
+	//bool bVisualizeTileLightCount = false;
 
 	// Rendering
-	bool bEnableFXAA = true;
-	bool bDepthView = false;
+	//bool bEnableFXAA = true;
+	//bool bDepthView = false;
 	// 끄면 감마 공간 렌더링이 되어 Linear 작업 흐름과 비교할 수 있다 (ColorWorkflow.h)
 	bool bLinearWorkflow = true;
 	// HDR 씬 컬러를 표시 범위로 압축하는 단계라 Linear 작업 흐름의 Lit 뷰에서만 적용된다
-	bool bToneMapping = true;
+	//bool bToneMapping = true;
 	// ACES fitted는 중간 회색(0.18)을 어둡게 내리므로, +0.6EV에서 톤매핑 전과 비슷한 밝기가 된다
-	float ExposureEV = 0.6f;
+	//float ExposureEV = 0.6f;
 
 	// Shadow Culling·Caching: 매 프레임 FSceneRenderer에 넘긴다. UI는 Debug 패널이 그리고 저장은 여기서 한다.
 	FShadowCullingSettings ShadowCulling;
