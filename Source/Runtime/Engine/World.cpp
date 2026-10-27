@@ -229,6 +229,12 @@ bool UWorld::ClearWorld()
 		Actor->UninitializeComponents();
 	}
 
+	// 종료 콜백이 Modifier를 정리할 기회를 준 뒤, Actor 해제 전에 남은 효과를 해제한다.
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ClearCameraModifiers();
+	}
+
 	// 렌더 등록 일괄 제거
 	Scene.RemoveAllPrimitives();
 	PhysicsScene.RemoveAllBodies();
