@@ -2,9 +2,14 @@
 local Acceleration = 4.0
 local SteeringSpeed = 90.0
 local FullSteeringSpeed = 2.0
-local CoastingDamping = 2.0
-local BrakeDamping = 20.0
+local CoastingDamping = 0.5
+local BrakeDamping = 1.5
 local StopSpeed = 0.01
+local SwampMaxSpeed = 2.0
+local SwampOverlapCount = 0
+local BaseFOV = 60.0
+local SpeedFOVIncrease = 30.0
+local FOVInterpSpeed = 20.0
 local WallParticleComponentName = "WallParticles"
 local WallParticleCount = 8
 local WallParticleOffset = 0.03
@@ -20,15 +25,27 @@ local EnginePitch = 1.0
 
 local BGMPath = "Assets/Audio/BGM/FirstMap.mp3"
 
+local Race = require("RaceState")
 local score = 0
 
 function BeginPlay()
+    script.set_tick_group("PrePhysics")
+    WallHitCooldown = 0.0
+    score = 0
     audio.play_bgm(BGMPath, 0.7)
     EngineSoundId = audio.play("Assets/Audio/SFX/EngineLoop.wav", true, EngineVolume)
 end
 
 function Tick(DeltaTime)
     WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
+    if Race.State == "Finished" and EngineSoundId >= 0 then
+        audio.stop(EngineSoundId)
+        EngineSoundId = -1
+    end
+    if Race.State ~= "Running" then
+        obj.Velocity = Vector(0, 0, 0)
+        return
+    end
     local MoveAxis = 0.0
     local TurnAxis = 0.0
     -- W/S는 추진력, A/D는 조향만 담당합니다. 동시 입력은 S와 A가 우선합니다.
@@ -36,7 +53,7 @@ function Tick(DeltaTime)
     if input.is_down("S") then
         Throttle = -1.0
     elseif input.is_down("W") then
-        Throttle = 1.0
+       Throttle = 1.0
     end
 
     local Steering = 0.0
@@ -65,7 +82,8 @@ function Tick(DeltaTime)
     end
 
     local MaxSpeed = math.max(0.0, obj.MaxSpeed)
-    Speed = math.max(-MaxSpeed, math.min(Speed, MaxSpeed))
+    local SpeedLimit = SwampOverlapCount > 0 and math.min(MaxSpeed, SwampMaxSpeed) or MaxSpeed
+    Speed = math.max(-SpeedLimit, math.min(Speed, SpeedLimit))
     if (IsBraking or Throttle == 0.0) and math.abs(Speed) < StopSpeed then
         Speed = 0.0
     end
@@ -78,8 +96,8 @@ function Tick(DeltaTime)
             SpeedRatio = math.min(math.abs(Speed) / MaxSpeed, 1.0)
         end
 
-        -- 현재 설정대로 볼륨은 0.1 ~ 0.4로 변화합니다.
-        local TargetVolume = 0.1 + (0.3 * SpeedRatio)
+        -- 현재 설정대로 볼륨은 0.2 ~ 0.5로 변화합니다.
+        local TargetVolume = 0.2 + (0.3 * SpeedRatio)
 
         -- 피치는 정지 시 1.0, 최고 속력에서 2.0이 됩니다.
         local TargetPitch = 1.0 + (1.0 * SpeedRatio)
@@ -109,10 +127,17 @@ function Tick(DeltaTime)
     obj.Velocity = Vector(math.cos(Yaw) * Speed, math.sin(Yaw) * Speed, Velocity.z)
 
 
+    local SpeedRatio = MaxSpeed > 0.0 and math.min(math.abs(Speed) / MaxSpeed, 1.0) or 0.0
+    local TargetFOV = math.max(1.0, math.min(BaseFOV + SpeedFOVIncrease * SpeedRatio, 179.0))
+    local Alpha = 1.0 - math.exp(-FOVInterpSpeed * math.max(0.0, DeltaTime))
+    obj.CameraFOV = obj.CameraFOV + (TargetFOV - obj.CameraFOV) * Alpha
 end
 
 -- 측면 Blocking Hit의 파티클 재생
 function OnHit(OtherActor, Hit, OtherComponent)
+    if Race.State ~= "Running" then
+        return
+    end
     if WallHitCooldown > 0.0 or not OtherActor:IsValid() or
         not OtherComponent:IsValid() or not Hit.bBlockingHit then
         return
@@ -143,9 +168,17 @@ local CoinSoundVolume = 1.0
 
 -- 코인 획득 / 점수 처리 / 파티클 설정
 function OnBeginOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = SwampOverlapCount + 1
+        return
+    end
+    if Race.State ~= "Running" or not OtherActor:IsValid() then
+        return
+    end
     if(OtherActor.Label == "Coin") then
         local position = OtherActor.Location
         score = score + 5
+        Race.CoinCount = Race.CoinCount + 1
         print("Score " .. score)
         game.set_score(score)
 
@@ -154,6 +187,12 @@ function OnBeginOverlap(OtherActor)
         audio.play(CoinSoundPath, false, CoinSoundVolume)
         
         obj:EmitParticleBurst(CoinParticleComponentName, position, Vector(0, 0, 1), CoinParticleCount)
+    end
+end
+
+function OnEndOverlap(OtherActor)
+    if OtherActor:IsSwamp() then
+        SwampOverlapCount = math.max(0, SwampOverlapCount - 1)
     end
 end
 

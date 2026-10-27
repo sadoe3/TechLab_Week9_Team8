@@ -1,0 +1,36 @@
+{
+  "Name": "Asphalt03",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/asphalt_03",
+  "MetadataUrl": "https://api.polyhaven.com/files/asphalt_03",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/Asphalt03/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_03/asphalt_03_diff_1k.png",
+      "OriginalName": "asphalt_03_diff_1k.png",
+      "Size": 5656580,
+      "SHA256": "3807160D24CD3D27CA29DB86A212EAB45061BFB54CD15BE8F39BC8483CF28A8F",
+      "OfficialMD5": "6cce7ca2cbf9b212246daf48fd2884eb",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/Asphalt03/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_03/asphalt_03_nor_dx_1k.png",
+      "OriginalName": "asphalt_03_nor_dx_1k.png",
+      "Size": 5746631,
+      "SHA256": "0FCBE84EBF38926C3678D6276FE3B527610A3568C24BC65831C32D4FA46EB495",
+      "OfficialMD5": "7b2d8deee8a88272ea4517c89376a338",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

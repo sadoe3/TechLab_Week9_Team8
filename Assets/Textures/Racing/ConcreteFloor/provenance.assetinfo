@@ -1,0 +1,36 @@
+{
+  "Name": "ConcreteFloor",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/concrete_floor",
+  "MetadataUrl": "https://api.polyhaven.com/files/concrete_floor",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/ConcreteFloor/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_diff_1k.png",
+      "OriginalName": "concrete_floor_diff_1k.png",
+      "Size": 5811278,
+      "SHA256": "EF52FAFC07F1E577BE40E2DE1B69111534544F108068EF8A497A59C8336AE1DF",
+      "OfficialMD5": "148161026a79e05d55136265e25136ca",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/ConcreteFloor/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_nor_dx_1k.png",
+      "OriginalName": "concrete_floor_nor_dx_1k.png",
+      "Size": 5633626,
+      "SHA256": "58C911BCD436134E36C39248D6B3953891133B8A825F7B30B659570C64BC45E4",
+      "OfficialMD5": "5dce0213c6b7c8dcc70e4ecce16d77c8",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

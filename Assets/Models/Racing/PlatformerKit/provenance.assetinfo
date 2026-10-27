@@ -1,0 +1,22 @@
+{
+  "Creator": "Kenney",
+  "Pack": "PlatformerKit",
+  "SourcePage": "https://kenney.nl/assets/platformer-kit",
+  "DownloadUrl": "https://kenney.nl/media/pages/assets/platformer-kit/1585cf62b4-1775122253/kenney_platformer-kit.zip",
+  "License": "CC0-1.0",
+  "OriginalArchiveSHA256": "899605D237367688C6B42E41FFF2206C0FB8D626163158294556353F7BAA7C1B",
+  "SourceSubfolder": "Models/OBJ format",
+  "Files": [
+    "coin-bronze.mtl",
+    "coin-bronze.obj",
+    "coin-gold.mtl",
+    "coin-gold.obj",
+    "coin-silver.mtl",
+    "coin-silver.obj",
+    "License.txt",
+    "star.mtl",
+    "star.obj",
+    "Textures/colormap.png"
+  ],
+  "InstallScope": "Representative runtime meshes only; complete original ZIP retained in Build/Validation/RacingAssetScene20261026/MeshDownloads"
+}

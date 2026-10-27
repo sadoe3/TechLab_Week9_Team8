@@ -7,6 +7,7 @@
 #include "Render/ColorWorkflow.h"
 #include "Render/RenderCommand.h"
 #include "Render/Swapchain.h"
+#include "Render/ViewMode.h"
 
 FEngineConfig UGameEngine::GetConfig() const
 {
@@ -57,6 +58,14 @@ bool UGameEngine::Init()
 		return false;
 	}
 
+	// 안개 합성 초기화
+	FogRenderer = MakeUnique<FFogRenderer>();
+	if (!FogRenderer->Init(GetEngineLoop().GetRenderer()))
+	{
+		PreExit();
+		return false;
+	}
+
 	GameViewport = MakeUnique<FViewport>();
 	GameViewport->SetOutputSize(
 		GetEngineLoop().GetViewportWidth(),
@@ -102,6 +111,7 @@ void UGameEngine::PreExit()
 {
 	// World 생존 중 Viewport 해제
 	GameViewport.reset();
+	FogRenderer.reset();
 	GammaEncodeRenderer.reset();
 
 	// World 종료와 Context 해제
@@ -197,6 +207,46 @@ void UGameEngine::RenderGameView()
 	Renderer->RenderOpaque(View.ViewProjection, true);
 	Renderer->RenderTranslucent(View.ViewProjection);
 	RenderCommand::EndRenderPass(ColorInfo);
+
+	// 원근 장면의 활성 안개 합성
+	const TArray<FExponentialHeightFogSceneInfo>& FogInfos = GameWorld->GetScene().FogInfos;
+	if (!View.IsOrthographic() && !IsDataVisualization(View.RenderMode.ViewMode) && !FogInfos.IsEmpty())
+	{
+		FRenderingInfo FogPassInfo = SceneInfo;
+		for (FRenderingDesc& Color : FogPassInfo.ColorRenderTargets)
+		{
+			Color.LoadOp = ERenderTargetLoadOp::Load;
+		}
+
+		// 깊이 텍스처의 출력 바인딩 해제
+		FogPassInfo.DepthStencil.Texture = nullptr;
+		FogPassInfo.DepthStencil.DSV = nullptr;
+
+		RenderCommand::BeginRenderPass(FogPassInfo);
+		FogRenderer->OnRender(
+			SceneInfo.DepthStencil.Texture,
+			View.ViewProjection,
+			View.GetCameraLocation(),
+			FogInfos[0].FogInfo);
+		RenderCommand::EndRenderPass(FogPassInfo);
+
+		// 깊이 입력 바인딩 해제
+		RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
+	}
+
+	if (!Data.HudRenderQueue.IsEmpty())
+	{
+		FRenderingInfo HudInfo = SceneInfo;
+		for (FRenderingDesc& Color : HudInfo.ColorRenderTargets)
+			Color.LoadOp = ERenderTargetLoadOp::Load;
+		HudInfo.DepthStencil.Texture = nullptr;
+
+		RenderCommand::BeginRenderPass(HudInfo);
+		RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
+		Renderer->RenderHud(Data.HudRenderQueue, View.ViewProjection, View.GetCameraLocation(), View.RenderMode);
+		RenderCommand::EndRenderPass(HudInfo);
+	}
+
 	RenderCommand::UnbindShaderResources(8, 4, EShaderBindFlagBits::Pixel);
 	RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Vertex);
 

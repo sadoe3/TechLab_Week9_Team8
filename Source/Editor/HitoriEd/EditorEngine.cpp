@@ -917,7 +917,7 @@ void UEditorEngine::RenderOverlayPass(FEditorViewportClient* OverlayClient, UWor
 			continue;
 		}
 
-		TextRenderer->OnRender(TextComponent->GetText(), TextComponent->GetWorldMatrix(), TextComponent->GetTextSize(), *TextComponent->GetFont(), ViewProjection);
+		TextRenderer->OnRender(TextComponent->GetText(), TextComponent->GetWorldMatrix(), TextComponent->GetTextSize(), *TextComponent->GetFont(), ViewProjection, TextComponent->IsDrawOnTop());
 	}
 
 	// 선택 대상은 한 월드에만 속하므로 그 월드를 그리는 View에만 표시한다.
@@ -1144,6 +1144,20 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 		if (!View.IsOrthographic() && !bVisualizeData && SettingsPanel->GetSettings().bExponentialHeightFog)
 			// 2. 안개 Pass (Linear 씬 컬러)
 			RenderFogPass(ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
+
+		// 2-1. HUD Pass : 깊이 버퍼 없이 맨 앞에!
+		if (!Data.HudRenderQueue.IsEmpty())
+		{
+			FRenderingInfo HudPassInfo = SceneRenderingInfo;
+			for (FRenderingDesc& Color : HudPassInfo.ColorRenderTargets)
+				Color.LoadOp = ERenderTargetLoadOp::Load;
+			HudPassInfo.DepthStencil.Texture = nullptr;
+
+			RenderCommand::BeginRenderPass(HudPassInfo);
+			RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
+			Renderer->RenderHud(Data.HudRenderQueue, ViewProjection, ViewCameraLocation, View.RenderMode);
+			RenderCommand::EndRenderPass(HudPassInfo);
+		}
 
 		// 3. Gamma Encode Pass: Linear 씬 컬러 → (Lit이면 ACES) → 표시용 sRGB
 		const FEditorSettings& Settings = SettingsPanel->GetSettings();

@@ -9,6 +9,7 @@
 #include "GameFramework/Character.h"
 #include "Core/GameHud.h"
 #include "GameFramework/RacingCar.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/Swamp.h"
 #include "Component/ExponentialHeightFogComponent.h"
 #include "Component/ParticleSubUVComponent.h"
@@ -16,8 +17,12 @@
 #include "Component/PrimitiveComponent.h"
 #include "Engine/Engine.h"
 #include "Audio/SoundManager.h"
+#include <algorithm>
 #include <cassert>
 #include <format>
+#include <fstream>
+#include <iomanip>
+#include <tuple>
 
 namespace LuaBindings
 {
@@ -63,6 +68,15 @@ namespace LuaBindings
 	}
 	// 인수로 오는 state_view에 Vector를 바인딩하는 함수
 	// TODO : 다른 공통 타입들도 바인딩해야함.
+	static UCameraComponent* ResolveVehicleCamera(const TWeakObjectPtr<AActor>& Reference)
+	{
+		ARacingCar* Car = Cast<ARacingCar>(Reference.Get());
+		UCameraComponent* Camera = Car ? Cast<UCameraComponent>(Car->FindComponentByName("VehicleCamera")) : nullptr;
+		if (!Car || !Car->CanRunGameplay() || !Camera || Camera->IsPendingDestroy())
+			throw sol::error("CameraFOV requires a RacingCar with an available VehicleCamera");
+		return Camera;
+	}
+
 	void Register(sol::state_view Lua)
 	{
 		// FVector 바인딩
@@ -195,6 +209,10 @@ namespace LuaBindings
 
 					return Actor->GetActorLabel();
 				}),
+			"IsSwamp", [](const TWeakObjectPtr<AActor>& Reference) -> bool
+				{
+					return Cast<ASwamp>(Reference.Get()) != nullptr;
+				},
 			// 삭제 예약 상태를 포함한 유효성 판정
 			"IsValid", [](const TWeakObjectPtr<AActor>& Reference) -> bool
 				{
@@ -310,6 +328,15 @@ namespace LuaBindings
 					ASwamp* Swamp = Cast<ASwamp>(Reference.Get());
 					if (!Swamp || !Swamp->GetFogComponent() || Swamp->GetFogComponent()->IsPendingDestroy()) throw sol::error("Swamp Fog component is unavailable");
 					Swamp->GetFogComponent()->SetFogEnabled(bEnabled);
+				}),
+			"CameraFOV", sol::property(
+				[](const TWeakObjectPtr<AActor>& Reference) -> float
+				{
+					return ResolveVehicleCamera(Reference)->GetFieldOfView();
+				},
+				[](const TWeakObjectPtr<AActor>& Reference, float FieldOfView)
+				{
+					ResolveVehicleCamera(Reference)->SetFieldOfView(FieldOfView);
 				}),
 			"MaxSpeed", sol::property(
 				[](const TWeakObjectPtr<AActor>& Reference) -> float
@@ -456,9 +483,88 @@ namespace LuaBindings
 		);
 
 		sol::table Game = Lua.create_named_table("game");
+		Game.set_function("get_score", []() -> int32
+			{
+				return FGameHud::GetScore();
+			}
+		);
 		Game.set_function("set_score", [](const int32 num)
 			{
 				FGameHud::SetScore(num);
+			}
+		);
+		Game.set_function("set_countdown", [](const FString& Text)
+			{
+				FGameHud::SetCountdown(Text);
+			}
+		);
+		Game.set_function("set_race_time", [](const float Seconds)
+			{
+				FGameHud::SetRaceTime(Seconds);
+			}
+		);
+
+		Game.set_function("update_best_records", [](int32 Score, double FinishTime)
+			{
+				// 파일이 없는 첫 완주에서는 이번 결과를 최고 기록으로 사용합니다.
+				int32 BestScore = Score;
+				double BestTime = FinishTime;
+
+				{
+					std::ifstream File("Leaderboard.save");
+					int32 SavedScore = 0;
+					double SavedTime = 0.0;
+					File >> SavedScore >> SavedTime;
+
+					const bool bReadSucceeded = !File.fail();
+					const bool bValidScore = SavedScore >= 0;
+					const bool bValidTime = SavedTime > 0.0;
+
+					if (bReadSucceeded && bValidScore && bValidTime)
+					{
+						// 최고 점수와 최단 시간은 서로 다른 주행일 수 있습니다.
+						BestScore = std::max(BestScore, SavedScore);
+						BestTime = std::min(BestTime, SavedTime);
+					}
+				}
+
+				// 읽기용 파일이 닫힌 뒤 갱신한 기록을 저장합니다.
+				std::ofstream File("Leaderboard.save");
+				File << BestScore << '\n'
+					 << std::setprecision(17) << BestTime << '\n';
+				File.close();
+
+				return std::make_tuple(BestScore, BestTime, !File.fail());
+			}
+		);
+
+		Game.set_function("set_race_result",
+			[](int32 FinishScore, double FinishTime,
+				int32 BestScore, double BestFinishTime)
+			{
+				// 결과 화면이 열리기 전에 Lua의 확정 기록을 C++에 복사합니다.
+				FRaceResult Result;
+				Result.FinishScore = FinishScore;
+				Result.FinishTime = FinishTime;
+				Result.BestScore = BestScore;
+				Result.BestFinishTime = BestFinishTime;
+				FGameHud::SetRaceResult(Result);
+			}
+		);
+
+		Game.set_function("show_finish_ui", []()
+			{
+				// 씬 전환 없이 완주 UI를 표시할 상태로 변경합니다.
+				FGameHud::SetResultScreen(ERaceResultScreen::Finish);
+
+				// 임시 연결: 완주 UI가 없어 곧바로 리더보드를 표시합니다.
+				// 완주 UI 구현 후 이 호출을 제거하고 해당 UI 종료 시 호출합니다.
+				FGameHud::NotifyFinishUIClosed();
+			}
+		);
+		Game.set_function("reset_result_ui", []()
+			{
+				FGameHud::SetResultScreen(ERaceResultScreen::Hidden);
 			}
 		);
 	}

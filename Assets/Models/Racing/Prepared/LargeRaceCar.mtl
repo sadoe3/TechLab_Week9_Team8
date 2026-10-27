@@ -1,0 +1,4 @@
+# Kenney CC0 차량 머티리얼
+newmtl colormap
+Kd 1 1 1
+map_Kd ../CarKit/Textures/colormap.png

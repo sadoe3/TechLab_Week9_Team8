@@ -1,0 +1,36 @@
+{
+  "Name": "LeafyGrass",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/leafy_grass",
+  "MetadataUrl": "https://api.polyhaven.com/files/leafy_grass",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/LeafyGrass/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/leafy_grass/leafy_grass_diff_1k.png",
+      "OriginalName": "leafy_grass_diff_1k.png",
+      "Size": 5913007,
+      "SHA256": "2A4356E6AEF5DB70BB803A31FA265321B733B1F77C7C80AC26AE9AA0552F345D",
+      "OfficialMD5": "7639691afa92caa8034236e6a0687bfe",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/LeafyGrass/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/leafy_grass/leafy_grass_nor_dx_1k.png",
+      "OriginalName": "leafy_grass_nor_dx_1k.png",
+      "Size": 6111982,
+      "SHA256": "D4055BBC35C9945858D3139E4F1F30FD15872425C52FF8671B7460AD80E5B6BF",
+      "OfficialMD5": "d4a88268a5daf67ea4963d4ad73f3601",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

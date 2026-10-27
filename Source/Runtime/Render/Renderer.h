@@ -135,6 +135,9 @@ public:
 	// RenderOpaque가 보관한 반투명 패킷을 먼 것부터 그린다.
 	void RenderTranslucent(const FMatrix& ViewProjection);
 
+	// HUD: 조명 없이 그린 뒤 장면 View 모드로 되돌리기
+	void RenderHud(FRenderQueue& HudQueue, const FMatrix& ViewProjection, const FVector& CameraPosition, const FViewRenderMode& SceneMode);
+
 	// 큐를 Material, Opaque, Mesh에 따라 정렬하고 View 상수(b0)를 올린다
 	void RenderQueueSorting(FRenderQueue& InQueue, const FMatrix& ViewProjection, const FVector& CameraPosition);
 

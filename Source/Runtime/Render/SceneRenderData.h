@@ -17,6 +17,7 @@ struct FParticleSortInput
 struct FSceneRenderData
 {
     FRenderQueue RenderQueue;
+    FRenderQueue HudRenderQueue;
     TArray<FPointLightInfo> PointLights;
     TArray<FSpotLightInfo> SpotLights;
     TArray<FCullingLight> CullingLights;
@@ -44,6 +45,7 @@ struct FSceneRenderData
     void ReleaseSceneReferences()
     {
         RenderQueue.Reset();
+        HudRenderQueue.Reset();
         PendingStaticMeshes.Reset();
         LODInputs.Reset();
     }

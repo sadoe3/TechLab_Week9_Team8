@@ -1,0 +1,5 @@
+{
+  "Purpose": "Canonical cube geometry with world-size UVs for existing collision track",
+  "Textures": "../../../Textures/Racing/",
+  "License": "Generated geometry CC0-1.0; textures CC0 from respective provenance.assetinfo"
+}

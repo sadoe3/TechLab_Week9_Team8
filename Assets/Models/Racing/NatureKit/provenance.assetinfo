@@ -1,0 +1,23 @@
+{
+  "Creator": "Kenney",
+  "Pack": "NatureKit",
+  "SourcePage": "https://kenney.nl/assets/nature-kit",
+  "DownloadUrl": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
+  "License": "CC0-1.0",
+  "OriginalArchiveSHA256": "FA7974A0D342BFE63C38664BA9F8EC1A4AAB8EA25F099BDC56870E33588C4D9D",
+  "SourceSubfolder": "Models/OBJ format",
+  "Files": [
+    "License.txt",
+    "plant_bush.mtl",
+    "plant_bush.obj",
+    "rock_largeA.mtl",
+    "rock_largeA.obj",
+    "rock_smallA.mtl",
+    "rock_smallA.obj",
+    "tree_default.mtl",
+    "tree_default.obj",
+    "tree_pineTallA.mtl",
+    "tree_pineTallA.obj"
+  ],
+  "InstallScope": "Representative runtime meshes only; complete original ZIP retained in Build/Validation/RacingAssetScene20261026/MeshDownloads"
+}

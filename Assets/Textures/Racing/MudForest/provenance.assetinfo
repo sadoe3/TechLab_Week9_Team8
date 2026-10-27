@@ -1,0 +1,36 @@
+{
+  "Name": "MudForest",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/mud_forest",
+  "MetadataUrl": "https://api.polyhaven.com/files/mud_forest",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/MudForest/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_forest/mud_forest_diff_1k.png",
+      "OriginalName": "mud_forest_diff_1k.png",
+      "Size": 5661854,
+      "SHA256": "B9A337F1C3A34F1DBBEC0685E7E994E8581166C5A1E4629E9CF5B3F8CF2F8580",
+      "OfficialMD5": "4df01996c353398f17f796a8f29c4673",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/MudForest/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mud_forest/mud_forest_nor_dx_1k.png",
+      "OriginalName": "mud_forest_nor_dx_1k.png",
+      "Size": 6111981,
+      "SHA256": "30AA9308B492AF29E22140B5BF0B81D443596DBB2629877FE428B6BA289664FD",
+      "OfficialMD5": "73660b9891eb9883ac5f8a80e4b06c8b",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}

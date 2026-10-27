@@ -28,6 +28,7 @@ public:
     void OnEndOverlap(AActor* OtherActor);
     void OnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FHitResult& Hit);
     void BindPrimitive(UPrimitiveComponent* Primitive);
+    void RequestInitialTickGroup(ETickingGroup Group);
     // 후보 파일 실행 여부
     bool IsLoadingScript() const
     {
@@ -49,6 +50,7 @@ private:
 
     // 새 환경과 콜백을 준비하고, 성공했을 때만 교체한다.
     bool TryLoadScript();
+    void ApplyInitialTickGroup();
 
     // 일정 간격으로 파일 수정 시각을 확인하고 재로드를 시도한다.
     void CheckScriptChanges(float DeltaTime);
@@ -79,5 +81,11 @@ private:
 
     // 후보 파일 실행 중 코루틴 생성 차단
     bool bLoadingScript = false;
+
+    // 최초 Lua BeginPlay 호출 범위
+    bool bCallingInitialBeginPlay = false;
+
+    // 시작 후보의 Tick 그룹, Max는 요청 없음
+    ETickingGroup RequestedTickGroup = ETickingGroup::Max;
 };
 

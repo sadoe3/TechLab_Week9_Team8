@@ -267,6 +267,9 @@ void UAssetManager::CreateDefaultMeshes()
 	FStaticMeshData* PlaneData = FGeometryGenerator::GetMeshData("Plane");
 	RegisterAsset("Plane", CreateStaticMesh(PlaneData));
 
+	FStaticMeshData* UIQuadData = FGeometryGenerator::GetMeshData("UIQuad");
+	RegisterAsset("UIQuad", CreateStaticMesh(UIQuadData));
+
 	FStaticMeshData* ArrowMeshData = FGeometryGenerator::GetMeshData("Arrow");
 	RegisterAsset("Arrow", CreateStaticMesh(ArrowMeshData));
 

@@ -1,0 +1,36 @@
+{
+  "Name": "AsphaltPitLane",
+  "Provider": "Poly Haven",
+  "SourcePage": "https://polyhaven.com/a/asphalt_pit_lane",
+  "MetadataUrl": "https://api.polyhaven.com/files/asphalt_pit_lane",
+  "License": "CC0-1.0",
+  "LicenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+  "Files": [
+    {
+      "Role": "Albedo",
+      "Path": "Assets/Textures/Racing/AsphaltPitLane/Albedo.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_pit_lane/asphalt_pit_lane_diff_1k.png",
+      "OriginalName": "asphalt_pit_lane_diff_1k.png",
+      "Size": 5825132,
+      "SHA256": "54BA47901A91257C251F7BCC03BEB6F21E4A2413980EA052EC5B66472975A748",
+      "OfficialMD5": "452ef95f2a8d07e980f35f51db371bea",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    },
+    {
+      "Role": "NormalDX",
+      "Path": "Assets/Textures/Racing/AsphaltPitLane/NormalDX.png",
+      "SourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_pit_lane/asphalt_pit_lane_nor_dx_1k.png",
+      "OriginalName": "asphalt_pit_lane_nor_dx_1k.png",
+      "Size": 5791174,
+      "SHA256": "DEA4518218339D91642995D7A13B13472B96171849241F9564E816443B55433B",
+      "OfficialMD5": "e0eed7732e50399ce98e1a1f5b64cba5",
+      "Width": 1024,
+      "Height": 1024,
+      "BitDepth": 16,
+      "ColorType": 2
+    }
+  ]
+}
