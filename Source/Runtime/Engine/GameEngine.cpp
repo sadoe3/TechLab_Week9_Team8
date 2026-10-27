@@ -4,16 +4,18 @@
 #include "Serialization/JsonArchive.h"
 #include "Core/Window.h"
 #include "Engine/GameViewportClient.h"
-#include "Render/ColorWorkflow.h"
 #include "Render/RenderCommand.h"
 #include "Render/Swapchain.h"
 #include "Render/ViewMode.h"
+#include "Component/TextRenderComponent.h"
+#include "GameFramework/Actor.h"
+#include "UObject/UObjectIterator.h"
 
 FEngineConfig UGameEngine::GetConfig() const
 {
 	FEngineConfig Desc;
 	// TODO : 게임 이름으로 바꿔야함
-	Desc.Title = L"Hitori";
+	Desc.Title = L"Jungle Rider";
 	Desc.Width = 1280;
 	Desc.Height = 720;
 	Desc.bBorderless = false;
@@ -29,7 +31,11 @@ bool UGameEngine::Init()
 	{
 		return false;
 	}
-
+	// 공통 장면 GPU 패스 초기화
+	if (!GetEngineLoop().GetRenderer()->InitScenePasses())
+	{
+		return false;
+	}
 	// 게임 World와 Context 연결
 	GameWorld = UWorld::CreateWorld(EWorldType::Game, false);
 	CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(GameWorld);
@@ -50,21 +56,8 @@ bool UGameEngine::Init()
 		return false;
 	}
 
-	// 화면 출력 초기화
-	GammaEncodeRenderer = MakeUnique<FGammaEncodeRenderer>();
-	if (!GammaEncodeRenderer->Init())
-	{
-		PreExit();
-		return false;
-	}
-
-	// 안개 합성 초기화
-	FogRenderer = MakeUnique<FFogRenderer>();
-	if (!FogRenderer->Init(GetEngineLoop().GetRenderer()))
-	{
-		PreExit();
-		return false;
-	}
+	TextRenderer = MakeUnique<FTextRenderer>();
+	TextRenderer->Init();
 
 	GameViewport = MakeUnique<FViewport>();
 	GameViewport->SetOutputSize(
@@ -111,8 +104,7 @@ void UGameEngine::PreExit()
 {
 	// World 생존 중 Viewport 해제
 	GameViewport.reset();
-	FogRenderer.reset();
-	GammaEncodeRenderer.reset();
+	TextRenderer.reset();
 
 	// World 종료와 Context 해제
 	if (GameWorld)
@@ -138,13 +130,37 @@ void UGameEngine::ReleaseWorldReferences(UWorld* World)
 		return;
 	}
 
-	// World 변경 전 렌더 참조 해제
+	// World 종료·씬 정리 여부
+	const bool bWorldEnding = !World->AcceptsChanges();
+
+	// Viewport의 비소유 참조 정리
 	if (GameViewport)
 	{
 		GameViewport->ClearSceneData();
+
+		if (bWorldEnding)
+		{
+			// 이전 방향광 프레임 무효화
+			GameViewport->GetDirectionalShadow().ResetFrame();
+		}
 	}
+
+	// CPU·Renderer의 장면 참조 정리
 	SceneRenderer.EndFrame();
-	GetEngineLoop().GetRenderer()->ReleaseSceneReferences();
+
+	FRenderer* Renderer = GetEngineLoop().GetRenderer();
+	Renderer->ReleaseSceneReferences();
+
+	// World 정리 중 그림자 슬롯 반환
+	if (bWorldEnding)
+	{
+		if (FWorldContext* Context = GetWorldContextFromWorld(World))
+		{
+			SceneRenderer.ReleaseWorldShadows(Context->ShadowResourceIndex);
+			Renderer->ReleaseShadowResources(Context->ShadowResourceIndex);
+			Context->ShadowResourceIndex = InvalidShadowResourceIndex;
+		}
+	}
 }
 void UGameEngine::RenderGameView()
 {
@@ -157,113 +173,81 @@ void UGameEngine::RenderGameView()
 	// View와 렌더 큐 준비
 	GameViewport->EnsureRenderTargets();
 	SceneRenderer.BeginFrame();
+
 	const FSceneView View = GameViewport->CreateSceneView();
 	FSceneRenderData& Data = GameViewport->GetSceneRenderData();
-	SceneRenderer.PrepareView(*GameWorld, View, Data);
 	FRenderer* Renderer = GetEngineLoop().GetRenderer();
-	const FRenderingInfo& SceneInfo = GameViewport->GetSceneRenderingInfo();
+	const bool bSupportsShadows = FSceneRenderer::SupportsShadows(View, RenderSettings);
 
-	// 조명 설정
-	FLightingConstants Lighting{};
-	GameWorld->GetScene().BuildLightingConstants(Lighting);
-	GameWorld->GetScene().BuildStructuredLight(Data.PointLights, Data.SpotLights, Data.CullingLights, View.ViewMatrix);
-	Renderer->BindWorldShadows(InvalidShadowResourceIndex, SceneRenderer.GetFrameNumber(), false);
-	Renderer->BindDirectionalShadow(*GameViewport, SceneRenderer.GetFrameNumber(), false);
-	Renderer->SetLighting(Lighting, Data.PointLights, Data.SpotLights);
-	Renderer->SetViewMode(View.RenderMode);
-	Renderer->RenderQueueSorting(Data.RenderQueue, View.ViewProjection, View.GetCameraLocation());
-
-	// 깊이 선행 패스
-	FRenderingInfo DepthInfo = SceneInfo;
-	DepthInfo.ColorRenderTargets.Reset();
-	RenderCommand::BeginRenderPass(DepthInfo);
-	RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
-	RenderCommand::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	Renderer->RenderDepthPrepass(View.ViewProjection);
-	RenderCommand::EndRenderPass(DepthInfo);
-
-	// 타일별 조명 계산
-	Renderer->CullLights(
-		GameViewport->GetLightCullingResources(),
-		View.ProjectionMatrix,
-		DepthInfo.DepthStencil.Texture,
-		Data.CullingLights,
-		DepthInfo.ViewportSetting.Width,
-		DepthInfo.ViewportSetting.Height,
-		false);
-
-	// 불투명 및 반투명 패스
-	FRenderingInfo ColorInfo = SceneInfo;
-	ColorInfo.DepthStencil.LoadOp = ERenderTargetLoadOp::Load;
-	const float ClearValue = ColorWorkflow::bLinear ? FLinearColor::SRGBToLinear(0.3f) : 0.3f;
-	ColorInfo.ColorRenderTargets[0].ClearValue.ColorClearValue =
-		FVector4(ClearValue, ClearValue, ClearValue, 1.0f);
-
-	RenderCommand::BeginRenderPass(ColorInfo);
-	RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
-	RenderCommand::SetBlendState(EBlendState::Opaque);
-	RenderCommand::SetDepthStencilState(EDepthStencilState::Default);
-	RenderCommand::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	Renderer->RenderOpaque(View.ViewProjection, true);
-	Renderer->RenderTranslucent(View.ViewProjection);
-	RenderCommand::EndRenderPass(ColorInfo);
-
-	// 원근 장면의 활성 안개 합성
-	const TArray<FExponentialHeightFogSceneInfo>& FogInfos = GameWorld->GetScene().FogInfos;
-	if (!View.IsOrthographic() && !IsDataVisualization(View.RenderMode.ViewMode) && !FogInfos.IsEmpty())
+	if (bSupportsShadows)
 	{
-		FRenderingInfo FogPassInfo = SceneInfo;
-		for (FRenderingDesc& Color : FogPassInfo.ColorRenderTargets)
+		// 그림자 컬링용 View 등록
+		SceneRenderer.AddShadowView(*GameWorld, View);
+	}
+
+	SceneRenderer.PrepareView(*GameWorld, View, Data);
+
+	// Engine 세션의 그림자 슬롯 할당
+	uint32 ShadowResourceIndex = InvalidShadowResourceIndex;
+	if (bSupportsShadows)
+	{
+		if (FWorldContext* Context = GetWorldContextFromWorld(GameWorld))
 		{
-			Color.LoadOp = ERenderTargetLoadOp::Load;
+			if (Context->ShadowResourceIndex == InvalidShadowResourceIndex)
+			{
+				Context->ShadowResourceIndex = Renderer->AllocateShadowResources(false);
+			}
+
+			ShadowResourceIndex = Context->ShadowResourceIndex;
 		}
-
-		// 깊이 텍스처의 출력 바인딩 해제
-		FogPassInfo.DepthStencil.Texture = nullptr;
-		FogPassInfo.DepthStencil.DSV = nullptr;
-
-		RenderCommand::BeginRenderPass(FogPassInfo);
-		FogRenderer->OnRender(
-			SceneInfo.DepthStencil.Texture,
-			View.ViewProjection,
-			View.GetCameraLocation(),
-			FogInfos[0].FogInfo);
-		RenderCommand::EndRenderPass(FogPassInfo);
-
-		// 깊이 입력 바인딩 해제
-		RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
 	}
 
-	if (!Data.HudRenderQueue.IsEmpty())
+	// 공통 장면 패스 실행
+	FShadowFrameData DirectionalFrame;
+	SceneRenderer.RenderView(*Renderer, *GameViewport, *GameWorld, View, ShadowResourceIndex, RenderSettings, DirectionalFrame);
+
+	// 표시용 컬러 위 텍스트 합성
+	FRenderingInfo TextInfo = GameViewport->GetRenderingInfo();
+	TextInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::Load;
+	TextInfo.DepthStencil.LoadOp = ERenderTargetLoadOp::Load;
+
+	RenderCommand::BeginRenderPass(TextInfo);
+	RenderCommand::BindSamplerState(0, ESamplerState::LinearClamp, EShaderBindFlagBits::Pixel);
+
+	// 일반 텍스트 이후 최상단 텍스트 출력
+	for (int32 Layer = 0; Layer < 2; ++Layer)
 	{
-		FRenderingInfo HudInfo = SceneInfo;
-		for (FRenderingDesc& Color : HudInfo.ColorRenderTargets)
-			Color.LoadOp = ERenderTargetLoadOp::Load;
-		HudInfo.DepthStencil.Texture = nullptr;
+		const bool bDrawOnTop = Layer == 1;
+		for (TObjectIterator<UTextRenderComponent> Text; Text; ++Text)
+		{
+			// 현재 게임 World의 출력 대상 선별
+			if (!Text->IsRegistered() || Text->IsPendingDestroy()
+				|| !Text->IsVisible() || Text->IsHiddenInGame()
+				|| !Text->GetFont() || Text->IsDrawOnTop() != bDrawOnTop)
+			{
+				continue;
+			}
 
-		RenderCommand::BeginRenderPass(HudInfo);
-		RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
-		Renderer->RenderHud(Data.HudRenderQueue, View.ViewProjection, View.GetCameraLocation(), View.RenderMode);
-		RenderCommand::EndRenderPass(HudInfo);
+			const AActor* Owner = Text->GetOwner();
+			if (!Owner || Owner->IsPendingDestroy() || Owner->GetWorld() != GameWorld)
+			{
+				continue;
+			}
+
+			TextRenderer->OnRender(
+				Text->GetText(), Text->GetWorldMatrix(), Text->GetTextSize(),
+				*Text->GetFont(), View.ViewProjection, bDrawOnTop);
+		}
 	}
 
-	RenderCommand::UnbindShaderResources(8, 4, EShaderBindFlagBits::Pixel);
-	RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Vertex);
-
-	// 표시용 색 변환
-	FRenderingInfo OutputInfo = GameViewport->GetRenderingInfo();
-	OutputInfo.DepthStencil.Texture = nullptr;
-	OutputInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::DontCare;
-	RenderCommand::BeginRenderPass(OutputInfo);
-	const bool bEncode = ColorWorkflow::bLinear;
-	const bool bToneMap = bEncode && View.RenderMode.ViewMode == EViewMode::Lit;
-	GammaEncodeRenderer->OnRender(SceneInfo.ColorRenderTargets[0].Texture, bEncode, bToneMap, 0.0f);
-	RenderCommand::EndRenderPass(OutputInfo);
+	RenderCommand::EndRenderPass(TextInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
 
-	// 백버퍼 복사 및 프레임 참조 해제
+	// 백버퍼 복사·프레임 참조 해제
 	const FRenderingInfo& BackbufferInfo = GetEngineLoop().GetSwapchain()->GetRenderingInfo();
+
 	RenderCommand::CopyTexture(BackbufferInfo.ColorRenderTargets[0].Texture, GameViewport->GetColorTarget());
+
 	Data.ReleaseSceneReferences();
 	SceneRenderer.EndFrame();
 }
