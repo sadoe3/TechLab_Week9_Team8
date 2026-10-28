@@ -3,14 +3,14 @@
 
 void FTimeDilation::Tick()
 {
-	if(state == ESlomoState::Inactive) return;
+	if(State == ESlomoState::Inactive) return;
 
 	Elapsed += GetRealDelta();
-	switch (state)
+	switch (State)
 	{
 	case ESlomoState::BlendIn:
 		if (Elapsed >= BlendInTime) {
-			state = ESlomoState::Hold;
+			State = ESlomoState::Hold;
 			Dilation = TargetDilation;
 			Elapsed -= BlendInTime;
 			return;
@@ -19,29 +19,30 @@ void FTimeDilation::Tick()
 		{
 			float Alpha = FMath::Clamp(Elapsed / BlendInTime, 0.0f, 1.0f);	// %
 			float Eased = 1.0f - (1.0f - Alpha) * (1.0f - Alpha);
-			Dilation = StartDilation + (TargetDilation - StartDilation) * Eased;
+			Dilation = InitialDilation + (TargetDilation - InitialDilation) * Eased;
 		}
 
 		break;
 	case ESlomoState::Hold:
 		if (Elapsed >= HoldTime) {
-			state = ESlomoState::BlendOut;
-			StartDilation = Dilation;
+			State = ESlomoState::BlendOut;
+			InitialDilation = Dilation;
 			Elapsed -= HoldTime;
 		}
 		break;
 	case ESlomoState::BlendOut:
 		if (Elapsed >= BlendOutTime) {
-			state = ESlomoState::Inactive;
+			State = ESlomoState::Inactive;
 			Dilation = 1.0f;
 			Elapsed = 0.0f;
+			OnSlomoFinished.Broadcast();
 			return;
 		}
 
 		{
 			float Alpha = FMath::Clamp(Elapsed / BlendOutTime, 0.0f, 1.0f);	// %
 			float Eased = 1.0f - (1.0f - Alpha) * (1.0f - Alpha);
-			Dilation = StartDilation + (1.0f - StartDilation) * Eased;
+			Dilation = InitialDilation + (1.0f - InitialDilation) * Eased;
 		}
 
 		break;
@@ -60,7 +61,7 @@ void FTimeDilation::StartSlomo(float inTargetDilation, float inBlendInTime, floa
 	HoldTime = inHoldTime;				// 유지 시간 
 	BlendOutTime = inBlendOutTime;		// 복귀 시간
 
-	StartDilation = Dilation;			// 보간 시작값
-	state = ESlomoState::BlendIn;
+	InitialDilation = Dilation;			// 보간 시작값
+	State = ESlomoState::BlendIn;
 }
 

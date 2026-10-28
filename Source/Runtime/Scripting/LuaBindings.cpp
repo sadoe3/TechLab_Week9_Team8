@@ -8,6 +8,7 @@
 #include "Math/Rotator.h"
 #include "GameFramework/Character.h"
 #include "Core/GameHud.h"
+#include "Core/TimeDilation.h"
 #include "GameFramework/RacingCar.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Swamp.h"
@@ -554,12 +555,8 @@ namespace LuaBindings
 
 		Game.set_function("show_finish_ui", []()
 			{
-				// 씬 전환 없이 완주 UI를 표시할 상태로 변경합니다.
+				FTimeDilation::StartSlomo(0.3f, 0.1f, 3.0f, 0.8f);
 				FGameHud::SetResultScreen(ERaceResultScreen::Finish);
-
-				// 임시 연결: 완주 UI가 없어 곧바로 리더보드를 표시합니다.
-				// 완주 UI 구현 후 이 호출을 제거하고 해당 UI 종료 시 호출합니다.
-				FGameHud::NotifyFinishUIClosed();
 			}
 		);
 		Game.set_function("reset_result_ui", []()

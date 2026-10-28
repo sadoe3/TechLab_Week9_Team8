@@ -19,6 +19,7 @@
 #include "Text/TextRenderer.h"
 #include <cmath>
 #include <format>
+#include <Core/TimeDilation.h>
 
 namespace
 {
@@ -159,6 +160,10 @@ ARacingCar::ARacingCar()
 void ARacingCar::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
+	FTimeDilation::OnSlomoFinished.AddRaw(this, &ARacingCar::HandleSlomoFinished);
+
 	if (IsPendingDestroy()) return;
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
@@ -502,6 +507,7 @@ void ARacingCar::HandleCountdownChanged(const FString& NewCountdown)
 
 void ARacingCar::EndPlay()
 {
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
 		Capsule->OnComponentHit.RemoveAll(this);
@@ -514,4 +520,9 @@ void ARacingCar::EndPlay()
 void ARacingCar::HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
 	SetVelocity(FVector::ZeroVector);
+}
+
+void ARacingCar::HandleSlomoFinished()
+{
+	FGameHud::NotifyFinishUIClosed();
 }
