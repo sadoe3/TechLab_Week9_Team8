@@ -18,6 +18,7 @@ class USceneComponent : public UActorComponent
 
 	REFLECT_START(ClassName)
 		PROPERTY(Transform)
+		PROPERTY(bAbsoluteRotation)
 		REFLECT_END()
 
 public:
@@ -33,6 +34,9 @@ public:
 
 	const FRotator& GetRelativeRotation() const { return Transform.Rotation; }
 	void SetRelativeRotation(const FRotator& InRotation);
+	bool IsUsingAbsoluteRotation() const { return bAbsoluteRotation; }
+	// 회전 수치는 유지하고 해석만 전환한다. Absolute에서는 Transform.Rotation이 월드 회전이다.
+	void SetUsingAbsoluteRotation(bool bInAbsoluteRotation);
 	void SetRelativeLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
 	const FVector& GetRelativeScale3D() const { return Transform.Scale; }
 	void SetRelativeScale3D(const FVector& InScale);
