@@ -15,6 +15,8 @@
 #include "Camera/CurveCameraShake.h"
 #include <cassert>
 #include "Camera/CameraTypes.h"
+#include "Cinematic/SequencePlayer.h"
+#include "Cinematic/SequenceSerializer.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -179,6 +181,27 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 		{
 			return GEngine && GEngine->RequestExit(WeakWorld.Get());
 		});
+	WorldTable.set_function("play_intro_sequence", [WeakWorld]()
+		{
+			UWorld* World = WeakWorld.Get();
+			TArray<FSequenceStep> Steps;
+			if (SequenceSerializer::Load(Steps, "Sequences/Intro.sequence"))
+			{
+				FSequencePlayer::Play(Steps, World);
+			}
+		}
+	);
+	WorldTable.set_function("stop_sequence", []()
+		{
+			FSequencePlayer::Stop();
+		}
+	);
+	WorldTable.set_function("is_sequence_playing", []()
+		{
+			return FSequencePlayer::IsPlaying();
+		}
+	);
+
 	Environment["world"] = WorldTable;
 	return Environment;
 }
