@@ -46204,144 +46204,6 @@
                                 "StaticMesh": "Models/Racing/LargeTrack/MuddyTracks_Cube_5p00_8p00_0p05.obj",
                                 "Transform": {
                                     "Location": {
-                                        "X": 68.34708404541016,
-                                        "Y": 60.595333099365234,
-                                        "Z": -0.9599999785423279
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": -151.41978454589844
-                                    },
-                                    "Scale": {
-                                        "X": 7.0,
-                                        "Y": 7.199999809265137,
-                                        "Z": 0.05999999865889549
-                                    }
-                                },
-                                "bAbsoluteRotation": false,
-                                "bCastShadow": true,
-                                "bGenerateOverlapEvents": false,
-                                "bReceiveShadow": true,
-                                "bVisible": true
-                            }
-                        },
-                        {
-                            "Class": "UBoxComponent",
-                            "Name": "BoxComponent",
-                            "Parent": "StaticMeshComponent",
-                            "Properties": {
-                                "BoxExtent": {
-                                    "X": 0.5,
-                                    "Y": 0.5,
-                                    "Z": 0.5
-                                },
-                                "CollisionEnabled": 1,
-                                "CollisionResponses.Camera": 0,
-                                "CollisionResponses.Pawn": 1,
-                                "CollisionResponses.WorldDynamic": 0,
-                                "CollisionResponses.WorldStatic": 0,
-                                "ObjectType": 0,
-                                "ShapeColor": {
-                                    "A": 255,
-                                    "B": 0,
-                                    "G": 255,
-                                    "R": 0
-                                },
-                                "Transform": {
-                                    "Location": {
-                                        "X": 0.0,
-                                        "Y": 0.0,
-                                        "Z": 16.0
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 1.0,
-                                        "Y": 1.0,
-                                        "Z": 33.33333206176758
-                                    }
-                                },
-                                "bAbsoluteRotation": false,
-                                "bCastShadow": false,
-                                "bDrawOnlyIfSelected": false,
-                                "bGenerateOverlapEvents": true,
-                                "bReceiveShadow": false,
-                                "bVisible": true
-                            }
-                        },
-                        {
-                            "Class": "UExponentialHeightFogComponent",
-                            "Name": "FogComponent",
-                            "Parent": "StaticMeshComponent",
-                            "Properties": {
-                                "FogColor": {
-                                    "A": 1.0,
-                                    "B": 0.4000000059604645,
-                                    "G": 0.6000000238418579,
-                                    "R": 0.7200000286102295
-                                },
-                                "FogCutoffDistance": 0.0,
-                                "FogDensity": 0.11999999731779099,
-                                "FogHeightFalloff": 0.25,
-                                "FogMaxOpacity": 1.0,
-                                "StartDistance": 0.10000000149011612,
-                                "Transform": {
-                                    "Location": {
-                                        "X": 0.0,
-                                        "Y": 0.0,
-                                        "Z": 0.0
-                                    },
-                                    "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
-                                        "Yaw": 0.0
-                                    },
-                                    "Scale": {
-                                        "X": 1.0,
-                                        "Y": 1.0,
-                                        "Z": 1.0
-                                    }
-                                },
-                                "bAbsoluteRotation": false,
-                                "bFogEnabled": false
-                            }
-                        },
-                        {
-                            "Class": "UScriptComponent",
-                            "Name": "SwampScript",
-                            "Parent": "",
-                            "Properties": {
-                                "ScriptPath": "Assets/Scripts/Swamp.lua"
-                            }
-                        }
-                    ],
-                    "Name": "LongCircuit_Swamp_0",
-                    "Properties": {
-                        "ActorLabel": "Center Swamp"
-                    }
-                },
-                {
-                    "Class": "ASwamp",
-                    "Components": [
-                        {
-                            "Class": "UStaticMeshComponent",
-                            "Name": "StaticMeshComponent",
-                            "OverrideMaterials": [],
-                            "Parent": "",
-                            "Properties": {
-                                "CollisionEnabled": 0,
-                                "CollisionResponses.Camera": 0,
-                                "CollisionResponses.Pawn": 0,
-                                "CollisionResponses.WorldDynamic": 0,
-                                "CollisionResponses.WorldStatic": 0,
-                                "ObjectType": 1,
-                                "StaticMesh": "Models/Racing/LargeTrack/MuddyTracks_Cube_5p00_8p00_0p05.obj",
-                                "Transform": {
-                                    "Location": {
                                         "X": -62.82353973388672,
                                         "Y": -46.435829162597656,
                                         "Z": -0.9599999785423279
@@ -47998,8 +47860,8 @@
                                 "StaticMesh": "Models/Racing/LargeTrack/MuddyTracks_Cube_5p00_8p00_0p05.obj",
                                 "Transform": {
                                     "Location": {
-                                        "X": -112.0386734008789,
-                                        "Y": 61.619483947753906,
+                                        "X": -117.07174682617188,
+                                        "Y": 67.96112823486328,
                                         "Z": -0.9599999785423279
                                     },
                                     "Rotation": {
