@@ -7,7 +7,7 @@ local BrakeDamping = 1.5
 local StopSpeed = 0.01
 local SwampMaxSpeed = 2.0
 local SwampOverlapCount = 0
-local BaseFOV = 60.0
+local BaseFOV = 91.5
 local SpeedFOVIncrease = 30.0
 local FOVInterpSpeed = 20.0
 local WallParticleComponentName = "WallParticles"
@@ -30,6 +30,7 @@ local score = 0
 
 function BeginPlay()
     script.set_tick_group("PrePhysics")
+    obj.CameraFOV = BaseFOV
     WallHitCooldown = 0.0
     score = 0
     audio.play_bgm(BGMPath, 0.7)

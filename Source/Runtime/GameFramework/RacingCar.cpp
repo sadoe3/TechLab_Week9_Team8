@@ -82,6 +82,7 @@ ARacingCar::ARacingCar()
 
 	// Capsule과 같은 부모에 부착하여 충돌 도형의 상대 회전과 카메라를 분리한다.
 	UCameraComponent* Camera = VehicleCamera = CreateDefaultSubobject<UCameraComponent>("VehicleCamera");
+	Camera->SetFieldOfView(91.5f);
 	Camera->SetupAttachment(VehicleMesh);
 	Camera->SetRelativeLocation(FVector(-4.0f, 0.0f, 2.0f));
 	Camera->SetRelativeRotation(FRotator(15.0f, 0.0f, 0.0f));
@@ -230,7 +231,7 @@ void ARacingCar::BeginPlay()
 	bWaitingForConfirmRelease = true;
 	UpdateLeaderboardLayout();
 
-	BaseFieldOfView = VehicleCamera ? VehicleCamera->GetFieldOfView() : 0.0f;
+	BaseFieldOfView = 91.5f;
 	LastAppliedFieldOfView = -1.0f;
 	UpdateHudForFieldOfView();
 
