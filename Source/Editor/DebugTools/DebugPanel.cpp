@@ -4,6 +4,7 @@
 #include <cfloat>
 #include <cstdio>
 #include <Cinematic/SequencePlayer.h>
+#include <Cinematic/SequenceSerializer.h>
 
 namespace
 {
@@ -341,6 +342,16 @@ void FDebugPanel::DrawSequenceSection()
 
 		ControlRow("Stop", "Cancels the sequence in progress.");
 		if (ImGui::Button("Stop Sequence", ImVec2(-FLT_MIN, 0.0f))) FSequencePlayer::Stop();
+
+		ControlRow("Save", "Writes the test sequence to Assets/Sequences/Intro.json.");
+		if (ImGui::Button("Save Sequence", ImVec2(-FLT_MIN, 0.0f)))
+		{
+			TArray<FSequenceStep> Steps;
+			Steps.Push({ 1.0f, ESequenceAction::Wait });
+			Steps.Push({ 2.0f, ESequenceAction::Wait });
+			Steps.Push({ 0.0f, ESequenceAction::Finish });
+			SequenceSerializer::Save(Steps, "Assets/Sequences/Intro.json");
+		}
 
 		ImGui::EndTable();
 	}
