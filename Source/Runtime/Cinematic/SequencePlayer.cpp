@@ -41,7 +41,16 @@ void FSequencePlayer::EnterStep()
 {
 	if (!IsPlaying()) return;
 
+	const FSequenceStep& Step = Steps[CurrentIndex];
 	HTR_LOG(Info, "CurrentIndex : {} , Action : {} ", CurrentIndex, (int32)Steps[CurrentIndex].Action);
+
+	switch (Step.Action) {
+	case ESequenceAction::Wait: break;
+	case ESequenceAction::Finish: break;
+	case ESequenceAction::SetViewTarget:
+		HTR_LOG(Info, "[Sequence] SetViewTarget: {}", Step.TargetName);
+		break;
+	}
 
 }
 

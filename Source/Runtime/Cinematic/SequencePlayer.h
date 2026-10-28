@@ -4,7 +4,7 @@
 #include "Engine/World.h"
 
 enum class ESequenceAction {
-	Wait, Finish
+	Wait, Finish, SetViewTarget
 };
 
 struct FSequenceStep {

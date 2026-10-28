@@ -7,6 +7,7 @@ namespace {
 	const FActionName ActionName[] = {
 		{ ESequenceAction::Wait, "Wait" },
 		{ ESequenceAction::Finish, "Finish" },
+		{ ESequenceAction::SetViewTarget, "SetViewTarget" },
 	};
 
 }
