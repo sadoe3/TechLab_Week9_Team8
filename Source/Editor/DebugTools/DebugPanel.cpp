@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "Editor/DebugTools/DebugPanel.h"
+#include "Core/TimeDilation.h"
 #include <cfloat>
 #include <cstdio>
 
@@ -108,6 +109,9 @@ void FDebugPanel::OnRender()
 		ImGui::End();
 		return;
 	}
+
+	DrawTimeDilationSection();
+
 	if (!ShadowSettings)
 	{
 		ImGui::TextDisabled("Shadow settings are not connected.");
@@ -291,5 +295,29 @@ void FDebugPanel::DrawCasterCullingSection(const FShadowCullingStats* Stats)
 	}
 	// 캐싱 중에는 다시 그린 패스의 Caster만 센다.
 	if (Stats->bCaching) ImGui::TextDisabled("Counted only for passes redrawn this frame.");
+	ImGui::Spacing();
+}
+
+void FDebugPanel::DrawTimeDilationSection()
+{
+	if (!ImGui::CollapsingHeader("Time Dilation", ImGuiTreeNodeFlags_DefaultOpen)) return;
+
+	if (BeginControlTable("##TimeDilationControls"))
+	{
+		ControlRow("Dilation", "Multiplied into the game World tick only. 1 = normal, 0 = frozen.");
+		float Dilation = FTimeDilation::GetDilation();
+		if (ImGui::SliderFloat("##Dilation", &Dilation, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+			FTimeDilation::SetDilation(Dilation);
+
+		ControlRow("Reset", "Back to normal speed.");
+		if (ImGui::Button("Normal Speed", ImVec2(-FLT_MIN, 0.0f))) FTimeDilation::ResetDilation();
+		
+		ControlRow("Test Slomo", "...");
+		if (ImGui::Button("Test Slomo", ImVec2(-FLT_MIN, 0.0f))) FTimeDilation::StartSlomo(0.3f, 0.1f, 1.0f, 0.8f);
+
+		ImGui::EndTable();
+	}
+
+	ImGui::TextDisabled("Real %.4f s    Game %.4f s", FTimeDilation::GetRealDelta(), FTimeDilation::GetGameDelta());
 	ImGui::Spacing();
 }

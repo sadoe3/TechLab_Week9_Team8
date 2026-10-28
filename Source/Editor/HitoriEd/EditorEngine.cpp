@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "Component/BillboardComponent.h"
 #include "Core/Stats/EditorStats.h"
+#include "Core/TimeDilation.h"
 #include "Engine/Level.h"
 
 #include "Render/Renderer.h"
@@ -590,7 +591,7 @@ void UEditorEngine::TickWorldAndEditor(const float DeltaTime)
 			bStepRequested = false;
 		}
 		else if(!bIsPaused)
-			GetActiveWorld()->Tick(DeltaTime);
+			GetActiveWorld()->Tick(DeltaTime * FTimeDilation::GetDilation());
 
 	}
     // 편집 입력 또는 CameraComponent Tick이 소비하고 남은 휠은 Pause/차단 해제 후 재생하지 않는다.
@@ -1175,6 +1176,7 @@ void UEditorEngine::EndPlayMap()
 	bIsPaused = false;
 	bStepRequested = false;
 	OnActiveWorldChanged();
+	FTimeDilation::ResetDilation();
 }
 
 bool UEditorEngine::CreatePIEWindow()
