@@ -15,4 +15,29 @@ struct FMinimalViewInfo
     float OrthoWidth = 16.0f;
     float NearClipPlane = 0.1f;
     float FarClipPlane = 10000.0f;
+
+    // 다른 시점과 지정 비율로 합성
+    void BlendViewInfo(const FMinimalViewInfo& Other, float Alpha);
+};
+
+// 기본 시점 전환 보간 방식
+enum class EViewTargetBlendFunction : uint8
+{
+    Linear,
+    Cubic,
+    EaseIn,
+    EaseOut,
+    EaseInOut
+};
+
+// 시점 전환 설정
+struct FViewTargetTransitionParams
+{
+    float BlendTime = 0.0f; // 전환 시간, 초
+    EViewTargetBlendFunction BlendFunction = EViewTargetBlendFunction::Cubic;
+    float BlendExp = 2.0f; // Ease 계열의 곡선 지수
+    bool bLockOutgoing = false; // 출발 시점 고정
+
+    // 경과 시간 비율의 합성 비율 변환
+    float GetBlendAlpha(float TimeAlpha) const;
 };

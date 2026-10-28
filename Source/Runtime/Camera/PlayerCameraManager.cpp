@@ -3,6 +3,7 @@
 #include "Camera/CameraModifier.h"
 #include "Camera/CameraModifier_CameraShake.h"
 #include <algorithm>
+#include <cmath>
 
 APlayerCameraManager::~APlayerCameraManager()
 {
@@ -86,9 +87,55 @@ void APlayerCameraManager::ClearCameraModifiers()
     }
 }
 
-void APlayerCameraManager::SetViewTarget(AActor* NewViewTarget)
+void APlayerCameraManager::SetViewTarget(AActor* NewViewTarget, const FViewTargetTransitionParams& Params)
 {
-    ViewTarget.Target = NewViewTarget;
+    // 삭제 예약 대상의 신규 선택 제외
+    if (NewViewTarget && NewViewTarget->IsPendingDestroy())
+    {
+        return;
+    }
+    AActor* Current = GetViewTarget();
+    // 동일대상 혹은 즉시 Transition
+    if (BlendTimeToGo <= 0.0f && NewViewTarget == Current)
+    {
+        return;
+    }
+
+    // 즉시 선택과 진행 중 Transition 취소
+    if (!NewViewTarget || !Current || Current->IsPendingDestroy() || !std::isfinite(Params.BlendTime) || Params.BlendTime <= 0.0f)
+    {
+        CancelViewTargetBlend();
+        ViewTarget.Target = NewViewTarget;
+        return;
+    }
+
+    // 동일 Transition대상의 경우 재시작으로 갱신하지 않음
+    if (NewViewTarget == GetPendingViewTarget())
+    {
+        return;
+    }
+
+    // 고정 출발과 중도 재지정의 직전 화면 사용
+    const bool bWasBlending = BlendTimeToGo > 0.0f;
+    if (Params.bLockOutgoing || bWasBlending)
+    {
+        ViewTarget.POV = CameraCachePrivate.POV;
+    }
+
+    PendingViewTarget = FTViewTarget();
+    PendingViewTarget.Target = NewViewTarget;
+    BlendParams = Params;
+    BlendParams.bLockOutgoing = Params.bLockOutgoing || bWasBlending;
+    BlendTimeToGo = Params.BlendTime;
+    ++ViewTargetGeneration;
+}
+void APlayerCameraManager::CancelViewTargetBlend()
+{
+    // 현재 대상 유지와 전환 상태 해제
+    PendingViewTarget = FTViewTarget();
+    BlendParams = FViewTargetTransitionParams();
+    BlendTimeToGo = 0.0f;
+    ++ViewTargetGeneration;
 }
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
@@ -99,9 +146,82 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     {
         return;
     }
-    // World가 이동 갱신 이후 명시적으로 호출한다. 일반 Actor Tick에는 등록하지 않는다.
-    UpdateViewTarget(ViewTarget, DeltaTime);
-    FillCameraCache(ViewTarget.POV);
+    // 삭제된 도착 대상의 전환 취소
+    AActor* PendingActor = GetPendingViewTarget();
+    if (BlendTimeToGo > 0.0f && (!PendingActor || PendingActor->IsPendingDestroy()))
+    {
+        CancelViewTargetBlend();
+    }
+
+    const float Step = FMath::Max(DeltaTime, 0.0f);
+    const uint32 UpdatingGeneration = ViewTargetGeneration;
+    FTViewTarget Current = ViewTarget;
+    FTViewTarget Pending = PendingViewTarget;
+    const bool bBlending = BlendTimeToGo > 0.0f;
+
+    // 고정되지 않은 출발 시점 갱신
+    if (!bBlending || !BlendParams.bLockOutgoing)
+    {
+        UpdateViewTarget(Current, Step);
+    }
+    if (ViewTargetGeneration != UpdatingGeneration)
+    {
+        return;
+    }
+
+    FMinimalViewInfo NewPOV = Current.POV;
+    if (bBlending)
+    {
+        // 콜백의 삭제 예약 여부 확인
+        const auto TargetsStillValid = [&Current, &Pending]()
+            {
+                AActor* From = Current.Target.Get();
+                AActor* To = Pending.Target.Get();
+                return From && !From->IsPendingDestroy()
+                    && To && !To->IsPendingDestroy();
+            };
+
+        if (!TargetsStillValid())
+        {
+            CancelViewTargetBlend();
+            return;
+        }
+
+        UpdateViewTarget(Pending, Step);
+        if (ViewTargetGeneration != UpdatingGeneration)
+        {
+            return;
+        }
+        if (!TargetsStillValid())
+        {
+            CancelViewTargetBlend();
+            return;
+        }
+
+        BlendTimeToGo = FMath::Max(0.0f, BlendTimeToGo - Step);
+        if (BlendTimeToGo <= 0.0f || Current.POV.ProjectionMode != Pending.POV.ProjectionMode)
+        {
+            // 완료 또는 투영 방식 변경 시 도착 시점 채택
+            ViewTarget = Pending;
+            NewPOV = Pending.POV;
+            CancelViewTargetBlend();
+        }
+        else
+        {
+            // 선택한 시간 보간 방식으로 시점 합성
+            ViewTarget = Current;
+            PendingViewTarget = Pending;
+            const float TimeAlpha = 1.0f - BlendTimeToGo / BlendParams.BlendTime;
+            NewPOV.BlendViewInfo(Pending.POV, BlendParams.GetBlendAlpha(TimeAlpha));
+        }
+    }
+    else
+    {
+        ViewTarget = Current;
+    }
+
+    FillCameraCache(NewPOV);
+
 }
 
 void APlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime)
@@ -110,11 +230,14 @@ void APlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime
     OutVT.POV = FMinimalViewInfo();
     OutVT.POV.FOV = DefaultFOV;
     OutVT.POV.AspectRatio = DefaultAspectRatio;
-    if (OutVT.Target)
+
+    if (AActor* Target = OutVT.Target.Get(); Target && !Target->IsPendingDestroy())
     {
-        OutVT.Target->CalcCamera(DeltaTime, OutVT.POV);
+        Target->CalcCamera(DeltaTime, OutVT.POV);
     }
+    // 기존 대상별 Modifier 적용
     ApplyCameraModifiers(DeltaTime, OutVT.POV);
+
 }
 
 void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FMinimalViewInfo& InOutPOV)
