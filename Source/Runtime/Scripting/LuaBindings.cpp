@@ -555,7 +555,7 @@ namespace LuaBindings
 
 		Game.set_function("show_finish_ui", []()
 			{
-				FTimeDilation::StartSlomo(0.3f, 0.1f, 3.0f, 0.8f);
+				FTimeDilation::StartSlomo(0.3f, 0.1f, 2.0f, 0.8f);
 				FGameHud::SetResultScreen(ERaceResultScreen::Finish);
 			}
 		);
