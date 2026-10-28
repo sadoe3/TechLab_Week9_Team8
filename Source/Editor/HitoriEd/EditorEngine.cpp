@@ -1007,7 +1007,9 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 
 	// 기존 에디터 오버레이 합성
 	RenderOverlayPass(OverlayClient, ViewWorld, ViewRenderingInfo, View, RenderQueue);
-	// PIE의 텍스트 출력 뒤에 합성한다. 에디터 View는 알파 0으로 생략된다.
+	// PIE의 텍스트 위에 합성한다. 일반 Editor View는 띠 높이 0으로 생략된다.
+	Renderer->RenderCameraLetterBoxPass(Viewport, View);
+	// 검은 띠를 포함한 화면 전체에 Fade를 적용한다.
 	Renderer->RenderCameraFadePass(Viewport, View);
 }
 

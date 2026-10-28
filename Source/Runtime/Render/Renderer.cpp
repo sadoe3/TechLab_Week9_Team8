@@ -183,7 +183,8 @@ bool FRenderer::InitScenePasses()
 		|| !FXAARenderer->Init()
 		|| !GammaEncodeRenderer->Init()
 		|| !DepthViewRenderer->Init()
-		|| !InitCameraFadePass())
+		|| !InitCameraFadePass()
+		|| !InitCameraLetterBoxPass())
 	{
 		HTR_LOG(Error, "[Renderer] shared scene pass initialization failed");
 		return false;
@@ -214,6 +215,29 @@ bool FRenderer::InitCameraFadePass()
 	CameraFadePipelineState.BlendState = EBlendState::AlphaBlend;
 	CameraFadePipelineState.DepthStencilState = EDepthStencilState::Disabled;
 	return CameraFadeCB && CameraFadeCB->GetBuffer();
+}
+
+bool FRenderer::InitCameraLetterBoxPass()
+{
+	const FString ShaderPath = "Resources/Shader/CameraLetterBoxShader.hlsl";
+	FShaderProgram* Shader = FRenderResourceManager::FindShaderProgram(ShaderPath);
+	if (!Shader || Shader->ComputeShader || !Shader->VertexShader || !Shader->PixelShader
+		|| !Shader->VertexShader->IsValid() || !Shader->PixelShader->IsValid())
+	{
+		HTR_LOG(Error, "[CameraLetterBox] missing or invalid graphics shader");
+		return false;
+	}
+
+	// HLSL의 HeightRatio(float)와 Padding(float3)에 대응한다.
+	static_assert(sizeof(FVector4) == 16);
+	CameraLetterBoxCB = RenderCommand::CreateConstantBuffer(sizeof(FVector4));
+	CameraLetterBoxPipelineState.Shader = Shader;
+	CameraLetterBoxPipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	CameraLetterBoxPipelineState.RasterizerState = ERasterizerState::SolidNone;
+	CameraLetterBoxPipelineState.DepthStencilState = EDepthStencilState::Disabled;
+	// 띠는 불투명하게 덮고 가운데는 Shader의 discard로 보존한다.
+	CameraLetterBoxPipelineState.BlendState = EBlendState::Opaque;
+	return CameraLetterBoxCB && CameraLetterBoxCB->GetBuffer();
 }
 
 void FRenderer::RenderGeometryPass(FViewport& Viewport, const FSceneView& View,
@@ -456,6 +480,35 @@ void FRenderer::RenderCameraFadePass(FViewport& Viewport, const FSceneView& View
 	RenderCommand::BindPipelineState(CameraFadePipelineState);
 	// 픽셀 셰이더의 register(b0)에 상수 버퍼를 연결한다.
 	RenderCommand::BindConstantBuffer(0, CameraFadeCB.get(), EShaderBindFlagBits::Pixel);
+	RenderCommand::Draw(3);
+	RenderCommand::EndRenderPass(PassInfo);
+}
+
+void FRenderer::RenderCameraLetterBoxPass(FViewport& Viewport, const FSceneView& View)
+{
+	if (View.LetterBoxHeightRatio <= 0.0f)
+	{
+		return;
+	}
+
+	// 기존 화면을 유지하고 장면의 Depth Target은 연결하지 않는다.
+	FRenderingInfo PassInfo = Viewport.GetRenderingInfo();
+	PassInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::Load;
+	PassInfo.DepthStencil.Texture = nullptr;
+	PassInfo.DepthStencil.DSV = nullptr;
+
+	// UV 기반 Shader에는 높이 비율만 전달한다. 나머지는 Padding이다.
+	FVector4 LetterBoxParameters;
+	LetterBoxParameters.X = View.LetterBoxHeightRatio;
+	LetterBoxParameters.Y = 0.0f;
+	LetterBoxParameters.Z = 0.0f;
+	LetterBoxParameters.W = 0.0f;
+	RenderCommand::UpdateBufferData(CameraLetterBoxCB.get(), &LetterBoxParameters);
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	RenderCommand::BindPipelineState(CameraLetterBoxPipelineState);
+	RenderCommand::BindConstantBuffer(0, CameraLetterBoxCB.get(), EShaderBindFlagBits::Pixel);
+	// SV_VertexID로 삼각형과 UV를 생성해 위·아래 띠만 그린다.
 	RenderCommand::Draw(3);
 	RenderCommand::EndRenderPass(PassInfo);
 }
