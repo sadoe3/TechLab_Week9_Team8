@@ -24,6 +24,12 @@
             "TargetName": "",
             "Params": {}
         },
+	{
+ 	   "Action": "MoveActor",
+    	"Duration": 1.0,
+    	"TargetName": "ACameraActor_1",
+    	"Params": { "ToZ": 8.0 }
+	},
         {
             "Action": "SetViewTarget",
             "Duration": 0.0,

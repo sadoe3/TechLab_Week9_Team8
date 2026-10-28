@@ -10,6 +10,7 @@ namespace {
 		{ ESequenceAction::SetViewTarget, "SetViewTarget" },
 		{ ESequenceAction::Fade, "Fade" },
 		{ ESequenceAction::LetterBox, "LetterBox" },
+		{ ESequenceAction::MoveActor, "MoveActor" },
 	};
 
 }

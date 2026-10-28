@@ -51,6 +51,38 @@ void FSequencePlayer::Tick()
 
 	while (IsPlaying() && Elapsed >= Steps[CurrentIndex].Duration)
 		AdvanceStep();
+
+	if (IsPlaying()) TickStep();
+}
+
+void FSequencePlayer::TickStep()
+{
+	const FSequenceStep& Step = Steps[CurrentIndex];
+	if (Step.Action != ESequenceAction::MoveActor) return;
+
+	AActor* Actor = StepActor.Get();
+	if (Actor == nullptr) return;
+
+	USceneComponent* Root = StepActor->GetRootComponent();
+	if (Root == nullptr) return;
+
+	float Alpha;
+	if (Step.Duration <= 0) Alpha = 1.0f;
+	else Alpha = Elapsed / Step.Duration;
+
+	const float ToX = GetParam(Step, "ToX", StepStartLocation.X);
+	const float ToY = GetParam(Step, "ToY", StepStartLocation.Y);
+	const float ToZ = GetParam(Step, "ToZ", StepStartLocation.Z);
+
+
+	const FVector NewLocation(
+		StepStartLocation.X + (ToX - StepStartLocation.X) * Alpha,
+		StepStartLocation.Y + (ToY - StepStartLocation.Y) * Alpha,
+		StepStartLocation.Z + (ToZ - StepStartLocation.Z) * Alpha);
+
+	// 연출용 이동이라 충돌로 막히지 않게 Sweep을 끈다.
+	Root->SetWorldLocation(NewLocation, false);
+	
 }
 
 void FSequencePlayer::Stop()
@@ -59,6 +91,7 @@ void FSequencePlayer::Stop()
 	WorldPtr.Reset();
 	CurrentIndex = 0;
 	Elapsed = 0.0f;
+	StepActor.Reset();
 }
 
 bool FSequencePlayer::IsPlaying()
@@ -118,6 +151,23 @@ void FSequencePlayer::EnterStep()
 		Manager->StartCameraLetterBox(Ratio, Step.Duration);
 		break;
 	}
+	case ESequenceAction::MoveActor:
+	{
+		UWorld* World = WorldPtr.Get();
+		if (World == nullptr) break;
+
+		AActor* TargetActor = FindActorByName(World, Step.TargetName);
+		if (TargetActor == nullptr) {
+			HTR_LOG(Error, "[Sequence] targetActor not found: {}", Step.TargetName);
+			break;
+		}
+
+		StepActor = TargetActor;
+
+		StepStartLocation = TargetActor->GetActorLocation();
+		break;
+	}
+
 	}
 
 	

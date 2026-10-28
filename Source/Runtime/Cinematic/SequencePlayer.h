@@ -4,7 +4,7 @@
 #include "Engine/World.h"
 
 enum class ESequenceAction {
-	Wait, Finish, SetViewTarget, Fade, LetterBox
+	Wait, Finish, SetViewTarget, Fade, LetterBox, MoveActor
 };
 
 struct FSequenceStep {
@@ -23,10 +23,13 @@ public:
 	static bool IsPlaying();
 
 private:
+	static void TickStep();
 	static void EnterStep();
 	static void AdvanceStep();
 
 	inline static TArray <FSequenceStep> Steps;
+	inline static TWeakObjectPtr<AActor> StepActor;
+	inline static FVector StepStartLocation;
 	inline static int32 CurrentIndex = 0;
 	inline static  float Elapsed = 0.0f;
 
