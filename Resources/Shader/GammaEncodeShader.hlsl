@@ -72,18 +72,19 @@ float3 ApplyVignette(float3 Color, float2 PixelPosition)
     // 화면 중심을 원점으로 바꾼 뒤, 화면 높이의 절반을 거리 1로 사용한다.
     float2 ScreenCenter = float2(ViewWidth, ViewHeight) * 0.5f;
     float2 CenteredPosition = PixelPosition - ScreenCenter;
+    
     // X와 Y를 같은 길이로 나눠 화면 비율이 달라도 원형을 유지한다.
     float2 NormalizedPosition = CenteredPosition / (ViewHeight * 0.5f);
     float DistanceFromCenter = length(NormalizedPosition);
 
     // Radius 안쪽은 0, Radius + Softness 바깥은 1이며 경계는 부드럽게 연결한다.
     float OuterRadius = VignetteRadius + VignetteSoftness;
-    float VignetteMask =
-        smoothstep(VignetteRadius, OuterRadius, DistanceFromCenter);
+    float VignetteMask = smoothstep(VignetteRadius, OuterRadius, DistanceFromCenter);
 
     // 중심부의 밝기는 유지하고, 최대 감쇠 영역은 (1 - Intensity)배 밝기로 만든다.
-    float Attenuation = 1.0f - VignetteIntensity * VignetteMask;
-    return Color * Attenuation;
+    float Darkness = VignetteIntensity * VignetteMask;
+    
+    return Color * (1.0f - Darkness);
 }
 
 float4 mainPS(PSInput Input) : SV_TARGET
