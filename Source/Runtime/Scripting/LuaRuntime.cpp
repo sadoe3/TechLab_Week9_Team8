@@ -124,7 +124,7 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 		{
 			UWorld* World = WeakWorld.Get();
 			TArray<FSequenceStep> Steps;
-			if (SequenceSerializer::Load(Steps, "Sequences/Intro.json"))
+			if (SequenceSerializer::Load(Steps, "Sequences/Intro.sequence"))
 			{
 				FSequencePlayer::Play(Steps, World);
 			}

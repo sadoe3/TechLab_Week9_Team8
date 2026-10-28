@@ -1,0 +1,25 @@
+{
+    "Steps": [
+        {
+            "Action": "SetViewTarget",
+            "Duration": 1.0,
+            "TargetName": "ACameraActor_1"
+        },
+        {
+            "Action": "Wait",
+            "Duration": 2.0,
+            "TargetName": ""
+        },
+        {
+            "Action": "SetViewTarget",
+            "Duration": 0.0,
+            "TargetName": "ARacingCar_0"
+        },
+        {
+            "Action": "Finish",
+            "Duration": 0.0,
+            "TargetName": ""
+        }
+    ],
+    "Version": 1
+}

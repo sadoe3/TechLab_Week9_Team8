@@ -343,21 +343,21 @@ void FDebugPanel::DrawSequenceSection()
 		ControlRow("Stop", "Cancels the sequence in progress.");
 		if (ImGui::Button("Stop Sequence", ImVec2(-FLT_MIN, 0.0f))) FSequencePlayer::Stop();
 
-		ControlRow("Save", "Writes the test sequence to Sequences/Intro.json.");
+		ControlRow("Save", "Writes the test sequence to Sequences/Test.sequence.");
 		if (ImGui::Button("Save Sequence", ImVec2(-FLT_MIN, 0.0f)))
 		{
 			TArray<FSequenceStep> Steps;
 			Steps.Push({ 1.0f, ESequenceAction::Wait });
 			Steps.Push({ 2.0f, ESequenceAction::Wait });
 			Steps.Push({ 0.0f, ESequenceAction::Finish });
-			SequenceSerializer::Save(Steps, "Sequences/Intro.json");
+			SequenceSerializer::Save(Steps, "Sequences/Test.sequence");
 		}
 
-		ControlRow("Load", "Reads Sequences/Intro.json and plays it.");
+		ControlRow("Load", "Reads Sequences/Intro.sequence and plays it.");
 		if (ImGui::Button("Load Sequence", ImVec2(-FLT_MIN, 0.0f)))
 		{
 			TArray<FSequenceStep> Steps;
-			if (SequenceSerializer::Load(Steps, "Sequences/Intro.json"))
+			if (SequenceSerializer::Load(Steps, "Sequences/Intro.sequence"))
 				FSequencePlayer::Play(Steps, nullptr);
 		}
 
