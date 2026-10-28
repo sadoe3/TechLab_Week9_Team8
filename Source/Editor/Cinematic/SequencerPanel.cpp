@@ -114,13 +114,14 @@ void FSequencerPanel::DrawToolbar()
 	ImGui::SetNextItemWidth(90.0f);
 	if (ImGui::InputFloat("Length##Length", &Sequence.Length, 0.0f, 0.0f, "%.2f s"))
 	{
-		// 마지막 키보다 짧은 재생 길이 방지
+		// 마지막 키와 카메라 전환 종료보다 짧은 재생 길이 방지
 		float MinimumLength = 0.0f;
 		for (const FSequenceTrack& Track : Sequence.Tracks)
 		{
-			if (!Track.Keys.IsEmpty())
+			for (const FSequenceKey& Key : Track.Keys)
 			{
-				MinimumLength = std::max(MinimumLength, Track.Keys.Last().Time);
+				const float End = Key.Time + (Track.Type == ESequenceTrackType::ViewTarget ? Key.BlendParams.BlendTime : 0.0f);
+				MinimumLength = std::max(MinimumLength, End);
 			}
 		}
 		Sequence.Length = std::isfinite(Sequence.Length) ? std::max(MinimumLength, Sequence.Length) : MinimumLength;
@@ -427,7 +428,8 @@ void FSequencerPanel::DrawTimeline()
 				const FSequenceKey& Key = Track.Keys[HoveredKey];
 				if (Track.Type == ESequenceTrackType::ViewTarget)
 				{
-					ImGui::SetTooltip("%.3f s -> %s", Key.Time, Key.TargetName.c_str());
+					ImGui::SetTooltip("%.3f s -> %s\nBlend: %.3f s (%s)", Key.Time, Key.TargetName.c_str(),
+						Key.BlendParams.BlendTime, SequenceSerializer::ToString(Key.BlendParams.BlendFunction));
 				}
 				else
 				{
@@ -506,6 +508,30 @@ void FSequencerPanel::DrawKeyEditor()
 	if (Track.Type == ESequenceTrackType::ViewTarget)
 	{
 		ImGui::InputText("Target Name##KeyTarget", KeyTarget, sizeof(KeyTarget));
+		// 키 시각부터 시작하는 카메라 전환 설정
+		ImGui::SetNextItemWidth(240.0f);
+		ImGui::InputFloat("Blend Time##KeyBlendTime", &EditedKey.BlendParams.BlendTime, 0.0f, 0.0f, "%.3f s");
+		if (ImGui::BeginCombo("Blend Function##KeyBlendFunction", SequenceSerializer::ToString(EditedKey.BlendParams.BlendFunction)))
+		{
+			for (EViewTargetBlendFunction Function : { EViewTargetBlendFunction::Linear, EViewTargetBlendFunction::Cubic,
+				EViewTargetBlendFunction::EaseIn, EViewTargetBlendFunction::EaseOut, EViewTargetBlendFunction::EaseInOut })
+			{
+				if (ImGui::Selectable(SequenceSerializer::ToString(Function), EditedKey.BlendParams.BlendFunction == Function))
+				{
+					EditedKey.BlendParams.BlendFunction = Function;
+				}
+			}
+			ImGui::EndCombo();
+		}
+		if (EditedKey.BlendParams.BlendFunction == EViewTargetBlendFunction::EaseIn
+			|| EditedKey.BlendParams.BlendFunction == EViewTargetBlendFunction::EaseOut
+			|| EditedKey.BlendParams.BlendFunction == EViewTargetBlendFunction::EaseInOut)
+		{
+			ImGui::SetNextItemWidth(240.0f);
+			ImGui::InputFloat("Blend Exp##KeyBlendExp", &EditedKey.BlendParams.BlendExp, 0.0f, 0.0f, "%.3f");
+		}
+		ImGui::TextDisabled("Blend starts at this key. Zero seconds makes an instant cut.");
+		ImGui::TextDisabled("Finish the blend before the next ViewTarget key and Length.");
 	}
 	else
 	{
@@ -533,28 +559,34 @@ void FSequencerPanel::DrawKeyEditor()
 	}
 	if (ImGui::Button("Apply"))
 	{
-		// 입력 검증 후 같은 시각의 키 교체
+		// 입력과 변경 배열 검증 후 기존 키 교체
 		if (!std::isfinite(EditedKey.Time) || EditedKey.Time < 0.0f || EditedKey.Time > Sequence.Length || !std::isfinite(EditedKey.Value))
 		{
 			KeyError = "Enter a finite value and a time within the sequence length.";
 		}
 		else if (Track.Type == ESequenceTrackType::ViewTarget && KeyTarget[0] == '\0')
 		{
-			KeyError = "Enter an actor's actual name for this camera cut.";
+			KeyError = "Enter an actor's actual name for this view target.";
 		}
 		else
 		{
-			FSequenceTrack& TargetTrack = Sequence.Tracks[EditingTrack];
+			FSequenceData Proposed = Sequence;
+			FSequenceTrack& TargetTrack = Proposed.Tracks[EditingTrack];
 			if (EditingKey >= 0)
 			{
 				TargetTrack.Keys.RemoveAt(EditingKey);
 			}
 			EditedKey.Time = SnapTime(EditedKey.Time);
 			EditedKey.TargetName = KeyTarget;
-			SelectedTrack = EditingTrack;
-			SelectedKey = TargetTrack.AddKey(EditedKey);
-			SequenceStatus = "Key updated. Play again to apply edits.";
-			ImGui::CloseCurrentPopup();
+			const int32 NewKeyIndex = TargetTrack.AddKey(EditedKey);
+			if (Proposed.Validate(KeyError))
+			{
+				Sequence.Tracks[EditingTrack] = std::move(TargetTrack);
+				SelectedTrack = EditingTrack;
+				SelectedKey = NewKeyIndex;
+				SequenceStatus = "Key updated. Play again to apply edits.";
+				ImGui::CloseCurrentPopup();
+			}
 		}
 	}
 	ImGui::SameLine();

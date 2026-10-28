@@ -146,6 +146,7 @@ void APlayerCameraManager::SetViewTargetInternal(AActor* NewViewTarget, const FV
     BlendTimeToGo = Params.BlendTime;
 
     // 수락한 전환 설정의 독립 복사
+    bExternallyTimedBlend = false;
     if (Curve)
     {
         ActiveBlendCurve.Emplace(*Curve);
@@ -176,12 +177,40 @@ bool APlayerCameraManager::BlendToCurrentViewTarget(const FViewTargetTransitionP
     return true;
 }
 
+bool APlayerCameraManager::SetViewTargetBlendAtTime(AActor* From, AActor* To,
+    const FViewTargetTransitionParams& Params, float ElapsedTime)
+{
+    // 외부 호출 경계의 대상과 시간 검증
+    if (!To || To->IsPendingDestroy() || !std::isfinite(ElapsedTime) || ElapsedTime < 0.0f
+        || !std::isfinite(Params.BlendTime) || Params.BlendTime < 0.0f)
+    {
+        return false;
+    }
+    if (!From || From->IsPendingDestroy() || From == To || ElapsedTime >= Params.BlendTime)
+    {
+        SetViewTarget(To);
+        return true;
+    }
+
+    // 순방향·역방향 탐색에 공통인 두 대상과 남은 시간 설정
+    ViewTarget.Target = From;
+    PendingViewTarget.Target = To;
+    BlendParams = Params;
+    BlendParams.bLockOutgoing = false;
+    BlendTimeToGo = Params.BlendTime - ElapsedTime;
+    bExternallyTimedBlend = true;
+    ActiveBlendCurve.Reset();
+    ++ViewTargetGeneration;
+    return true;
+}
+
 void APlayerCameraManager::CancelViewTargetBlend()
 {
     // 현재 대상 유지와 전환 상태 해제
     PendingViewTarget = FTViewTarget();
     BlendParams = FViewTargetTransitionParams();
     BlendTimeToGo = 0.0f;
+    bExternallyTimedBlend = false;
     ActiveBlendCurve.Reset();
     ++ViewTargetGeneration;
 }
@@ -245,11 +274,19 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     FTViewTarget Current = ViewTarget;
     FTViewTarget Pending = PendingViewTarget;
     const bool bBlending = BlendTimeToGo > 0.0f;
+    const bool bExternalTime = bExternallyTimedBlend;
 
     // 고정되지 않은 출발 시점 갱신
     if (!bBlending || !BlendParams.bLockOutgoing)
     {
-        UpdateViewTarget(Current, Step);
+        if (bExternalTime)
+        {
+            CalculateViewTarget(Current, Step);
+        }
+        else
+        {
+            UpdateViewTarget(Current, Step);
+        }
     }
     if (ViewTargetGeneration != UpdatingGeneration)
     {
@@ -272,7 +309,14 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
             return;
         }
         // 도착 대상의 현재 시점 갱신
-        UpdateViewTarget(Pending, Step);
+        if (bExternalTime)
+        {
+            CalculateViewTarget(Pending, Step);
+        }
+        else
+        {
+            UpdateViewTarget(Pending, Step);
+        }
         if (ViewTargetGeneration != UpdatingGeneration)
         {
             return;
@@ -282,7 +326,10 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
             CancelViewTargetBlend();
             return;
         }
-        BlendTimeToGo = FMath::Max(0.0f, BlendTimeToGo - Step);
+        if (!bExternalTime)
+        {
+            BlendTimeToGo = FMath::Max(0.0f, BlendTimeToGo - Step);
+        }
         if (BlendTimeToGo <= 0.0f || Current.POV.ProjectionMode != Pending.POV.ProjectionMode)
         {
             // 완료 또는 투영 방식 변경 시 도착 시점 채택
@@ -305,10 +352,27 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     {
         ViewTarget = Current;
     }
+    if (bExternalTime)
+    {
+        // 외부 시간축은 두 시점 합성 후 Modifier를 한 번 적용
+        const uint32 GenerationBeforeModifiers = ViewTargetGeneration;
+        ApplyCameraModifiers(Step, NewPOV);
+        if (ViewTargetGeneration != GenerationBeforeModifiers)
+        {
+            return;
+        }
+    }
     FillCameraCache(NewPOV);
 }
 
 void APlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime)
+{
+    // 기존 대상별 Modifier 적용 경로 유지
+    CalculateViewTarget(OutVT, DeltaTime);
+    ApplyCameraModifiers(DeltaTime, OutVT.POV);
+}
+
+void APlayerCameraManager::CalculateViewTarget(FTViewTarget& OutVT, float DeltaTime)
 {
     // 매 갱신을 기본값에서 시작해 이전 대상의 투영 설정이나 효과가 남지 않게 한다.
     OutVT.POV = FMinimalViewInfo();
@@ -319,9 +383,6 @@ void APlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime
     {
         Target->CalcCamera(DeltaTime, OutVT.POV);
     }
-    // 기존 대상별 Modifier 적용
-    ApplyCameraModifiers(DeltaTime, OutVT.POV);
-
 }
 
 void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FMinimalViewInfo& InOutPOV)

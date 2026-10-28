@@ -653,6 +653,24 @@ bool UWorld::SetViewTargetWithCurve(AActor* Actor, const FViewTargetTransitionPa
 	return SetViewTargetInternal(Actor, Params, &Curve);
 }
 
+bool UWorld::SetViewTargetBlendAtTime(AActor* From, AActor* To,
+	const FViewTargetTransitionParams& Params, float ElapsedTime)
+{
+	// 같은 World의 유효한 시점 대상만 수락
+	if (!PlayerCameraManager || !AcceptsChanges() || !To || To->GetWorld() != this
+		|| (From && From->GetWorld() != this))
+	{
+		return false;
+	}
+	if (!PlayerCameraManager->SetViewTargetBlendAtTime(From, To, Params, ElapsedTime))
+	{
+		return false;
+	}
+	// POV는 World Tick 또는 Seek에서 갱신
+	SyncCameraTargets();
+	return true;
+}
+
 bool UWorld::SetViewTargetInternal(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve* Curve)
 {
 	// 카메라 매니저와 대상 상태 검증

@@ -22,6 +22,8 @@ namespace {
 		"Fade", "LetterBox", "ViewTarget"
 	};
 	const char* InterpolationNames[] = { "Constant", "Linear", "Cubic" };
+	// 파일과 편집기가 공유하는 시점 전환 보간 이름
+	const char* BlendFunctionNames[] = { "Linear", "Cubic", "EaseIn", "EaseOut", "EaseInOut" };
 
 }
 
@@ -69,6 +71,28 @@ bool SequenceSerializer::FromString(const FString& Name, ESequenceInterpolation&
 		if (Name == InterpolationNames[Index])
 		{
 			OutInterpolation = static_cast<ESequenceInterpolation>(Index);
+			return true;
+		}
+	}
+	return false;
+}
+
+const char* SequenceSerializer::ToString(EViewTargetBlendFunction BlendFunction)
+{
+	// 열거값의 시점 전환 이름 조회
+	const int32 Index = static_cast<int32>(BlendFunction);
+	return Index >= 0 && Index < static_cast<int32>(std::size(BlendFunctionNames))
+		? BlendFunctionNames[Index] : "Unknown";
+}
+
+bool SequenceSerializer::FromString(const FString& Name, EViewTargetBlendFunction& OutBlendFunction)
+{
+	// 파일 이름의 시점 전환 열거값 변환
+	for (int32 Index = 0; Index < static_cast<int32>(std::size(BlendFunctionNames)); ++Index)
+	{
+		if (Name == BlendFunctionNames[Index])
+		{
+			OutBlendFunction = static_cast<EViewTargetBlendFunction>(Index);
 			return true;
 		}
 	}
@@ -337,6 +361,13 @@ bool SequenceSerializer::Save(const FSequenceData& Sequence, const FString& Path
 			{
 				KeyEntry["UseInitial"] = true;
 			}
+			if (Track.Type == ESequenceTrackType::ViewTarget)
+			{
+				// 숫자 채널과 분리된 시점 전환 설정
+				KeyEntry["BlendTime"] = Key.BlendParams.BlendTime;
+				KeyEntry["BlendFunction"] = ToString(Key.BlendParams.BlendFunction);
+				KeyEntry["BlendExp"] = Key.BlendParams.BlendExp;
+			}
 			Entry["Keys"].push_back(std::move(KeyEntry));
 		}
 		Root["Tracks"].push_back(std::move(Entry));
@@ -476,6 +507,24 @@ bool SequenceSerializer::Load(FSequenceData& OutSequence, const FString& Path)
 					{
 						HTR_LOG(Error, "[Sequence] Unknown interpolation: {}", Path);
 						return false;
+					}
+					if (Track.Type == ESequenceTrackType::ViewTarget)
+					{
+						// JSON bool의 float 암묵 변환 차단
+						if ((KeyEntry.contains("BlendTime") && !KeyEntry["BlendTime"].is_number())
+							|| (KeyEntry.contains("BlendExp") && !KeyEntry["BlendExp"].is_number()))
+						{
+							HTR_LOG(Error, "[Sequence] Camera blend time and exponent must be numeric: {}", Path);
+							return false;
+						}
+						// 기존 파일의 생략된 전환 설정은 즉시 컷으로 유지
+						Key.BlendParams.BlendTime = KeyEntry.value("BlendTime", 0.0f);
+						Key.BlendParams.BlendExp = KeyEntry.value("BlendExp", 2.0f);
+						if (!FromString(KeyEntry.value("BlendFunction", FString("Cubic")), Key.BlendParams.BlendFunction))
+						{
+							HTR_LOG(Error, "[Sequence] Unknown camera blend function: {}", Path);
+							return false;
+						}
 					}
 					Track.Keys.Add(Key);
 				}

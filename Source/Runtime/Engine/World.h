@@ -74,6 +74,8 @@ public:
 	bool SetViewTarget(AActor* Actor, const FViewTargetTransitionParams& Params = {});
 	// 사용자 시간 곡선을 사용하는 시점 전환
 	bool SetViewTargetWithCurve(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve& Curve);
+	// 외부 시간축의 두 대상과 전환 경과 시간 전달
+	bool SetViewTargetBlendAtTime(AActor* From, AActor* To, const FViewTargetTransitionParams& Params, float ElapsedTime);
 	void SetCameraInputEnabled(bool bEnabled);
 
 	// 현재 선택된 시점 제공 액터입니다.

@@ -20,6 +20,9 @@ namespace SequenceSerializer {
 	bool FromString(const FString& Name, ESequenceTrackType& OutType);
 	const char* ToString(ESequenceInterpolation Interpolation);
 	bool FromString(const FString& Name, ESequenceInterpolation& OutInterpolation);
+	// 시점 전환 보간 이름 변환
+	const char* ToString(EViewTargetBlendFunction BlendFunction);
+	bool FromString(const FString& Name, EViewTargetBlendFunction& OutBlendFunction);
 	int32 GetTrackTypeCount();
 	ESequenceTrackType GetTrackTypeAt(int32 Index);
 }

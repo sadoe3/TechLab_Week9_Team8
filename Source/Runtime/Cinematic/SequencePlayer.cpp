@@ -87,6 +87,7 @@ bool FSequenceData::Validate(FString& OutError) const
 			}
 		}
 		float PreviousTime = -1.0f;
+		float PreviousBlendEnd = 0.0f;
 		for (const FSequenceKey& Key : Track.Keys)
 		{
 			const int32 Interpolation = static_cast<int32>(Key.Interpolation);
@@ -96,6 +97,21 @@ bool FSequenceData::Validate(FString& OutError) const
 			{
 				OutError = "Keys require unique sorted times within Length, finite values and valid interpolation/targets.";
 				return false;
+			}
+			if (Track.Type == ESequenceTrackType::ViewTarget)
+			{
+				// 전환 종료 시각과 같은 트랙 내 구간 중첩 검증
+				const FViewTargetTransitionParams& Params = Key.BlendParams;
+				const int32 Function = static_cast<int32>(Params.BlendFunction);
+				if (!std::isfinite(Params.BlendTime) || Params.BlendTime < 0.0f
+					|| !std::isfinite(Params.BlendExp) || Params.BlendExp <= 0.0f
+					|| Function < 0 || Function > static_cast<int32>(EViewTargetBlendFunction::EaseInOut)
+					|| Key.Time + Params.BlendTime > Length || Key.Time < PreviousBlendEnd)
+				{
+					OutError = "Camera blends require valid settings, must end within Length and cannot overlap the next key.";
+					return false;
+				}
+				PreviousBlendEnd = Key.Time + Params.BlendTime;
 			}
 			PreviousTime = Key.Time;
 		}
@@ -366,13 +382,24 @@ void FSequencePlayer::Evaluate(bool bRestore)
 			{
 				KeyIndex = Key;
 			}
-			if (KeyIndex != LastCameraKey || bRestore)
+			const bool bTimedKey = KeyIndex >= 0 && Track.Keys[KeyIndex].BlendParams.BlendTime > 0.0f;
+			if (KeyIndex != LastCameraKey || bRestore || bTimedKey)
 			{
 				AActor* Target = KeyIndex < 0 ? InitialViewTarget.Get() : FindActor(World, Track.Keys[KeyIndex].TargetName);
 				LastCameraKey = KeyIndex;
 				if (Target && !Target->IsPendingDestroy())
 				{
-					World->SetViewTarget(Target);
+					if (bTimedKey)
+					{
+						// 직전 키 대상에서 현재 키 대상으로 절대 시간 보간
+						AActor* From = KeyIndex > 0 ? FindActor(World, Track.Keys[KeyIndex - 1].TargetName) : InitialViewTarget.Get();
+						const FSequenceKey& Key = Track.Keys[KeyIndex];
+						World->SetViewTargetBlendAtTime(From, Target, Key.BlendParams, Position - Key.Time);
+					}
+					else
+					{
+						World->SetViewTarget(Target);
+					}
 				}
 				else if (KeyIndex >= 0)
 				{
@@ -404,6 +431,14 @@ void FSequencePlayer::Seek(float Time)
 	bPlaying = true;
 	bPaused = true;
 	Evaluate();
+	if (UWorld* World = WorldPtr.Get())
+	{
+		// World 시간이 멈춘 상태에서도 탐색 결과를 즉시 표시
+		if (APlayerCameraManager* Manager = World->GetPlayerCameraManager())
+		{
+			Manager->UpdateCamera(0.0f);
+		}
+	}
 }
 
 void FSequencePlayer::StopWorld(UWorld* World)
@@ -417,6 +452,17 @@ void FSequencePlayer::StopWorld(UWorld* World)
 
 void FSequencePlayer::Stop()
 {
+	if (UWorld* World = WorldPtr.Get())
+	{
+		// 시퀀스 종료 후 외부 시간에 고정된 전환 해제
+		if (APlayerCameraManager* Manager = World->GetPlayerCameraManager())
+		{
+			if (Manager->IsViewTargetBlendExternallyTimed())
+			{
+				Manager->CancelViewTargetBlend();
+			}
+		}
+	}
 	// 기존 Stop과 동일하게 위치 결과를 남기고 참조 해제
 	++PlaybackGeneration;
 	bPlaying = false;

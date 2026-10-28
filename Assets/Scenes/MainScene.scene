@@ -46926,13 +46926,13 @@
                             "Properties": {
                                 "Transform": {
                                     "Location": {
-                                        "X": 0.0,
+                                        "X": -5.0,
                                         "Y": 0.0,
-                                        "Z": 10.990179061889648
+                                        "Z": 190.0
                                     },
                                     "Rotation": {
-                                        "Pitch": 0.0,
-                                        "Roll": 0.0,
+                                        "Pitch": -270.0,
+                                        "Roll": 90.0,
                                         "Yaw": 0.0
                                     },
                                     "Scale": {

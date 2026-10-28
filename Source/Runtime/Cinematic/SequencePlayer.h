@@ -33,6 +33,7 @@ struct FSequenceKey
 	ESequenceInterpolation Interpolation = ESequenceInterpolation::Cubic;
 	FString TargetName;
 	bool bUseInitialValue = false; // 기존 파일의 생략된 시작값
+	FViewTargetTransitionParams BlendParams; // ViewTarget 키의 전환 설정
 };
 
 struct FSequenceTrack

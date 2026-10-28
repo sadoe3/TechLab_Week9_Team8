@@ -1,53 +1,70 @@
 {
-    "Steps": [
+    "HoldEnd": true,
+    "Length": 4.5,
+    "Loop": false,
+    "Rate": 1.0,
+    "Tracks": [
         {
-            "Action": "LetterBox",
-            "Duration": 0.0,
+            "Keys": [
+                {
+                    "Interpolation": "Constant",
+                    "Time": 0.0,
+                    "Value": 0.11999999731779099
+                },
+                {
+                    "Interpolation": "Linear",
+                    "Time": 4.0,
+                    "Value": 0.11999999731779099
+                },
+                {
+                    "Interpolation": "Constant",
+                    "Time": 4.5,
+                    "Value": 0.0
+                }
+            ],
             "TargetName": "",
-            "Params": { "Ratio": 0.12 }
+            "Type": "LetterBox"
         },
         {
-            "Action": "SetViewTarget",
-            "Duration": 0.0,
-            "TargetName": "ACameraActor_1",
-            "Params": {}
-        },
-        {
-            "Action": "Fade",
-            "Duration": 1.0,
+            "Keys": [
+                {
+                    "BlendExp": 2.0,
+                    "BlendFunction": "Cubic",
+                    "BlendTime": 0.0,
+                    "Interpolation": "Constant",
+                    "TargetName": "ACameraActor_1",
+                    "Time": 0.0,
+                    "Value": 0.0
+                },
+                {
+                    "BlendExp": 2.0,
+                    "BlendFunction": "EaseIn",
+                    "BlendTime": 2.25,
+                    "Interpolation": "Cubic",
+                    "TargetName": "ARacingCar_0",
+                    "Time": 0.7666666507720947,
+                    "Value": 0.0
+                }
+            ],
             "TargetName": "",
-            "Params": { "From": 1.0, "To": 0.0 }
+            "Type": "ViewTarget"
         },
         {
-            "Action": "Wait",
-            "Duration": 2.0,
+            "Keys": [
+                {
+                    "Interpolation": "Linear",
+                    "Time": 0.0,
+                    "Value": 1.0
+                },
+                {
+                    "Interpolation": "Constant",
+                    "Time": 1.0,
+                    "Value": 0.0
+                }
+            ],
             "TargetName": "",
-            "Params": {}
-        },
-	{
- 	   "Action": "MoveActor",
-    	"Duration": 1.0,
-    	"TargetName": "ACameraActor_1",
-    	"Params": { "ToZ": 8.0 }
-	},
-        {
-            "Action": "SetViewTarget",
-            "Duration": 0.0,
-            "TargetName": "ARacingCar_0",
-            "Params": {}
-        },
-        {
-            "Action": "LetterBox",
-            "Duration": 0.5,
-            "TargetName": "",
-            "Params": { "Ratio": 0.0 }
-        },
-        {
-            "Action": "Finish",
-            "Duration": 0.0,
-            "TargetName": "",
-            "Params": {}
+            "Type": "Fade"
         }
     ],
-    "Version": 1
+    "Version": 2
 }

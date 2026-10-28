@@ -39,6 +39,9 @@ public:
     void SetViewTargetWithCurve(AActor* NewViewTarget, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve& Curve);
     // 대상은 유지하고 현재 캐시에서 새 POV로 전환한다. 진행 중인 전환은 덮어쓰지 않는다.
     bool BlendToCurrentViewTarget(const FViewTargetTransitionParams& Params);
+    // 외부 시간축의 절대 경과 시간으로 시점 전환
+    bool SetViewTargetBlendAtTime(AActor* From, AActor* To, const FViewTargetTransitionParams& Params, float ElapsedTime);
+    bool IsViewTargetBlendExternallyTimed() const { return bExternallyTimedBlend; }
     // 현재 대상 조회
     AActor* GetViewTarget() const{ return ViewTarget.Target.Get(); }
     // Transition 도착 대상 조회
@@ -82,6 +85,8 @@ protected:
     TArray<UCameraModifier*> ModifierList;
 
     virtual void UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime);
+    // Modifier 적용 전 대상의 기본 시점 계산
+    void CalculateViewTarget(FTViewTarget& OutVT, float DeltaTime);
     virtual void ApplyCameraModifiers(float DeltaTime, FMinimalViewInfo& InOutPOV);
     void FillCameraCache(const FMinimalViewInfo& NewInfo);
 
@@ -99,6 +104,7 @@ private:
     // 진행 중인 Transition 설정과 남은 시간
     FViewTargetTransitionParams BlendParams;
     float BlendTimeToGo = 0.0f;
+    bool bExternallyTimedBlend = false; // 외부 시간축의 전환 진행률 유지
 
     // 콜백 중 대상 변경 식별
     uint32 ViewTargetGeneration = 0;
