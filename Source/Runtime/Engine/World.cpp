@@ -29,6 +29,7 @@
 #include "UObject/UObjectHash.h"
 #include "Engine/Engine.h"
 #include "Scripting/LuaRuntime.h"
+#include "Cinematic/SequencePlayer.h"
 
 DECLARE_CYCLE_STAT("Actor Tick", STAT_ActorTick); // Actor 틱 측정
 DECLARE_CYCLE_STAT("Update All Transforms", STAT_UpdateAllTransforms); // 각 Transform의 Update 시간 측정
@@ -173,6 +174,11 @@ void UWorld::Tick(float DeltaTime)
 		SCOPE_CYCLE_COUNTER(STAT_ActorTick);
 		// 모든 Actor를 도는 대신 등록된 Tick 함수(메인 카메라 포함)만 실행한다.
 		TickTaskManager.RunAllTickGroups(DeltaTime);
+		// 소유 World 실행 시에만 시퀀스 시간 진행
+		if (HasBegunPlay())
+		{
+			FSequencePlayer::TickWorld(this, DeltaTime);
+		}
 	}
 	{
 		SCOPE_CYCLE_COUNTER(STAT_UpdateAllTransforms);
@@ -202,6 +208,7 @@ bool UWorld::ClearWorld()
 	}
 
 	bClearingWorld = true;
+	FSequencePlayer::StopWorld(this);
 	ReleaseExternalReferences();
 	BeginPlayList.Reset();
 	PendingDestroyList.Reset();
@@ -991,6 +998,7 @@ void UWorld::EndPlay()
 	}
 
 	PlayState = EWorldPlayState::Ending;
+	FSequencePlayer::StopWorld(this);
 	ReleaseExternalReferences();
 	BeginPlayList.Reset();
 

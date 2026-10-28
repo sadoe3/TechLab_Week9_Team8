@@ -49,6 +49,7 @@ namespace
 }
 
 #include "Core/SplashScreen.h"
+#include "Cinematic/SequencePlayer.h"
 
 FEngineConfig UEditorEngine::GetConfig() const
 {
@@ -132,6 +133,7 @@ bool UEditorEngine::Init()
 
 	SettingsPanel = EditorUI->AddEditorPanel<FSettingsPanel>();
 	DebugPanel = EditorUI->AddEditorPanel<FDebugPanel>();
+	SequencerPanel = EditorUI->AddEditorPanel<FSequencerPanel>();
 	ShadowAtlasPanel = EditorUI->AddEditorPanel<FShadowAtlasPanel>();
 
 	//ToolbarPanel->SetPlayCallback([this]() { RequestPlaySession(); });
@@ -303,6 +305,10 @@ bool UEditorEngine::Init()
 	// Debug 패널은 Settings가 소유한 그림자 설정을 직접 고치고, World별 결과를 읽는다.
 	DebugPanel->SetShadowCullingSettings(&SettingsPanel->GetMutableSettings().ShadowCulling);
 	DebugPanel->SetHasPlayWorldQuery([this]() { return PlayWorld != nullptr; });
+	// 시퀀스 미리보기 대상인 현재 PIE World 조회
+	SequencerPanel->SetSequenceWorldQuery([this]() { return PlayWorld; });
+	// 편집 대상 조회만 Editor World 허용
+	SequencerPanel->SetEditorWorldQuery([this]() { return EditorWorld; });
 	DebugPanel->SetDirectionalStatsQuery([this]() -> const FShadowCullingStats*
 	{
 		const FViewport* Selected = ViewportsPanel->GetViewport(ViewportsPanel->GetActiveViewIndex());
@@ -950,9 +956,12 @@ bool UEditorEngine::ViewSupportsShadows(const FSceneView& View) const
 void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FSceneView& View, FEditorViewportClient* OverlayClient)
 {
 	const FEditorSettings& Settings = SettingsPanel->GetSettings();
-	// Camera와 원본 View는 보존하고 Editor·PIE 렌더링에만 패널 설정을 적용한다.
+	// 에디터 설정 적용 및 PIE 카메라 효과 보존
 	FSceneView RenderView = View;
-	RenderView.FinalPostProcessSettings = Settings.PostProcessSettings;
+	if (ViewWorld.GetWorldType() == EWorldType::Editor)
+	{
+		RenderView.FinalPostProcessSettings = Settings.PostProcessSettings;
+	}
 	const FRenderingInfo& ViewRenderingInfo = Viewport.GetRenderingInfo();
 	FRenderQueue& RenderQueue = Viewport.GetSceneRenderData().RenderQueue;
 
@@ -1179,6 +1188,7 @@ void UEditorEngine::EndPlayMap()
 	bStepRequested = false;
 	OnActiveWorldChanged();
 	FTimeDilation::ResetDilation();
+	FSequencePlayer::Stop();
 }
 
 bool UEditorEngine::CreatePIEWindow()

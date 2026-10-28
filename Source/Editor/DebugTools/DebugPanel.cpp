@@ -111,7 +111,6 @@ void FDebugPanel::OnRender()
 	}
 
 	DrawTimeDilationSection();
-
 	if (!ShadowSettings)
 	{
 		ImGui::TextDisabled("Shadow settings are not connected.");

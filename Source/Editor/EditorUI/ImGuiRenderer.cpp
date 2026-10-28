@@ -9,6 +9,9 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
+// DX11 백엔드의 보조 창 스왑체인 설정 API
+void ImGui_ImplDX11_SetSwapChainDescs(const DXGI_SWAP_CHAIN_DESC* DescTemplates, int DescTemplateCount);
+
 namespace
 {
 	// FWindow가 ImGui를 직접 알지 않도록 메시지 처리기를 훅으로 등록한다.
@@ -103,6 +106,17 @@ bool FImGuiRenderer::Init(HWND WindowHandle, ID3D11Device* Device, ID3D11DeviceC
 
 	ImGui_ImplWin32_Init(WindowHandle);
 	ImGui_ImplDX11_Init(Device, DeviceContext);
+
+	// 메인 창과 동일한 Flip 모델 사용으로 다중 창 Present 방식 통일
+	DXGI_SWAP_CHAIN_DESC ViewportDesc{};
+	ViewportDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	ViewportDesc.SampleDesc.Count = 1;
+	ViewportDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	ViewportDesc.BufferCount = 2;
+	ViewportDesc.Windowed = TRUE;
+	ViewportDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	ImGui_ImplDX11_SetSwapChainDescs(&ViewportDesc, 1);
+
 	FWindow::SetWndProcHook(&ImGuiWndProcHook);
 
 	ApplyDefaultStyle();

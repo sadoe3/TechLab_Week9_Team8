@@ -22,6 +22,7 @@
 #include "Editor/EditorControls/EditorControlsPanel.h"
 #include "Editor/Settings/SettingsPanel.h"
 #include "Editor/DebugTools/DebugPanel.h"
+#include "Editor/Cinematic/SequencerPanel.h"
 #include "Editor/DebugTools/ShadowAtlasPanel.h"
 #include "Editor/Viewports/ViewportsPanel.h"
 #include "Editor/ContentDrawer/ContentDrawerPanel.h"
@@ -146,6 +147,7 @@ private:
 	FEditorControlsPanel* EditorControlsPanel = nullptr;
 	FSettingsPanel* SettingsPanel = nullptr;
 	FDebugPanel* DebugPanel = nullptr;
+	FSequencerPanel* SequencerPanel = nullptr;
 	FShadowAtlasPanel* ShadowAtlasPanel = nullptr;
 	FViewportsPanel* ViewportsPanel = nullptr;
 	FSceneRenderer SceneRenderer;
