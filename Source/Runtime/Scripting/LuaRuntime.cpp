@@ -15,6 +15,8 @@
 #include "Camera/CurveCameraShake.h"
 #include <cassert>
 #include "Camera/CameraTypes.h"
+#include "Cinematic/SequencePlayer.h"
+#include "Cinematic/SequenceSerializer.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()

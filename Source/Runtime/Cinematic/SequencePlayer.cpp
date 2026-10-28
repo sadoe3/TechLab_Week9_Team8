@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "SequencePlayer.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Camera/CameraTypes.h"
 #include "Core/TimeDilation.h"
 #include "Core/EngineLog.h"
 #include "GameFramework/Actor.h"
@@ -69,6 +70,10 @@ void FSequencePlayer::TickStep()
 	float Alpha;
 	if (Step.Duration <= 0) Alpha = 1.0f;
 	else Alpha = Elapsed / Step.Duration;
+
+	FViewTargetTransitionParams Blend;
+	Blend.BlendFunction = EViewTargetBlendFunction::Cubic;
+	Alpha = Blend.GetBlendAlpha(Alpha);
 
 	const float ToX = GetParam(Step, "ToX", StepStartLocation.X);
 	const float ToY = GetParam(Step, "ToY", StepStartLocation.Y);
