@@ -233,6 +233,7 @@ bool UWorld::ClearWorld()
 	if (PlayerCameraManager)
 	{
 		PlayerCameraManager->ClearCameraModifiers();
+		PlayerCameraManager->UpdateCamera(0.0f);
 	}
 
 	// 렌더 등록 일괄 제거
@@ -966,6 +967,11 @@ void UWorld::EndPlay()
 	}
 
 	PlayState = EWorldPlayState::NotStarted;
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ClearCameraModifiers();
+		PlayerCameraManager->UpdateCamera(0.0f);
+	}
 }
 
 UWorld* UWorld::CreateWorld(const EWorldType InWorldType, bool bInformEngineOfWorld, FName WorldName)

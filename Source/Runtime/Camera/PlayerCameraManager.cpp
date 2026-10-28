@@ -1,6 +1,7 @@
 #include "EnginePCH.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Camera/CameraModifier.h"
+#include "Camera/CameraModifier_CameraShake.h"
 #include <algorithm>
 
 APlayerCameraManager::~APlayerCameraManager()
@@ -152,4 +153,53 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FMinimalViewInf
 void APlayerCameraManager::FillCameraCache(const FMinimalViewInfo& NewInfo)
 {
     CameraCachePrivate.POV = NewInfo;
+}
+
+UCameraModifier* APlayerCameraManager::FindCameraModifierByClass(UClass* ModifierClass) const
+{
+    if (!ModifierClass)
+    {
+        return nullptr;
+    }
+
+    for (UCameraModifier* Modifier : ModifierList)
+    {
+        if (Modifier->GetClass()->IsChildOf(ModifierClass))
+        {
+            return Modifier;
+        }
+    }
+    return nullptr;
+}
+
+UCameraShakeBase* APlayerCameraManager::StartCameraShake(UClass* ShakeClass, float Scale, ECameraShakePlaySpace PlaySpace)
+{
+    // 등록된 Shake Modifier 조회
+    UCameraModifier_CameraShake* Modifier = 
+        Cast<UCameraModifier_CameraShake>(FindCameraModifierByClass(UCameraModifier_CameraShake::StaticClass()));
+    if (!Modifier)
+    {
+        Modifier = Cast<UCameraModifier_CameraShake>(AddNewCameraModifier(UCameraModifier_CameraShake::StaticClass()));
+    }
+    return Modifier ? Modifier->AddCameraShake(ShakeClass, Scale, PlaySpace) : nullptr;
+}
+
+void APlayerCameraManager::StopCameraShake(UCameraShakeBase* Shake, bool bImmediately)
+{
+    // 개별 재생 정지 요청
+    UCameraModifier_CameraShake* Modifier = Cast<UCameraModifier_CameraShake>(FindCameraModifierByClass(UCameraModifier_CameraShake::StaticClass()));
+    if (Modifier)
+    {
+        Modifier->RemoveCameraShake(Shake, bImmediately);
+    }
+}
+
+void APlayerCameraManager::StopAllCameraShakes(bool bImmediately)
+{
+    // 전체 재생 정지 요청
+    UCameraModifier_CameraShake* Modifier = Cast<UCameraModifier_CameraShake>(FindCameraModifierByClass(UCameraModifier_CameraShake::StaticClass()));
+    if (Modifier)
+    {
+        Modifier->RemoveAllCameraShakes(bImmediately);
+    }
 }

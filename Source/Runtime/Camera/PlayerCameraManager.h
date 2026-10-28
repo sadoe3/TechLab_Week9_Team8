@@ -2,6 +2,7 @@
 
 #include "Camera/CameraTypes.h"
 #include "GameFramework/Actor.h"
+#include "Camera/CameraShakeBase.h"
 
 class UCameraModifier;
 
@@ -32,6 +33,15 @@ public:
     AActor* GetViewTarget() const { return ViewTarget.Target; }
     virtual void UpdateCamera(float DeltaTime);
     const FMinimalViewInfo& GetCameraCacheView() const { return CameraCachePrivate.POV; }
+
+    // 등록된 Modifier 조회
+    UCameraModifier* FindCameraModifierByClass(UClass* ModifierClass) const;
+
+    // Shake 재생 제어
+    UCameraShakeBase* StartCameraShake(UClass* ShakeClass, float Scale = 1.0f,
+        ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal);
+    void StopCameraShake(UCameraShakeBase* Shake, bool bImmediately = false);
+    void StopAllCameraShakes(bool bImmediately = false);
 
     float DefaultFOV = 60.0f; // Camera Component가 없는 대상에 사용할 수평 시야각(degree).
     float DefaultAspectRatio = 16.0f / 9.0f;
