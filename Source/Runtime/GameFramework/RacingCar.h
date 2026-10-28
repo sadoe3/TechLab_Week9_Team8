@@ -51,6 +51,10 @@ protected:
 	float MaxSpeed = 6.0f;
 
 private:
+    void UpdateReverseCameraLag();
+    bool bCameraLagSuppressedForReverse = false;
+    bool bCameraLagEnabledBeforeReverse = false;
+
 	// 카메라에 붙일 리더보드 텍스트를 생성합니다.
 	void CreateLeaderboardHud();
 	// 결과 화면 상태에 따라 리더보드를 표시하거나 숨깁니다.

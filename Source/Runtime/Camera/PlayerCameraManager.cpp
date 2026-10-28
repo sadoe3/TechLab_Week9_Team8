@@ -157,6 +157,25 @@ void APlayerCameraManager::SetViewTargetInternal(AActor* NewViewTarget, const FV
 
     ++ViewTargetGeneration;
 }
+bool APlayerCameraManager::BlendToCurrentViewTarget(const FViewTargetTransitionParams& Params)
+{
+    AActor* Current = GetViewTarget();
+    if (!Current || Current->IsPendingDestroy() || BlendTimeToGo > 0.0f ||
+        !std::isfinite(Params.BlendTime) || Params.BlendTime <= 0.0f)
+    {
+        return false;
+    }
+
+    ViewTarget.POV = CameraCachePrivate.POV;
+    PendingViewTarget = FTViewTarget();
+    PendingViewTarget.Target = Current;
+    BlendParams = Params;
+    BlendParams.bLockOutgoing = true;
+    BlendTimeToGo = Params.BlendTime;
+    ++ViewTargetGeneration;
+    return true;
+}
+
 void APlayerCameraManager::CancelViewTargetBlend()
 {
     // 현재 대상 유지와 전환 상태 해제

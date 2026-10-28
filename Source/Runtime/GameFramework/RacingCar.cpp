@@ -6,6 +6,7 @@
 #include "Component/ScriptComponent.h"
 #include "Component/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Input/InputSystem.h"
@@ -492,6 +493,7 @@ void ARacingCar::HandleLeaderboardInput()
 void ARacingCar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateReverseCameraLag();
 	UpdateHudForFieldOfView();
 	UpdateRaceTimeText();
 	// 상태를 먼저 갱신한 뒤 리더보드 메뉴 입력을 처리합니다.
@@ -508,6 +510,41 @@ void ARacingCar::Tick(float DeltaTime)
 	SpeedNeedlePivot->SetRelativeRotation(FRotator(0.0f, 0.0f, Roll));
 }
 
+void ARacingCar::UpdateReverseCameraLag()
+{
+	const FVector Velocity = GetVelocity();
+	const float Yaw = FMath::DegreesToRadians(GetRootComponent()->GetWorldRotation().Yaw);
+	const bool bReversing = Velocity.X * std::cos(Yaw) + Velocity.Y * std::sin(Yaw) < 0.0f;
+	if (bReversing == bCameraLagSuppressedForReverse) return;
+
+	USpringArmComponent* Arm = Cast<USpringArmComponent>(FindComponentByName("VehicleSpringArm"));
+	if (!Arm) return;
+
+	if (bReversing)
+	{
+		bCameraLagEnabledBeforeReverse = Arm->IsCameraLagEnabled();
+		if (bCameraLagEnabledBeforeReverse)
+		{
+			APlayerCameraManager* Manager = GetWorld()->GetPlayerCameraManager();
+			if (Manager && Manager->GetViewTarget() == this)
+			{
+				FViewTargetTransitionParams Params;
+				Params.BlendTime = 0.2f;
+				Params.BlendFunction = EViewTargetBlendFunction::Cubic;
+				// Lag 해제 전 화면을 고정하고, PostPhysics 이후 갱신되는 차량 POV로 전환한다.
+				Manager->BlendToCurrentViewTarget(Params);
+			}
+			Arm->SetEnableCameraLag(false);
+		}
+	}
+	else if (Arm->IsCameraLagEnabled() != bCameraLagEnabledBeforeReverse)
+	{
+		// 현재 위치에서 Lag를 다시 시작한다. 진행 중인 블렌드는 새 POV를 계속 따라간다.
+		Arm->SetEnableCameraLag(bCameraLagEnabledBeforeReverse);
+	}
+	bCameraLagSuppressedForReverse = bReversing;
+}
+
 void ARacingCar::HandleScoreChanged(int32 NewScore)
 {
 	ScoreText->SetText(std::to_string(NewScore));
@@ -520,6 +557,15 @@ void ARacingCar::HandleCountdownChanged(const FString& NewCountdown)
 
 void ARacingCar::EndPlay()
 {
+	if (bCameraLagSuppressedForReverse)
+	{
+		if (USpringArmComponent* Arm = Cast<USpringArmComponent>(FindComponentByName("VehicleSpringArm")))
+		{
+			if (Arm->IsCameraLagEnabled() != bCameraLagEnabledBeforeReverse)
+				Arm->SetEnableCameraLag(bCameraLagEnabledBeforeReverse);
+		}
+		bCameraLagSuppressedForReverse = false;
+	}
 	FTimeDilation::OnSlomoFinished.RemoveAll(this);
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
