@@ -184,6 +184,20 @@ UCameraShakeBase* APlayerCameraManager::StartCameraShake(UClass* ShakeClass, flo
     return Modifier ? Modifier->AddCameraShake(ShakeClass, Scale, PlaySpace) : nullptr;
 }
 
+UCameraShakeBase* APlayerCameraManager::StartCameraShake(FName PresetName, UClass* ShakeClass, bool bSingleInstance,
+    const FCameraShakeInitializer& Initialize, float Scale, ECameraShakePlaySpace PlaySpace)
+{
+    // 기존 Modifier 등록 경로 재사용
+    UCameraModifier_CameraShake* Modifier = 
+        Cast<UCameraModifier_CameraShake>(FindCameraModifierByClass(UCameraModifier_CameraShake::StaticClass()));
+    if (!Modifier)
+    {
+        Modifier = Cast<UCameraModifier_CameraShake>(AddNewCameraModifier(UCameraModifier_CameraShake::StaticClass()));
+    }
+
+    return Modifier ? Modifier->AddCameraShake(PresetName, ShakeClass, bSingleInstance, Initialize, Scale, PlaySpace) : nullptr;
+}
+
 void APlayerCameraManager::StopCameraShake(UCameraShakeBase* Shake, bool bImmediately)
 {
     // 개별 재생 정지 요청

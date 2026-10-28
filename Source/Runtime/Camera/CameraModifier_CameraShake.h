@@ -56,6 +56,70 @@ public:
         EnableModifier();
         return Shake;
     }
+    // 프리셋 이름 기준 재생 요청
+    UCameraShakeBase* AddCameraShake(FName PresetName, UClass* ShakeClass, bool bSingleInstance,
+        const FCameraShakeInitializer& Initialize, float Scale, ECameraShakePlaySpace PlaySpace)
+    {
+        if (PresetName.IsNone() || !ShakeClass || !ShakeClass->IsChildOf(UCameraShakeBase::StaticClass()))
+        {
+            return nullptr;
+        }
+
+        UCameraShakeBase* Reusable = nullptr;
+        if (bSingleInstance)
+        {
+            // 같은 종류·이름의 재생을 하나로 정리
+            for (UCameraShakeBase* Shake : ActiveShakes)
+            {
+                if (Shake->GetClass() == ShakeClass && Shake->PresetName == PresetName)
+                {
+                    if (!Reusable)
+                    {
+                        Reusable = Shake;
+                    }
+                    else
+                    {
+                        Shake->StopShake(true);
+                    }
+                }
+            }
+        }
+
+        UCameraShakeBase* Shake = Reusable ? Reusable : NewObject<UCameraShakeBase>(this, ShakeClass);
+        if (!Shake)
+        {
+            return nullptr;
+        }
+
+        // 재시작 전에 최신 프리셋 반영
+        if (Initialize)
+        {
+            Initialize(*Shake);
+        }
+        Shake->PresetName = PresetName;
+        Shake->bSingleInstance = bSingleInstance;
+
+        if (!Shake->StartShake(CameraOwner, Scale, PlaySpace))
+        {
+            if (!Reusable)
+            {
+                delete Shake;
+            }
+            return nullptr;
+        }
+
+        if (!Reusable)
+        {
+            ActiveShakes.Add(Shake);
+        }
+
+        EnableModifier();
+        if (!bUpdatingShakes)
+        {
+            RemoveFinishedShakes();
+        }
+        return Shake;
+    }
 
     void RemoveCameraShake(UCameraShakeBase* Target, bool bImmediately)
     {

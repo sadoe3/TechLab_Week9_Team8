@@ -31,6 +31,9 @@ public:
 	// Environment별 코루틴 시작 함수 연결
 	void BindCoroutineFunctions(sol::environment& Environment, UScriptComponent* Owner, const FString& ScriptPath);
 
+	// 환경별 카메라 재생 요청 연결
+	void BindCameraFunctions(sol::environment& Environment, UScriptComponent* Owner);
+
 	// 선택적 이벤트의 존재 여부는 호출자가 판단합니다.
 	template<typename... TArgs>
 	bool Call(const sol::protected_function& Function,

@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <cmath>
 #include "Engine/Engine.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Camera/WaveCameraShake.h"
+#include <cassert>
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -188,6 +191,172 @@ void FLuaRuntime::BindCoroutineFunctions(sol::environment& Environment, UScriptC
 		});
 
 	Environment["script"] = Script;
+}
+
+void FLuaRuntime::BindCameraFunctions(sol::environment& Environment, UScriptComponent* Owner)
+{
+	// 기존 환경의 World API 확장
+	sol::table WorldTable = Environment["world"];
+	const TWeakObjectPtr<UScriptComponent> WeakOwner(Owner);
+
+	WorldTable.set_function("start_camera_shake",
+		[WeakOwner](const FString& Name, const sol::table& Settings,
+			sol::optional<sol::object> RequestedScale) -> bool
+		{
+			UScriptComponent* Script = WeakOwner.Get();
+			if (Script && Script->IsLoadingScript())
+			{
+				throw sol::error("Camera shake is unavailable while loading script");
+			}
+			if (!Script || !Script->CanRunGameplay())
+			{
+				return false;
+			}
+
+			// 설정 오류는 실제 재생 변경 전에 처리
+			const FName PresetName(Name);
+			if (PresetName.IsNone())
+			{
+				throw sol::error("Camera shake name is required");
+			}
+
+			sol::object PatternType = Settings.raw_get<sol::object>("pattern");
+			if (PatternType.valid() && PatternType.get_type() != sol::type::nil
+				&& (!PatternType.is<FString>() || PatternType.as<FString>() != "Wave"))
+			{
+				throw sol::error("Only the Wave shake pattern is supported");
+			}
+
+			float Scale = 1.0f;
+			if (RequestedScale && RequestedScale->get_type() != sol::type::nil)
+			{
+				if (!RequestedScale->is<float>())
+				{
+					throw sol::error("Camera shake scale must be numeric");
+				}
+				Scale = RequestedScale->as<float>();
+			}
+			if (!std::isfinite(Scale))
+			{
+				throw sol::error("Camera shake scale must be finite");
+			}
+
+			// 숫자 필드의 기본값·타입·유한성 검증
+			const auto ReadNumber = 
+				[](const sol::table& Table, const char* Key, float DefaultValue, bool bRequired = false) -> float
+				{
+					sol::object Value = Table.raw_get<sol::object>(Key);
+					if (!Value.valid() || Value.get_type() == sol::type::nil)
+					{
+						if (bRequired)
+						{
+							throw sol::error(FString("Missing shake field: ") + Key);
+						}
+						return DefaultValue;
+					}
+					if (!Value.is<float>())
+					{
+						throw sol::error(FString("Invalid shake number: ") + Key);
+					}
+
+					const float Number = Value.as<float>();
+					if (!std::isfinite(Number))
+					{
+						throw sol::error(FString("Non-finite shake number: ") + Key);
+					}
+					return Number;
+				};
+
+			// 생략한 축은 기존 파형 기본값 사용
+			const auto ReadWave = [&ReadNumber](const sol::table& Table, const char* Key) -> FWaveOscillator
+				{
+					FWaveOscillator Wave;
+					sol::object Value = Table.raw_get<sol::object>(Key);
+					if (!Value.valid() || Value.get_type() == sol::type::nil)
+					{
+						return Wave;
+					}
+					if (!Value.is<sol::table>())
+					{
+						throw sol::error(FString("Invalid shake axis: ") + Key);
+					}
+
+					const sol::table Axis = Value.as<sol::table>();
+					Wave.Amplitude = ReadNumber(Axis, "amplitude", Wave.Amplitude);
+					Wave.Frequency = ReadNumber(Axis, "frequency", Wave.Frequency);
+					Wave.Phase = ReadNumber(Axis, "phase", Wave.Phase);
+					return Wave;
+				};
+
+			const float Duration = ReadNumber(Settings, "duration", 0.0f, true);
+			const float BlendIn = ReadNumber(Settings, "blend_in", 0.0f, true);
+			const float BlendOut = ReadNumber(Settings, "blend_out", 0.0f, true);
+
+			const FWaveOscillator X = ReadWave(Settings, "x");
+			const FWaveOscillator Y = ReadWave(Settings, "y");
+			const FWaveOscillator Z = ReadWave(Settings, "z");
+			const FWaveOscillator Pitch = ReadWave(Settings, "pitch");
+			const FWaveOscillator Yaw = ReadWave(Settings, "yaw");
+			const FWaveOscillator Roll = ReadWave(Settings, "roll");
+			const FWaveOscillator FOV = ReadWave(Settings, "fov");
+
+			bool bSingleInstance = false;
+			sol::object Single = Settings.raw_get<sol::object>("single_instance");
+			if (Single.valid() && Single.get_type() != sol::type::nil)
+			{
+				if (!Single.is<bool>())
+				{
+					throw sol::error("single_instance must be boolean");
+				}
+				bSingleInstance = Single.as<bool>();
+			}
+
+			ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal;
+			sol::object SpaceValue = Settings.raw_get<sol::object>("play_space");
+			if (SpaceValue.valid() && SpaceValue.get_type() != sol::type::nil)
+			{
+				if (!SpaceValue.is<FString>())
+				{
+					throw sol::error("Camera shake play_space must be a string");
+				}
+
+				const FString Space = SpaceValue.as<FString>();
+				if (Space == "World")
+				{
+					PlaySpace = ECameraShakePlaySpace::World;
+				}
+				else if (Space != "CameraLocal")
+				{
+					throw sol::error("Unsupported shake play_space");
+				}
+			}
+
+			// Lua 참조 대신 파싱한 값만 전달
+			const FCameraShakeInitializer Initialize =[Duration, BlendIn, BlendOut, X, Y, Z, Pitch, Yaw, Roll, FOV]
+				(UCameraShakeBase& Shake)
+				{
+					auto* Pattern = Cast<UWaveOscillatorCameraShakePattern>(Shake.GetRootShakePattern());
+					assert(Pattern != nullptr);
+
+					Pattern->Duration = Duration;
+					Pattern->BlendInTime = BlendIn;
+					Pattern->BlendOutTime = BlendOut;
+					Pattern->X = X;
+					Pattern->Y = Y;
+					Pattern->Z = Z;
+					Pattern->Pitch = Pitch;
+					Pattern->Yaw = Yaw;
+					Pattern->Roll = Roll;
+					Pattern->FOV = FOV;
+				};
+
+			UWorld* World = Script->GetOwner()->GetWorld();
+			APlayerCameraManager* Manager = World->GetPlayerCameraManager();
+
+			return Manager && Manager->StartCameraShake(
+				PresetName, UWaveCameraShake::StaticClass(), bSingleInstance,
+				Initialize, Scale, PlaySpace) != nullptr;
+		});
 }
 
 uint32 FLuaRuntime::CreateCoroutine(UScriptComponent* Owner, const sol::protected_function& Function, const FString& ScriptPath)

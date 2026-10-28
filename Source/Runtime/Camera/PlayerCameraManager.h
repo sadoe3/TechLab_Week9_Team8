@@ -40,6 +40,10 @@ public:
     // Shake 재생 제어
     UCameraShakeBase* StartCameraShake(UClass* ShakeClass, float Scale = 1.0f,
         ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal);
+    // 프리셋 이름과 초기화 설정으로 재생
+    UCameraShakeBase* StartCameraShake(FName PresetName, UClass* ShakeClass, bool bSingleInstance,
+        const FCameraShakeInitializer& Initialize, float Scale = 1.0f,
+        ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal);
     void StopCameraShake(UCameraShakeBase* Shake, bool bImmediately = false);
     void StopAllCameraShakes(bool bImmediately = false);
 

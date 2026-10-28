@@ -181,6 +181,6 @@ private:
     uint32 PlaybackGeneration = 0;
     bool bActive = false;
     bool bStopping = false;
-    // 재생 시작 전 설정 대입
-    using FCameraShakeInitializer = std::function<void(UCameraShakeBase&)>;
 };
+// 재생 시작 전 설정 대입
+using FCameraShakeInitializer = std::function<void(UCameraShakeBase&)>;

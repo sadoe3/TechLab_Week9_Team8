@@ -20,10 +20,6 @@
 #include <cmath>
 #include <format>
 
-// World와 Shake 재생 API
-#include "Engine/World.h"
-#include "Camera/PlayerCameraManager.h"
-#include "GameFramework/RacingCameraShakes.h"
 
 namespace
 {
@@ -519,14 +515,5 @@ void ARacingCar::EndPlay()
 
 void ARacingCar::HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
-	// 임시 테스트 코드
-	if (APlayerCameraManager* Manager = GetWorld()->GetPlayerCameraManager())
-	{
-		Manager->StartCameraShake(
-			UWallImpactCameraShake::StaticClass(),
-			1.0f,
-			ECameraShakePlaySpace::CameraLocal);
-	}
-
 	SetVelocity(FVector::ZeroVector);
 }
