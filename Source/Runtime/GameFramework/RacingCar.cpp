@@ -20,6 +20,7 @@
 #include <cmath>
 #include <format>
 #include <Core/TimeDilation.h>
+#include <Cinematic/SequencePlayer.h>
 
 namespace
 {
@@ -173,7 +174,10 @@ void ARacingCar::BeginPlay()
 	}
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
-	GetWorld()->SetViewTarget(this);
+	if (!FSequencePlayer::IsPlaying())
+	{
+		GetWorld()->SetViewTarget(this);
+	}
 	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
 	if (ScoreText) ScoreText->SetDrawOnTop(true);

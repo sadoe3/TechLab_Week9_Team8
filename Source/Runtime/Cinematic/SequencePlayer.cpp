@@ -2,6 +2,28 @@
 #include "SequencePlayer.h"
 #include "Core/TimeDilation.h"
 #include "Core/EngineLog.h"
+#include "GameFramework/Actor.h"
+#include "Engine/World.h"
+#include "Engine/Level.h"
+
+namespace
+{
+	AActor* FindActorByName(UWorld* World, const FString& Name)
+	{
+		if (World == nullptr) return nullptr;
+
+		ULevel* Level = World->GetPersistentLevel();
+		if (Level == nullptr) return nullptr;
+
+		const FName SearchName(Name);
+
+		for (AActor* Actor : Level->GetActors()) {
+			if (Actor == nullptr || Actor->IsPendingDestroy() || Actor->GetFName() != SearchName) continue;
+			return Actor;
+		}
+		return nullptr;
+	}
+}
 
 void FSequencePlayer::Play(const TArray<FSequenceStep>& InSteps, UWorld* World)
 {
@@ -48,8 +70,21 @@ void FSequencePlayer::EnterStep()
 	case ESequenceAction::Wait: break;
 	case ESequenceAction::Finish: break;
 	case ESequenceAction::SetViewTarget:
-		HTR_LOG(Info, "[Sequence] SetViewTarget: {}", Step.TargetName);
-		break;
+		{
+			UWorld* World = WorldPtr.Get();
+			if (World == nullptr) 
+				HTR_LOG(Error, "[Sequence] Not Found World");
+			AActor* Target = FindActorByName(World, Step.TargetName);
+			if (Target == nullptr)
+			{
+				HTR_LOG(Error, "[Sequence] Target not found: {}", Step.TargetName);
+				break;
+			}
+
+
+			World->SetViewTarget(Target);
+			break;
+		}
 	}
 
 }
