@@ -5,6 +5,8 @@
 #include "Text/Font.h"
 
 #include "RenderingInfo.h"
+#include "Buffer.h"
+#include "PipelineState.h"
 #include "ViewMode.h"
 #include "LightInfo.h"
 #include "Occlusion/GPUOcclusion.h"
@@ -128,6 +130,8 @@ public:
 
 	// 표시용 색 변환·후처리 출력
 	void RenderOutputPass(FViewport& Viewport, const FSceneView& View, const FSceneViewRenderSettings& Settings);
+	// HUD와 텍스트까지 출력한 최종 View 위에 페이드를 합성한다.
+	void RenderCameraFadePass(FViewport& Viewport, const FSceneView& View);
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
 
@@ -174,6 +178,10 @@ public:
 	void CullLights(FTileLightCullingResources& Resources, const FMatrix& Projection, FTexture2D* Depth, const TArray<FCullingLight>& Lights, uint32 Width, uint32 Height, bool bVisualizeLightCount);
 
 private:
+	bool InitCameraFadePass();
+	FPipelineState CameraFadePipelineState;
+	TUniquePtr<FConstantBuffer> CameraFadeCB;
+
 	// 공통 GPU 패스 자원 소유
 	TUniquePtr<FFogRenderer> FogRenderer;
 	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;

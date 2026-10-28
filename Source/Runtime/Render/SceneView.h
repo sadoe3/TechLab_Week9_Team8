@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Math/Rect.h"
+#include "Math/Color.h"
 #include "Camera/CameraProjection.h"
 #include "Render/ViewMode.h"
 #include "Math/Frustum.h"
@@ -23,6 +24,10 @@ struct FSceneView
     FMatrix ProjectionMatrix;
     FMatrix ViewProjection;
     FFrustumPlanes Frustum;
+
+    // 게임 View에서만 값을 전달한다. 에디터 View는 기본 알파 0을 사용한다.
+    float FadeAmount = 0.0f;
+    FLinearColor FadeColor{0.0f, 0.0f, 0.0f, 1.0f};
 
     bool IsOrthographic() const { return ProjectionSettings.Mode == EProjectionMode::Orthographic; }
     FVector GetCameraLocation() const { return CameraLocation; }

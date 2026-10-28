@@ -996,6 +996,8 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 
 	// 기존 에디터 오버레이 합성
 	RenderOverlayPass(OverlayClient, ViewWorld, ViewRenderingInfo, View, RenderQueue);
+	// PIE의 텍스트 출력 뒤에 합성한다. 에디터 View는 알파 0으로 생략된다.
+	Renderer->RenderCameraFadePass(Viewport, View);
 }
 
 // View Texture가 포함된 UI를 Swapchain 백버퍼에 합성한다. Present는 FEngineLoop가 한다.

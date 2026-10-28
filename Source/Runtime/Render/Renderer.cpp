@@ -182,13 +182,38 @@ bool FRenderer::InitScenePasses()
 		|| !SkyboxRenderer->Init(ResourcePaths::DefaultSkyPanorama)
 		|| !FXAARenderer->Init()
 		|| !GammaEncodeRenderer->Init()
-		|| !DepthViewRenderer->Init())
+		|| !DepthViewRenderer->Init()
+		|| !InitCameraFadePass())
 	{
 		HTR_LOG(Error, "[Renderer] shared scene pass initialization failed");
 		return false;
 	}
 
 	return true;
+}
+
+bool FRenderer::InitCameraFadePass()
+{
+	// 기본 셰이더로 대체하지 않고 실제 페이드 셰이더의 준비 여부를 확인한다.
+	const FString ShaderPath = "Resources/Shader/CameraFadeShader.hlsl";
+	FShaderProgram* Shader = FRenderResourceManager::FindShaderProgram(ShaderPath);
+	if (!Shader || Shader->ComputeShader || !Shader->VertexShader || !Shader->PixelShader
+		|| !Shader->VertexShader->IsValid() || !Shader->PixelShader->IsValid())
+	{
+		HTR_LOG(Error, "[CameraFade] required fade graphics shader is missing or invalid");
+		return false;
+	}
+
+	// HLSL의 float4 하나와 동일한 레이아웃으로 색상과 강도를 전달한다.
+	static_assert(sizeof(FVector4) == 16);
+	CameraFadeCB = RenderCommand::CreateConstantBuffer(sizeof(FVector4));
+	CameraFadePipelineState.Shader = Shader;
+	CameraFadePipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	CameraFadePipelineState.RasterizerState = ERasterizerState::SolidNone;
+	// 가림 정도에 따라 기존 화면과 혼합하고, 장면 깊이의 영향은 받지 않는다.
+	CameraFadePipelineState.BlendState = EBlendState::AlphaBlend;
+	CameraFadePipelineState.DepthStencilState = EDepthStencilState::Disabled;
+	return CameraFadeCB && CameraFadeCB->GetBuffer();
 }
 
 void FRenderer::RenderGeometryPass(FViewport& Viewport, const FSceneView& View,
@@ -393,6 +418,35 @@ void FRenderer::RenderOutputPass(
 		// FXAA 결과를 표시용 타깃에 복사
 		RenderCommand::CopyTexture(OutputColor, FxaaTarget);
 	}
+}
+
+void FRenderer::RenderCameraFadePass(FViewport& Viewport, const FSceneView& View)
+{
+	if (View.FadeAmount <= 0.0f)
+	{
+		return;
+	}
+
+	// 완성된 화면을 유지하고 깊이 타깃은 연결하지 않는다.
+	FRenderingInfo PassInfo = Viewport.GetRenderingInfo();
+	PassInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::Load;
+	PassInfo.DepthStencil.Texture = nullptr;
+	PassInfo.DepthStencil.DSV = nullptr;
+
+	// 최종 출력과 같은 sRGB 공간으로 변환하고, A에는 페이드 강도를 넣는다.
+	FVector4 FadeColorAndAmount;
+	FadeColorAndAmount.X = FLinearColor::LinearToSRGB(View.FadeColor.R);
+	FadeColorAndAmount.Y = FLinearColor::LinearToSRGB(View.FadeColor.G);
+	FadeColorAndAmount.Z = FLinearColor::LinearToSRGB(View.FadeColor.B);
+	FadeColorAndAmount.W = View.FadeAmount;
+	RenderCommand::UpdateBufferData(CameraFadeCB.get(), &FadeColorAndAmount);
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	RenderCommand::BindPipelineState(CameraFadePipelineState);
+	// 픽셀 셰이더의 register(b0)에 상수 버퍼를 연결한다.
+	RenderCommand::BindConstantBuffer(0, CameraFadeCB.get(), EShaderBindFlagBits::Pixel);
+	RenderCommand::Draw(3);
+	RenderCommand::EndRenderPass(PassInfo);
 }
 
 // 필요한 칸 수가 용량을 넘을 때만 두 배씩 키워 재할당을 드물게 한다.

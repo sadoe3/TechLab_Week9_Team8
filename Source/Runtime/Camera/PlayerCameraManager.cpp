@@ -90,6 +90,28 @@ void APlayerCameraManager::SetViewTarget(AActor* NewViewTarget)
     ViewTarget.Target = NewViewTarget;
 }
 
+void APlayerCameraManager::StartCameraFade(float FromAlpha, float ToAlpha, float Duration,
+    const FLinearColor& Color, bool bHoldFadeWhenFinished)
+{
+    // 초기화와 시간 보간 규칙은 FCameraFade에 위임한다.
+    CameraFade.Start(FromAlpha, ToAlpha, Duration, Color, bHoldFadeWhenFinished);
+}
+
+void APlayerCameraManager::StopCameraFade()
+{
+    CameraFade.Stop();
+}
+
+float APlayerCameraManager::GetFadeAmount() const
+{
+    return CameraFade.GetAmount();
+}
+
+const FLinearColor& APlayerCameraManager::GetFadeColor() const
+{
+    return CameraFade.GetColor();
+}
+
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
     // Modifier에서 World.SetViewTarget이 UpdateCamera(0)를 다시 호출할 수 있다.
@@ -98,6 +120,8 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     {
         return;
     }
+    // 재진입 검사 뒤에서 Modifier의 적용 여부와 독립적으로 페이드를 진행한다.
+    CameraFade.Update(DeltaTime);
     // World가 이동 갱신 이후 명시적으로 호출한다. 일반 Actor Tick에는 등록하지 않는다.
     UpdateViewTarget(ViewTarget, DeltaTime);
     FillCameraCache(ViewTarget.POV);

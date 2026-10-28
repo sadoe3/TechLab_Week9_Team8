@@ -243,6 +243,9 @@ void UGameEngine::RenderGameView()
 	RenderCommand::EndRenderPass(TextInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
 
+	// HUD와 텍스트까지 합성한 결과에 페이드를 적용한 뒤 백버퍼로 복사한다.
+	Renderer->RenderCameraFadePass(*GameViewport, View);
+
 	// 백버퍼 복사·프레임 참조 해제
 	const FRenderingInfo& BackbufferInfo = GetEngineLoop().GetSwapchain()->GetRenderingInfo();
 

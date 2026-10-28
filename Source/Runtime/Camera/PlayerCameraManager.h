@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera/CameraTypes.h"
+#include "Camera/CameraFade.h"
 #include "GameFramework/Actor.h"
 
 class UCameraModifier;
@@ -33,6 +34,12 @@ public:
     virtual void UpdateCamera(float DeltaTime);
     const FMinimalViewInfo& GetCameraCacheView() const { return CameraCachePrivate.POV; }
 
+    void StartCameraFade(float FromAlpha, float ToAlpha, float Duration,
+        const FLinearColor& Color, bool bHoldFadeWhenFinished);
+    void StopCameraFade();
+    float GetFadeAmount() const;
+    const FLinearColor& GetFadeColor() const;
+
     float DefaultFOV = 60.0f; // Camera Component가 없는 대상에 사용할 수평 시야각(degree).
     float DefaultAspectRatio = 16.0f / 9.0f;
 
@@ -48,6 +55,8 @@ protected:
     FTViewTarget ViewTarget;
 
 private:
+    // 시점 대상과 독립적인 값 멤버로 페이드 상태를 유지한다.
+    FCameraFade CameraFade;
     bool bApplyingCameraModifiers = false;
     TArray<UCameraModifier*> PendingModifierDeletes;
     FCameraCacheEntry CameraCachePrivate;
