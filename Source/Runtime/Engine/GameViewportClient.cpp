@@ -48,8 +48,8 @@ void FGameViewportClient::UpdateInput(const FViewportInput& Input, FVector2 Outp
 	}
 	else if (FInputSystem::IsKeyPressed(EKeyCode::Num4))
 	{
-		// 4: 현재 높이에서 1초 동안 각 띠를 화면 높이의 20%로 표시하고 유지한다.
-		Manager->StartCameraLetterBox(0.2f, 1.0f);
+		// 4: 현재 높이에서 1초 동안 각 띠를 화면 높이의 10%로 표시하고 유지한다.
+		Manager->StartCameraLetterBox(0.1f, 1.0f);
 	}
 	else if (FInputSystem::IsKeyPressed(EKeyCode::Num5))
 	{
