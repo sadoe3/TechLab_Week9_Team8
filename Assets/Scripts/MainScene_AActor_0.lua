@@ -202,6 +202,7 @@ end
 function EndPlay()
     -- C++에 보관된 결과 화면 상태를 씬 종료 시 정리합니다.
     game.reset_result_ui()
+    game.stop_sequence()
     GoDisplayRemaining = 0.0
     game.set_countdown("")
     Race.Stop()

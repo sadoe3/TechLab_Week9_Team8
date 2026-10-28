@@ -49,6 +49,7 @@ namespace
 }
 
 #include "Core/SplashScreen.h"
+#include "Cinematic/SequencePlayer.h"
 
 FEngineConfig UEditorEngine::GetConfig() const
 {
@@ -1177,6 +1178,7 @@ void UEditorEngine::EndPlayMap()
 	bStepRequested = false;
 	OnActiveWorldChanged();
 	FTimeDilation::ResetDilation();
+	FSequencePlayer::Stop();
 }
 
 bool UEditorEngine::CreatePIEWindow()

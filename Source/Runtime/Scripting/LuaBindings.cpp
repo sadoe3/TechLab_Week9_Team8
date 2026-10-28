@@ -567,6 +567,11 @@ namespace LuaBindings
 				FSequencePlayer::Play(Steps);
 			}
 		);
+		Game.set_function("stop_sequence", []()
+			{
+				FSequencePlayer::Stop();
+			}
+		);
 		Game.set_function("is_sequence_playing", []()
 			{
 				return FSequencePlayer::IsPlaying();
