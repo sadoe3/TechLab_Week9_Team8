@@ -63,8 +63,10 @@ private:
 	void UpdateLeaderboardText();
 	// 항목은 왼쪽, 기록은 오른쪽 기준선에 맞춰 배치합니다.
 	void UpdateLeaderboardLayout();
-	// 다시 도전 / 메인 메뉴 선택 입력을 처리합니다.
+	// 다시 도전 / 메인 메뉴 / 크레딧 선택 입력을 처리합니다.
 	void HandleLeaderboardInput();
+	// 리더보드와 크레딧 화면을 맞바꿔 표시합니다.
+	void SetCreditsVisible(bool bVisible);
 
 	UTextRenderComponent* LeaderboardTitleText = nullptr;
 	UTextRenderComponent* BestScoreText = nullptr;
@@ -80,6 +82,17 @@ private:
 	UTextRenderComponent* FinishScoreLabelText = nullptr;
 	UTextRenderComponent* FinishTimeLabelText = nullptr;
 	UTextRenderComponent* ResultMenuPointerText = nullptr;
+	UTextRenderComponent* CreditsMenuText = nullptr;
+	// 크레딧 화면은 리더보드와 번갈아 표시하므로 따로 모읍니다.
+	UTextRenderComponent* CreditsTitleText = nullptr;
+	UTextRenderComponent* CreditsTeamText = nullptr;
+	UTextRenderComponent* CreditsMemberAText = nullptr;
+	UTextRenderComponent* CreditsMemberBText = nullptr;
+	UTextRenderComponent* CreditsMemberCText = nullptr;
+	UTextRenderComponent* CreditsMemberDText = nullptr;
+	UTextRenderComponent* CreditsBackText = nullptr;
+	TArray<UTextRenderComponent*> CreditsTexts;
+	bool bCreditsVisible = false;
 	TArray<UTextRenderComponent*> LeaderboardTexts;
 
 	// 0은 다시 도전, 1은 메인 메뉴입니다.

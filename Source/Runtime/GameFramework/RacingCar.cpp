@@ -239,7 +239,33 @@ void ARacingCar::BeginPlay()
 	FinishScoreLabelText = FindLeaderboardText("FinishScoreLabelText");
 	FinishTimeLabelText = FindLeaderboardText("FinishTimeLabelText");
 	ResultMenuPointerText = FindLeaderboardText("ResultMenuPointerText");
+	CreditsMenuText = FindLeaderboardText("CreditsMenuText");
+
+	// 크레딧 화면도 같은 방식으로 다시 연결합니다.
+	CreditsTexts.Reset();
+	const auto FindCreditsText = [this](const char* Name)
+	{
+		auto* Text =
+			Cast<UTextRenderComponent>(FindComponentByName(Name));
+		if (Text)
+		{
+			Text->SetDrawOnTop(true);
+			Text->SetVisible(false);
+			CreditsTexts.Add(Text);
+		}
+		return Text;
+	};
+
+	CreditsTitleText = FindCreditsText("CreditsScreenTitle");
+	CreditsTeamText = FindCreditsText("CreditsTeam");
+	CreditsMemberAText = FindCreditsText("CreditsMemberA");
+	CreditsMemberBText = FindCreditsText("CreditsMemberB");
+	CreditsMemberCText = FindCreditsText("CreditsMemberC");
+	CreditsMemberDText = FindCreditsText("CreditsMemberD");
+	CreditsBackText = FindCreditsText("CreditsBack");
+
 	bLeaderboardVisible = false;
+	bCreditsVisible = false;
 	SelectedResultMenu = 0;
 	bWaitingForConfirmRelease = true;
 	UpdateLeaderboardLayout();
@@ -349,6 +375,28 @@ void ARacingCar::CreateLeaderboardHud()
 	RetryText = CreateText("RetryText", "다시 도전");
 	MainMenuText = CreateText("MainMenuText", "메인 메뉴");
 	ResultMenuPointerText = CreateText("ResultMenuPointerText", ">");
+	CreditsMenuText = CreateText("CreditsMenuText", "크레딧");
+
+	// 크레딧 화면은 리더보드를 숨긴 자리에 표시합니다.
+	const auto CreateCreditsText = [this](const char* Name, const FString& Label)
+	{
+		auto* Text = CreateDefaultSubobject<UTextRenderComponent>(Name);
+		Text->SetupAttachment(VehicleCamera);
+		Text->SetRelativeLocation(FVector(3.0f, 0.0f, 0.0f));
+		Text->SetText(Label);
+		Text->SetDrawOnTop(true);
+		Text->SetVisible(false);
+		CreditsTexts.Add(Text);
+		return Text;
+	};
+
+	CreditsTitleText = CreateCreditsText("CreditsScreenTitle", "크레딧");
+	CreditsTeamText = CreateCreditsText("CreditsTeam", "Team 8");
+	CreditsMemberAText = CreateCreditsText("CreditsMemberA", "최강인");
+	CreditsMemberBText = CreateCreditsText("CreditsMemberB", "고민수");
+	CreditsMemberCText = CreateCreditsText("CreditsMemberC", "권동현");
+	CreditsMemberDText = CreateCreditsText("CreditsMemberD", "양효정");
+	CreditsBackText = CreateCreditsText("CreditsBack", "> 돌아가기");
 }
 
 void ARacingCar::UpdateLeaderboardText()
@@ -401,12 +449,25 @@ void ARacingCar::UpdateLeaderboardLayout()
 	PlaceText(FinishScoreText, RightColumn, -0.63f, 0.22f, true);
 	PlaceText(FinishTimeLabelText, LeftColumn, -0.90f, 0.18f, false);
 	PlaceText(FinishTimeText, RightColumn, -0.90f, 0.22f, true);
-	PlaceText(RetryText, -2.5f, -1.32f, 0.19f, false);
-	PlaceText(MainMenuText, -1.25f, -1.32f, 0.19f, false);
+	const float MenuBaseline = -1.32f;
+	const float MenuHorizontal[] = { -2.5f, -1.25f, 0.0f };
+	PlaceText(RetryText, MenuHorizontal[0], MenuBaseline, 0.19f, false);
+	PlaceText(MainMenuText, MenuHorizontal[1], MenuBaseline, 0.19f, false);
+	PlaceText(CreditsMenuText, MenuHorizontal[2], MenuBaseline, 0.19f, false);
 
 	// 선택 표시는 별도로 움직여 메뉴 글자의 위치가 바뀌지 않게 합니다.
-	const float PointerHorizontal = SelectedResultMenu == 0 ? -2.75f : -1.5f;
-	PlaceText(ResultMenuPointerText, PointerHorizontal, -1.32f, 0.19f, false);
+	const int32 MenuIndex = FMath::Clamp(SelectedResultMenu, 0, 2);
+	PlaceText(ResultMenuPointerText,
+		MenuHorizontal[MenuIndex] - 0.25f, MenuBaseline, 0.19f, false);
+
+	// 크레딧 화면은 리더보드와 같은 왼쪽 기준선을 씁니다.
+	PlaceText(CreditsTitleText, LeftColumn, 1.13f, 0.46f, false);
+	PlaceText(CreditsTeamText, LeftColumn, 0.60f, 0.24f, false);
+	PlaceText(CreditsMemberAText, LeftColumn, 0.20f, 0.18f, false);
+	PlaceText(CreditsMemberBText, LeftColumn, -0.10f, 0.18f, false);
+	PlaceText(CreditsMemberCText, LeftColumn, -0.40f, 0.18f, false);
+	PlaceText(CreditsMemberDText, LeftColumn, -0.70f, 0.18f, false);
+	PlaceText(CreditsBackText, LeftColumn, MenuBaseline, 0.19f, false);
 }
 
 void ARacingCar::UpdateLeaderboardHud()
@@ -434,6 +495,7 @@ void ARacingCar::UpdateLeaderboardHud()
 	if (bShouldShow)
 	{
 		// 화면을 켜기 전에 기록과 초기 메뉴 선택을 준비합니다.
+		bCreditsVisible = false;
 		SelectedResultMenu = 0;
 		UpdateLeaderboardText();
 		bWaitingForConfirmRelease = true;
@@ -452,6 +514,11 @@ void ARacingCar::UpdateLeaderboardHud()
 	{
 		Text->SetVisible(bShouldShow);
 	}
+	// 결과 화면을 닫을 때 크레딧이 남지 않게 합니다.
+	for (UTextRenderComponent* Text : CreditsTexts)
+	{
+		if (Text) Text->SetVisible(false);
+	}
 	bLeaderboardVisible = bShouldShow;
 }
 
@@ -467,18 +534,37 @@ void ARacingCar::HandleLeaderboardInput()
 		return;
 	}
 
+	// 크레딧 화면에서는 돌아가기만 받습니다.
+	if (bCreditsVisible)
+	{
+		if (!FInputSystem::IsKeyPressed(EKeyCode::Enter)) return;
+		SetCreditsVisible(false);
+		bWaitingForConfirmRelease = true;
+		return;
+	}
+
 	const bool bUp = FInputSystem::IsKeyPressed(EKeyCode::W)
 		|| FInputSystem::IsKeyPressed(EKeyCode::Up);
 	const bool bDown = FInputSystem::IsKeyPressed(EKeyCode::S)
 		|| FInputSystem::IsKeyPressed(EKeyCode::Down);
-	// 두 메뉴 사이를 이동하며, 위아래 동시 입력은 무시합니다.
+	// 세 메뉴를 순환하며, 위아래 동시 입력은 무시합니다.
 	if (bUp != bDown)
 	{
-		SelectedResultMenu = 1 - SelectedResultMenu;
+		const int32 Step = bDown ? 1 : 2;
+		SelectedResultMenu = (SelectedResultMenu + Step) % 3;
 		UpdateLeaderboardLayout();
 	}
 
 	if (!FInputSystem::IsKeyPressed(EKeyCode::Enter)) return;
+
+	// 크레딧은 씬을 바꾸지 않고 같은 화면 위에서 전환합니다.
+	if (SelectedResultMenu == 2)
+	{
+		SetCreditsVisible(true);
+		bWaitingForConfirmRelease = true;
+		return;
+	}
+
 	if (!GEngine) return;
 
 	// 다시 도전은 차량·코인·체크포인트를 초기화하도록 씬을 다시 읽습니다.
@@ -488,6 +574,21 @@ void ARacingCar::HandleLeaderboardInput()
 		ScenePath = "Assets/Scenes/MainMenu.scene";
 	}
 	GEngine->RequestSceneChange(GetWorld(), ScenePath);
+}
+
+void ARacingCar::SetCreditsVisible(bool bVisible)
+{
+	bCreditsVisible = bVisible;
+
+	// 리더보드와 크레딧은 같은 자리를 쓰므로 한쪽만 보입니다.
+	for (UTextRenderComponent* Text : LeaderboardTexts)
+	{
+		if (Text) Text->SetVisible(!bVisible);
+	}
+	for (UTextRenderComponent* Text : CreditsTexts)
+	{
+		if (Text) Text->SetVisible(bVisible);
+	}
 }
 
 void ARacingCar::Tick(float DeltaTime)
