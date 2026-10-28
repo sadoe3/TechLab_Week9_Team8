@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "Component/BillboardComponent.h"
 #include "Core/Stats/EditorStats.h"
+#include "Core/TimeDilation.h"
 #include "Engine/Level.h"
 
 #include "Render/Renderer.h"
@@ -590,7 +591,7 @@ void UEditorEngine::TickWorldAndEditor(const float DeltaTime)
 			bStepRequested = false;
 		}
 		else if(!bIsPaused)
-			GetActiveWorld()->Tick(DeltaTime);
+			GetActiveWorld()->Tick(DeltaTime * FTimeDilation::GetDilation());
 
 	}
     // 편집 입력 또는 CameraComponent Tick이 소비하고 남은 휠은 Pause/차단 해제 후 재생하지 않는다.
@@ -949,6 +950,9 @@ bool UEditorEngine::ViewSupportsShadows(const FSceneView& View) const
 void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FSceneView& View, FEditorViewportClient* OverlayClient)
 {
 	const FEditorSettings& Settings = SettingsPanel->GetSettings();
+	// Camera와 원본 View는 보존하고 Editor·PIE 렌더링에만 패널 설정을 적용한다.
+	FSceneView RenderView = View;
+	RenderView.FinalPostProcessSettings = Settings.PostProcessSettings;
 	const FRenderingInfo& ViewRenderingInfo = Viewport.GetRenderingInfo();
 	FRenderQueue& RenderQueue = Viewport.GetSceneRenderData().RenderQueue;
 
@@ -969,7 +973,14 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 
 	// 공통 장면 패스 실행
 	FShadowFrameData DirectionalFrame;
-	SceneRenderer.RenderView(*Renderer, Viewport, ViewWorld, View,ShadowResourceIndex, Settings, DirectionalFrame);
+	SceneRenderer.RenderView(
+		*Renderer,
+		Viewport,
+		ViewWorld,
+		RenderView,
+		ShadowResourceIndex,
+		Settings,
+		DirectionalFrame);
 
 	const FDirectionalShadowResources& DirectionalResources = Viewport.GetDirectionalShadow();
 	const bool bDirectionalReady =
@@ -996,6 +1007,10 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 
 	// 기존 에디터 오버레이 합성
 	RenderOverlayPass(OverlayClient, ViewWorld, ViewRenderingInfo, View, RenderQueue);
+	// PIE의 텍스트 위에 합성한다. 일반 Editor View는 띠 높이 0으로 생략된다.
+	Renderer->RenderCameraLetterBoxPass(Viewport, View);
+	// 검은 띠를 포함한 화면 전체에 Fade를 적용한다.
+	Renderer->RenderCameraFadePass(Viewport, View);
 }
 
 // View Texture가 포함된 UI를 Swapchain 백버퍼에 합성한다. Present는 FEngineLoop가 한다.
@@ -1163,6 +1178,7 @@ void UEditorEngine::EndPlayMap()
 	bIsPaused = false;
 	bStepRequested = false;
 	OnActiveWorldChanged();
+	FTimeDilation::ResetDilation();
 }
 
 bool UEditorEngine::CreatePIEWindow()

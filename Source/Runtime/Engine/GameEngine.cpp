@@ -3,6 +3,7 @@
 #include "Launch/LaunchEngineLoop.h"
 #include "Serialization/JsonArchive.h"
 #include "Core/Window.h"
+#include "Core/TimeDilation.h"
 #include "Engine/GameViewportClient.h"
 #include "Render/RenderCommand.h"
 #include "Render/Swapchain.h"
@@ -88,7 +89,7 @@ void UGameEngine::PreTick(float DeltaTime)
 void UGameEngine::Tick(float DeltaTime)
 {
 	// 게임 World 갱신
-	GameWorld->Tick(DeltaTime);
+	GameWorld->Tick(DeltaTime * FTimeDilation::GetDilation());
 	// 갱신 후 랜더 Transform 반영
 	GameWorld->GetScene().UpdateAllTransforms();
 	RenderGameView();
@@ -242,6 +243,10 @@ void UGameEngine::RenderGameView()
 
 	RenderCommand::EndRenderPass(TextInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
+
+	// HUD와 텍스트 위에 검은 띠를 합성하고, 띠를 포함한 화면 전체에 Fade를 적용한다.
+	Renderer->RenderCameraLetterBoxPass(*GameViewport, View);
+	Renderer->RenderCameraFadePass(*GameViewport, View);
 
 	// 백버퍼 복사·프레임 참조 해제
 	const FRenderingInfo& BackbufferInfo = GetEngineLoop().GetSwapchain()->GetRenderingInfo();

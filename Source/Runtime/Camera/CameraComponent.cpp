@@ -99,6 +99,9 @@ void UCameraComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredV
     DesiredView.OrthoWidth = OrthoWidth;
     DesiredView.NearClipPlane = NearClipPlane;
     DesiredView.FarClipPlane = FarClipPlane;
+
+    // Camera 설정을 이번 POV에 값으로 복사해 Camera Cache에 함께 보관한다.
+    DesiredView.PostProcessSettings = PostProcessSettings;
 }
 
 FCameraProjection UCameraComponent::GetProjectionSettings() const

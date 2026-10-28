@@ -66,8 +66,6 @@ local function ProcessPendingTriggers()
                     Race.State = "Finished"
                     Race.FinishScore = game.get_score()
                     Race.FinishTime = Race.ElapsedTime
-                    Race.Player.Velocity = Vector(0, 0, 0)
-
                     -- 주행 중 넓어진 시야를 기본 FOV로 복원합니다.
                     -- RacingCar.lua의 BaseFOV(60.0)와 같은 값을 사용합니다.
                     Race.Player.CameraFOV = 91.5
@@ -165,6 +163,12 @@ function Tick(DeltaTime)
             game.set_countdown(tostring(CurrentNumber))
             print(string.format("[Race] Countdown: %d", CurrentNumber))
         end
+
+        return
+    end
+
+    if Race.State == "Finished" then
+        Race.Player.Velocity = Race.Player.Velocity * (1 - 1.5 * DeltaTime)
 
         return
     end

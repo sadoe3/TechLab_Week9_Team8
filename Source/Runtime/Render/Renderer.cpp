@@ -182,13 +182,62 @@ bool FRenderer::InitScenePasses()
 		|| !SkyboxRenderer->Init(ResourcePaths::DefaultSkyPanorama)
 		|| !FXAARenderer->Init()
 		|| !GammaEncodeRenderer->Init()
-		|| !DepthViewRenderer->Init())
+		|| !DepthViewRenderer->Init()
+		|| !InitCameraFadePass()
+		|| !InitCameraLetterBoxPass())
 	{
 		HTR_LOG(Error, "[Renderer] shared scene pass initialization failed");
 		return false;
 	}
 
 	return true;
+}
+
+bool FRenderer::InitCameraFadePass()
+{
+	// 기본 셰이더로 대체하지 않고 실제 페이드 셰이더의 준비 여부를 확인한다.
+	const FString ShaderPath = "Resources/Shader/CameraFadeShader.hlsl";
+	FShaderProgram* Shader = FRenderResourceManager::FindShaderProgram(ShaderPath);
+	if (!Shader || Shader->ComputeShader || !Shader->VertexShader || !Shader->PixelShader
+		|| !Shader->VertexShader->IsValid() || !Shader->PixelShader->IsValid())
+	{
+		HTR_LOG(Error, "[CameraFade] required fade graphics shader is missing or invalid");
+		return false;
+	}
+
+	// HLSL의 float4 하나와 동일한 레이아웃으로 색상과 강도를 전달한다.
+	static_assert(sizeof(FVector4) == 16);
+	CameraFadeCB = RenderCommand::CreateConstantBuffer(sizeof(FVector4));
+	CameraFadePipelineState.Shader = Shader;
+	CameraFadePipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	CameraFadePipelineState.RasterizerState = ERasterizerState::SolidNone;
+	// 가림 정도에 따라 기존 화면과 혼합하고, 장면 깊이의 영향은 받지 않는다.
+	CameraFadePipelineState.BlendState = EBlendState::AlphaBlend;
+	CameraFadePipelineState.DepthStencilState = EDepthStencilState::Disabled;
+	return CameraFadeCB && CameraFadeCB->GetBuffer();
+}
+
+bool FRenderer::InitCameraLetterBoxPass()
+{
+	const FString ShaderPath = "Resources/Shader/CameraLetterBoxShader.hlsl";
+	FShaderProgram* Shader = FRenderResourceManager::FindShaderProgram(ShaderPath);
+	if (!Shader || Shader->ComputeShader || !Shader->VertexShader || !Shader->PixelShader
+		|| !Shader->VertexShader->IsValid() || !Shader->PixelShader->IsValid())
+	{
+		HTR_LOG(Error, "[CameraLetterBox] missing or invalid graphics shader");
+		return false;
+	}
+
+	// HLSL의 HeightRatio(float)와 Padding(float3)에 대응한다.
+	static_assert(sizeof(FVector4) == 16);
+	CameraLetterBoxCB = RenderCommand::CreateConstantBuffer(sizeof(FVector4));
+	CameraLetterBoxPipelineState.Shader = Shader;
+	CameraLetterBoxPipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	CameraLetterBoxPipelineState.RasterizerState = ERasterizerState::SolidNone;
+	CameraLetterBoxPipelineState.DepthStencilState = EDepthStencilState::Disabled;
+	// 띠는 불투명하게 덮고 가운데는 Shader의 discard로 보존한다.
+	CameraLetterBoxPipelineState.BlendState = EBlendState::Opaque;
+	return CameraLetterBoxCB && CameraLetterBoxCB->GetBuffer();
 }
 
 void FRenderer::RenderGeometryPass(FViewport& Viewport, const FSceneView& View,
@@ -362,10 +411,18 @@ void FRenderer::RenderOutputPass(
 
 	// 데이터 시각화의 색 변환 제외
 	const bool bVisualizeData = IsDataVisualization(View.RenderMode.ViewMode);
+	// Camera의 Gamma 스위치는 OnRender에서 반영해 Tone Mapping과 분리한다.
 	const bool bEncode = !bVisualizeData && ColorWorkflow::bLinear;
 	const bool bToneMap =
 		bEncode && Settings.bToneMapping
 		&& View.RenderMode.ViewMode == EViewMode::Lit;
+
+	// 데이터 시각화에서는 Vignetting도 제외한다. View의 원본 설정은 유지한다.
+	FPostProcessSettings PostProcessSettings = View.FinalPostProcessSettings;
+	if (bVisualizeData)
+	{
+		PostProcessSettings.bEnableVignette = false;
+	}
 
 	// 장면 색상의 톤매핑·sRGB 인코딩
 	RenderCommand::BeginRenderPass(PassInfo);
@@ -373,7 +430,10 @@ void FRenderer::RenderOutputPass(
 
 	GammaEncodeRenderer->OnRender(
 		SceneInfo.ColorRenderTargets[0].Texture,
-		bEncode, bToneMap, Settings.ExposureEV);
+		bEncode,
+		bToneMap,
+		Settings.ExposureEV,
+		PostProcessSettings);
 
 	RenderCommand::EndRenderPass(PassInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
@@ -393,6 +453,64 @@ void FRenderer::RenderOutputPass(
 		// FXAA 결과를 표시용 타깃에 복사
 		RenderCommand::CopyTexture(OutputColor, FxaaTarget);
 	}
+}
+
+void FRenderer::RenderCameraFadePass(FViewport& Viewport, const FSceneView& View)
+{
+	if (View.FadeAmount <= 0.0f)
+	{
+		return;
+	}
+
+	// 완성된 화면을 유지하고 깊이 타깃은 연결하지 않는다.
+	FRenderingInfo PassInfo = Viewport.GetRenderingInfo();
+	PassInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::Load;
+	PassInfo.DepthStencil.Texture = nullptr;
+	PassInfo.DepthStencil.DSV = nullptr;
+
+	// 최종 출력과 같은 sRGB 공간으로 변환하고, A에는 페이드 강도를 넣는다.
+	FVector4 FadeColorAndAmount;
+	FadeColorAndAmount.X = FLinearColor::LinearToSRGB(View.FadeColor.R);
+	FadeColorAndAmount.Y = FLinearColor::LinearToSRGB(View.FadeColor.G);
+	FadeColorAndAmount.Z = FLinearColor::LinearToSRGB(View.FadeColor.B);
+	FadeColorAndAmount.W = View.FadeAmount;
+	RenderCommand::UpdateBufferData(CameraFadeCB.get(), &FadeColorAndAmount);
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	RenderCommand::BindPipelineState(CameraFadePipelineState);
+	// 픽셀 셰이더의 register(b0)에 상수 버퍼를 연결한다.
+	RenderCommand::BindConstantBuffer(0, CameraFadeCB.get(), EShaderBindFlagBits::Pixel);
+	RenderCommand::Draw(3);
+	RenderCommand::EndRenderPass(PassInfo);
+}
+
+void FRenderer::RenderCameraLetterBoxPass(FViewport& Viewport, const FSceneView& View)
+{
+	if (View.LetterBoxHeightRatio <= 0.0f)
+	{
+		return;
+	}
+
+	// 기존 화면을 유지하고 장면의 Depth Target은 연결하지 않는다.
+	FRenderingInfo PassInfo = Viewport.GetRenderingInfo();
+	PassInfo.ColorRenderTargets[0].LoadOp = ERenderTargetLoadOp::Load;
+	PassInfo.DepthStencil.Texture = nullptr;
+	PassInfo.DepthStencil.DSV = nullptr;
+
+	// UV 기반 Shader에는 높이 비율만 전달한다. 나머지는 Padding이다.
+	FVector4 LetterBoxParameters;
+	LetterBoxParameters.X = View.LetterBoxHeightRatio;
+	LetterBoxParameters.Y = 0.0f;
+	LetterBoxParameters.Z = 0.0f;
+	LetterBoxParameters.W = 0.0f;
+	RenderCommand::UpdateBufferData(CameraLetterBoxCB.get(), &LetterBoxParameters);
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	RenderCommand::BindPipelineState(CameraLetterBoxPipelineState);
+	RenderCommand::BindConstantBuffer(0, CameraLetterBoxCB.get(), EShaderBindFlagBits::Pixel);
+	// SV_VertexID로 삼각형과 UV를 생성해 위·아래 띠만 그린다.
+	RenderCommand::Draw(3);
+	RenderCommand::EndRenderPass(PassInfo);
 }
 
 // 필요한 칸 수가 용량을 넘을 때만 두 배씩 키워 재할당을 드물게 한다.

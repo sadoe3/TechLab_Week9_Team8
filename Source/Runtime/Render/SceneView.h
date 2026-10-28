@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Math/Rect.h"
+#include "Math/Color.h"
 #include "Camera/CameraProjection.h"
 #include "Render/ViewMode.h"
+#include "Render/PostProcessSettings.h"
 #include "Math/Frustum.h"
 #include "Collision/Ray.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
@@ -23,6 +25,16 @@ struct FSceneView
     FMatrix ProjectionMatrix;
     FMatrix ViewProjection;
     FFrustumPlanes Frustum;
+
+    // Renderer는 Camera 객체 대신 이번 View의 최종 설정값을 사용한다.
+    FPostProcessSettings FinalPostProcessSettings;
+
+    // 게임 View에서만 값을 전달한다. 에디터 View는 기본 알파 0을 사용한다.
+    float FadeAmount = 0.0f;
+    FLinearColor FadeColor{0.0f, 0.0f, 0.0f, 1.0f};
+
+    // 각 띠의 높이 비율. Editor View는 기본값 0으로 합성을 생략한다.
+    float LetterBoxHeightRatio = 0.0f;
 
     bool IsOrthographic() const { return ProjectionSettings.Mode == EProjectionMode::Orthographic; }
     FVector GetCameraLocation() const { return CameraLocation; }

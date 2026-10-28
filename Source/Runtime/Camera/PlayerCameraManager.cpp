@@ -138,6 +138,43 @@ void APlayerCameraManager::CancelViewTargetBlend()
     ++ViewTargetGeneration;
 }
 
+void APlayerCameraManager::StartCameraFade(float FromAlpha, float ToAlpha, float Duration,
+    const FLinearColor& Color, bool bHoldFadeWhenFinished)
+{
+    // 초기화와 시간 보간 규칙은 FCameraFade에 위임한다.
+    CameraFade.Start(FromAlpha, ToAlpha, Duration, Color, bHoldFadeWhenFinished);
+}
+
+void APlayerCameraManager::StopCameraFade()
+{
+    CameraFade.Stop();
+}
+
+float APlayerCameraManager::GetFadeAmount() const
+{
+    return CameraFade.GetAmount();
+}
+
+const FLinearColor& APlayerCameraManager::GetFadeColor() const
+{
+    return CameraFade.GetColor();
+}
+
+void APlayerCameraManager::StartCameraLetterBox(float TargetHeightRatio, float Duration)
+{
+    CameraLetterBox.Start(TargetHeightRatio, Duration);
+}
+
+void APlayerCameraManager::StopCameraLetterBox()
+{
+    CameraLetterBox.Stop();
+}
+
+float APlayerCameraManager::GetLetterBoxHeightRatio() const
+{
+    return CameraLetterBox.GetHeightRatio();
+}
+
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
     // Modifier에서 World.SetViewTarget이 UpdateCamera(0)를 다시 호출할 수 있다.
@@ -154,6 +191,8 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     }
 
     const float Step = FMath::Max(DeltaTime, 0.0f);
+    CameraFade.Update(DeltaTime);
+    CameraLetterBox.Update(DeltaTime);
     const uint32 UpdatingGeneration = ViewTargetGeneration;
     FTViewTarget Current = ViewTarget;
     FTViewTarget Pending = PendingViewTarget;

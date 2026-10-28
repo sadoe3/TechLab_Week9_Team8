@@ -69,6 +69,23 @@ void FSettingsPanel::OnRender()
 	ImGui::EndDisabled();
 	ImGui::EndDisabled();
 
+	ImGui::Dummy(ImVec2(0.0f, SubsectionGap));
+	ImGui::TextDisabled("Post Process");
+
+	// UI 전용 복사본 대신 Settings의 값을 직접 편집한다.
+	FPostProcessSettings& PostProcess = Settings.PostProcessSettings;
+	// Tone Mapping의 활성 상태와 독립적으로 조작한다.
+	ImGui::Checkbox("Gamma Correction (sRGB)", &PostProcess.bEnableGammaCorrection);
+	ImGui::SetItemTooltip("Requires Linear Workflow. Controls output sRGB encoding only.");
+	ImGui::Checkbox("Vignetting", &PostProcess.bEnableVignette);
+
+	// 효과가 꺼져도 강도와 모양 설정값은 유지하고 슬라이더만 비활성화한다.
+	ImGui::BeginDisabled(!PostProcess.bEnableVignette);
+	ImGui::SliderFloat("Intensity", &PostProcess.VignetteIntensity, 0.0f, 1.0f);
+	ImGui::SliderFloat("Radius", &PostProcess.VignetteRadius, 0.0f, 2.0f);
+	ImGui::SliderFloat("Softness", &PostProcess.VignetteSoftness, 0.001f, 2.0f);
+	ImGui::EndDisabled();
+
 	//////////////////////////////////////////////////////////
 
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
@@ -144,6 +161,17 @@ bool FSettingsPanel::SaveSettings() const
 	File << "LinearWorkflow=" << Settings.bLinearWorkflow << "\n";
 	File << "ToneMapping=" << Settings.bToneMapping << "\n";
 	File << "ExposureEV=" << Settings.ExposureEV << "\n";
+
+	// Settings 패널에서 편집한 후처리 설정을 Rendering 섹션에 기록한다.
+	const FPostProcessSettings& PostProcess = Settings.PostProcessSettings;
+	// ON/OFF는 기존 설정 파일 형식에 맞춰 0 또는 1로 저장한다.
+	File << "EnableGammaCorrection="
+	     << PostProcess.bEnableGammaCorrection << "\n";
+	File << "EnableVignette=" << PostProcess.bEnableVignette << "\n";
+	// Vignetting이 OFF여도 강도와 모양 설정은 보존한다.
+	File << "VignetteIntensity=" << PostProcess.VignetteIntensity << "\n";
+	File << "VignetteRadius=" << PostProcess.VignetteRadius << "\n";
+	File << "VignetteSoftness=" << PostProcess.VignetteSoftness << "\n";
 	File << "\n";
 
 	File << "[ShadowCulling]\n";
@@ -201,6 +229,8 @@ bool FSettingsPanel::LoadSettings()
 		return false;
 	}
 
+	// 파일에서 읽은 값을 Settings의 실제 후처리 설정에 복원한다.
+	FPostProcessSettings& PostProcess = Settings.PostProcessSettings;
 	uint8 LocationComponentMasks[4]{};
 	uint8 RotationComponentMasks[4]{};
 	for (int32 Index = 0; Index < 4; ++Index)
@@ -296,6 +326,19 @@ bool FSettingsPanel::LoadSettings()
 				else if (Key == "LinearWorkflow") Settings.bLinearWorkflow = std::stoi(ValueStr);
 				else if (Key == "ToneMapping") Settings.bToneMapping = std::stoi(ValueStr);
 				else if (Key == "ExposureEV") Settings.ExposureEV = std::stof(ValueStr);
+
+				// 저장된 0/1 문자열을 ON/OFF 값으로 복원한다.
+				else if (Key == "EnableGammaCorrection")
+					PostProcess.bEnableGammaCorrection = std::stoi(ValueStr) != 0;
+				else if (Key == "EnableVignette")
+					PostProcess.bEnableVignette = std::stoi(ValueStr) != 0;
+				// 저장된 숫자 문자열을 float 설정값으로 복원한다.
+				else if (Key == "VignetteIntensity")
+					PostProcess.VignetteIntensity = std::stof(ValueStr);
+				else if (Key == "VignetteRadius")
+					PostProcess.VignetteRadius = std::stof(ValueStr);
+				else if (Key == "VignetteSoftness")
+					PostProcess.VignetteSoftness = std::stof(ValueStr);
 
 				else if (Key == "CullLightsByView") Settings.ShadowCulling.bCullLightsByView = std::stoi(ValueStr);
 				else if (Key == "ShadowDistance") Settings.ShadowCulling.ShadowDistance = std::stof(ValueStr);

@@ -23,6 +23,7 @@ local score = 0
 function BeginPlay()
     script.set_tick_group("PrePhysics")
     obj.CameraFOV = BaseFOV
+    WallHitCooldown = 0.0
     score = 0
     audio.play_bgm(BGMPath, 0.7)
     EngineSoundId = audio.play("Assets/Audio/SFX/EngineLoop.wav", true, EngineVolume)
@@ -33,10 +34,14 @@ function Tick(DeltaTime)
         audio.stop(EngineSoundId)
         EngineSoundId = -1
     end
+
     if Race.State ~= "Running" then
-        obj.Velocity = Vector(0, 0, 0)
+        if Race.State ~= "Finished" then    
+            obj.Velocity = Vector(0, 0, 0)
+        end
         return
     end
+
     local MoveAxis = 0.0
     local TurnAxis = 0.0
     -- W/S는 추진력, A/D는 조향만 담당합니다. 동시 입력은 S와 A가 우선합니다.

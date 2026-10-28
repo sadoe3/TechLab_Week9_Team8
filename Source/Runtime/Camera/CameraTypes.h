@@ -3,6 +3,7 @@
 #include "Camera/CameraProjection.h"
 #include "Math/Rotator.h"
 #include "Math/Vector.h"
+#include "Render/PostProcessSettings.h"
 
 struct FMinimalViewInfo
 {
@@ -16,6 +17,8 @@ struct FMinimalViewInfo
     float NearClipPlane = 0.1f;
     float FarClipPlane = 10000.0f;
 
+    // 위치·회전·투영 정보와 함께 보관하는 이번 POV의 후처리 설정이다.
+    FPostProcessSettings PostProcessSettings;
     // 다른 시점과 지정 비율로 합성
     void BlendViewInfo(const FMinimalViewInfo& Other, float Alpha);
 };

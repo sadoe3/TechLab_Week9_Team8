@@ -95,6 +95,37 @@ FQuat FQuat::Normalized() const
 	return Result;
 }
 
+bool FQuat::Equals(const FQuat& Other, float Tolerance) const
+{
+	// q와 -q는 같은 회전이므로 두 부호를 모두 비교한다.
+	const FQuatRegister A = VectorSIMD::Load(V);
+	const FQuatRegister B = VectorSIMD::Load(Other.V);
+	return VectorSIMD::IsNearlyEqual(A, B, Tolerance)
+		|| VectorSIMD::IsNearlyEqual(A, VectorSIMD::Sub(VectorSIMD::SetZero(), B), Tolerance);
+}
+
+FQuat FQuat::Slerp(const FQuat& A, const FQuat& B, float Alpha)
+{
+	float Dot = A.X * B.X + A.Y * B.Y + A.Z * B.Z + A.W * B.W;
+	// q와 -q는 같은 회전이다. 짧은 경로로 보간하도록 부호를 맞춘다.
+	const float Sign = Dot < 0.0f ? -1.0f : 1.0f;
+	Dot = FMath::Clamp(Dot * Sign, 0.0f, 1.0f);
+	float WeightA = 1.0f - Alpha;
+	float WeightB = Alpha;
+	if (Dot < 0.9995f)
+	{
+		const float Angle = std::acos(Dot);
+		const float InvSin = 1.0f / std::sin(Angle);
+		WeightA = std::sin((1.0f - Alpha) * Angle) * InvSin;
+		WeightB = std::sin(Alpha * Angle) * InvSin;
+	}
+	WeightB *= Sign;
+	return FQuat(A.X * WeightA + B.X * WeightB,
+		A.Y * WeightA + B.Y * WeightB,
+		A.Z * WeightA + B.Z * WeightB,
+		A.W * WeightA + B.W * WeightB).Normalized();
+}
+
 FVector FQuat::RotateVector(const FVector& V) const
 {
 	FQuatRegister Q = VectorSIMD::Load(this->V);
@@ -245,38 +276,4 @@ FQuat FQuat::MakeFromEuler(float RollRadian, float PitchRadian, float YawRadian)
 		// W
 		CR * CP * CY + SR * SP * SY
 	);
-}
-
-FQuat FQuat::Slerp(const FQuat& A, const FQuat& B, float Alpha)
-{
-	// 입력 회전 정규화
-	const FQuat Start = A.Normalized();
-	FQuat End = B.Normalized();
-	Alpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
-	float Dot = Start.X * End.X + Start.Y * End.Y + Start.Z * End.Z + Start.W * End.W;
-
-	// 동일 회전 표현 중 짧은 경로 선택
-	if (Dot < 0.0f)
-	{
-		End = FQuat(-End.X, -End.Y, -End.Z, -End.W);
-		Dot = -Dot;
-	}
-	Dot = FMath::Clamp(Dot, 0.0f, 1.0f);
-	float StartWeight = 1.0f - Alpha;
-	float EndWeight = Alpha;
-
-	// 내적값이 1에 가까움-> sin값이 0에 가까움-> 이때는 선형보간
-	if (Dot < 0.99995f)
-	{
-		const float Angle = std::acos(Dot);
-		const float InvSin = 1.0f / std::sin(Angle);
-		StartWeight = std::sin((1.0f - Alpha) * Angle) * InvSin;
-		EndWeight = std::sin(Alpha * Angle) * InvSin;
-	}
-	return FQuat(
-		Start.X * StartWeight + End.X * EndWeight,
-		Start.Y * StartWeight + End.Y * EndWeight,
-		Start.Z * StartWeight + End.Z * EndWeight,
-		Start.W * StartWeight + End.W * EndWeight).Normalized();
-
 }

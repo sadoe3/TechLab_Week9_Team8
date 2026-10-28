@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "RacingCar.h"
+#include "GameFramework/SpringArmComponent.h"
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ScriptComponent.h"
@@ -19,6 +20,7 @@
 #include "Text/TextRenderer.h"
 #include <cmath>
 #include <format>
+#include <Core/TimeDilation.h>
 
 
 namespace
@@ -81,10 +83,16 @@ ARacingCar::ARacingCar()
 	UStaticMeshComponent* VehicleMesh = GetStaticMeshComponent();
 
 	// Capsule과 같은 부모에 부착하여 충돌 도형의 상대 회전과 카메라를 분리한다.
+	USpringArmComponent* CameraArm = CreateDefaultSubobject<USpringArmComponent>("VehicleSpringArm");
+	CameraArm->SetupAttachment(VehicleMesh);
+	CameraArm->SetRelativeLocation(FVector(0.0f, 0.0f, 2.0f));
+	CameraArm->SetTargetArmLength(4.0f);
+
 	UCameraComponent* Camera = VehicleCamera = CreateDefaultSubobject<UCameraComponent>("VehicleCamera");
 	Camera->SetFieldOfView(91.5f);
-	Camera->SetupAttachment(VehicleMesh);
-	Camera->SetRelativeLocation(FVector(-4.0f, 0.0f, 2.0f));
+	Camera->SetupAttachment(CameraArm);
+	Camera->SetRelativeLocation(FVector::ZeroVector);
+	// 팔은 수평으로 뻗고 Camera만 기울여 기존 구도를 유지한다.
 	Camera->SetRelativeRotation(FRotator(15.0f, 0.0f, 0.0f));
 
 	// 기본 카메라 입력 비활성화
@@ -161,6 +169,10 @@ ARacingCar::ARacingCar()
 void ARacingCar::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
+	FTimeDilation::OnSlomoFinished.AddRaw(this, &ARacingCar::HandleSlomoFinished);
+
 	if (IsPendingDestroy()) return;
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
@@ -504,6 +516,7 @@ void ARacingCar::HandleCountdownChanged(const FString& NewCountdown)
 
 void ARacingCar::EndPlay()
 {
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
 		Capsule->OnComponentHit.RemoveAll(this);
@@ -516,4 +529,9 @@ void ARacingCar::EndPlay()
 void ARacingCar::HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
 	SetVelocity(FVector::ZeroVector);
+}
+
+void ARacingCar::HandleSlomoFinished()
+{
+	FGameHud::NotifyFinishUIClosed();
 }
