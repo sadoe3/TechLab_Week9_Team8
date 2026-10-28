@@ -8,6 +8,7 @@ namespace {
 		{ ESequenceAction::Wait, "Wait" },
 		{ ESequenceAction::Finish, "Finish" },
 		{ ESequenceAction::SetViewTarget, "SetViewTarget" },
+		{ ESequenceAction::Fade, "Fade" },
 	};
 
 }
@@ -58,6 +59,14 @@ bool SequenceSerializer::Save(const TArray<FSequenceStep>& Steps, const FString&
 		Entry["Duration"] = Step.Duration;
 		Entry["Action"] = ToString(Step.Action);
 		Entry["TargetName"] = Step.TargetName;
+		
+		json Params = json::object();
+		for (const auto& Pair : Step.Params)
+		{
+			Params[Pair.first] = Pair.second;
+		}
+		Entry["Params"] = Params;
+
 		Root["Steps"].push_back(Entry);
 	}
 
@@ -113,6 +122,18 @@ bool SequenceSerializer::Load(TArray<FSequenceStep>& OutSteps, const FString& Pa
 		{
 			HTR_LOG(Error, "[Sequence] Unknown action '{}' in {}", ActionName, Path);
 			return false;
+		}
+
+		const auto ParamsNode = Entry.find("Params");
+		if (ParamsNode != Entry.end() && ParamsNode->is_object())
+		{
+			for (auto It = ParamsNode->begin(); It != ParamsNode->end(); ++It)
+			{
+				if (It->is_number())
+				{
+					Step.Params.Add(It.key(), It->get<float>());
+				}
+			}
 		}
 
 		Loaded.Push(Step);

@@ -4,13 +4,14 @@
 #include "Engine/World.h"
 
 enum class ESequenceAction {
-	Wait, Finish, SetViewTarget
+	Wait, Finish, SetViewTarget, Fade
 };
 
 struct FSequenceStep {
 	float Duration = 0.0f;
 	ESequenceAction Action = ESequenceAction::Wait;
 	FString TargetName;
+	TMap <FString, float> Params;
 };
 
 

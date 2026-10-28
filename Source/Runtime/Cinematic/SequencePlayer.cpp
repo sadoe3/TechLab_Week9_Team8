@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "SequencePlayer.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Core/TimeDilation.h"
 #include "Core/EngineLog.h"
 #include "GameFramework/Actor.h"
@@ -22,6 +23,12 @@ namespace
 			return Actor;
 		}
 		return nullptr;
+	}
+
+	float GetParam(const FSequenceStep& Step, const FString& Key, float Default)
+	{
+		const float* Found = Step.Params.Find(Key);
+		return Found ? *Found : Default;
 	}
 }
 
@@ -70,22 +77,38 @@ void FSequencePlayer::EnterStep()
 	case ESequenceAction::Wait: break;
 	case ESequenceAction::Finish: break;
 	case ESequenceAction::SetViewTarget:
+	{
+		UWorld* World = WorldPtr.Get();
+		if (World == nullptr)
+			HTR_LOG(Error, "[Sequence] Not Found World");
+		AActor* Target = FindActorByName(World, Step.TargetName);
+		if (Target == nullptr)
 		{
-			UWorld* World = WorldPtr.Get();
-			if (World == nullptr) 
-				HTR_LOG(Error, "[Sequence] Not Found World");
-			AActor* Target = FindActorByName(World, Step.TargetName);
-			if (Target == nullptr)
-			{
-				HTR_LOG(Error, "[Sequence] Target not found: {}", Step.TargetName);
-				break;
-			}
-
-
-			World->SetViewTarget(Target);
+			HTR_LOG(Error, "[Sequence] Target not found: {}", Step.TargetName);
 			break;
 		}
+
+
+		World->SetViewTarget(Target);
+		break;
 	}
+
+	case ESequenceAction::Fade:
+	{
+		UWorld* World = WorldPtr.Get();
+		if (World == nullptr) break;
+
+		APlayerCameraManager* Manager = World->GetPlayerCameraManager();
+		if (Manager == nullptr) break;
+
+		const float From = GetParam(Step, "From", 0.0f);
+		const float To = GetParam(Step, "To", 1.0f);
+		Manager->StartCameraFade(From, To, Step.Duration, FLinearColor(0, 0, 0), true);
+		break;
+	}
+	}
+
+	
 
 }
 

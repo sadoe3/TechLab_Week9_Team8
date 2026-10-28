@@ -19,7 +19,14 @@
             "Action": "Finish",
             "Duration": 0.0,
             "TargetName": ""
-        }
+        },
+	{
+   	 "Action": "Fade",
+   	 "Duration": 1.0,
+  	  "TargetName": "",
+ 	   "Params": { "From": 1.0, "To": 0.0 }
+	}
+
     ],
     "Version": 1
 }
