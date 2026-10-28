@@ -35,6 +35,8 @@ public:
 
     // 즉시 선택 또는 시간 지정 전환
     void SetViewTarget(AActor* NewViewTarget, const FViewTargetTransitionParams& Params = {});
+    // 대상은 유지하고 현재 캐시에서 새 POV로 전환한다. 진행 중인 전환은 덮어쓰지 않는다.
+    bool BlendToCurrentViewTarget(const FViewTargetTransitionParams& Params);
     // 현재 대상 조회
     AActor* GetViewTarget() const{ return ViewTarget.Target.Get(); }
     // Transition 도착 대상 조회
