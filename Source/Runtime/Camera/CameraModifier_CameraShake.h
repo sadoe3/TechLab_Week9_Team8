@@ -68,12 +68,12 @@ public:
         UCameraShakeBase* Reusable = nullptr;
         if (bSingleInstance)
         {
-            // 같은 종류·이름의 재생을 하나로 정리
+            // 이름별 단일 재생과 동일 종류 인스턴스 재사용
             for (UCameraShakeBase* Shake : ActiveShakes)
             {
-                if (Shake->GetClass() == ShakeClass && Shake->PresetName == PresetName)
+                if (Shake->PresetName == PresetName)
                 {
-                    if (!Reusable)
+                    if (!Reusable && Shake->GetClass() == ShakeClass)
                     {
                         Reusable = Shake;
                     }

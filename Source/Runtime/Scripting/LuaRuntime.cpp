@@ -11,6 +11,8 @@
 #include "Engine/Engine.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Camera/WaveCameraShake.h"
+#include "Camera/PerlinCameraShake.h"
+#include "Camera/CurveCameraShake.h"
 #include <cassert>
 #include "Camera/CameraTypes.h"
 
@@ -276,11 +278,16 @@ void FLuaRuntime::BindCameraFunctions(sol::environment& Environment, UScriptComp
 				throw sol::error("Camera shake name is required");
 			}
 
-			sol::object PatternType = Settings.raw_get<sol::object>("pattern");
-			if (PatternType.valid() && PatternType.get_type() != sol::type::nil
-				&& (!PatternType.is<FString>() || PatternType.as<FString>() != "Wave"))
+			FString PatternName = "Wave";
+			sol::object PatternValue = Settings.raw_get<sol::object>("pattern");
+
+			if (PatternValue.valid() && PatternValue.get_type() != sol::type::nil)
 			{
-				throw sol::error("Only the Wave shake pattern is supported");
+				if (PatternValue.get_type() != sol::type::string)
+				{
+					throw sol::error("Camera shake pattern must be a string");
+				}
+				PatternName = PatternValue.as<FString>();
 			}
 
 			float Scale = 1.0f;
@@ -343,19 +350,83 @@ void FLuaRuntime::BindCameraFunctions(sol::environment& Environment, UScriptComp
 					Wave.Phase = ReadNumber(Axis, "phase", Wave.Phase);
 					return Wave;
 				};
+			// 축별 기본 Seed와 전체 uint32 범위 보존
+			const auto ReadPerlin = [&ReadNumber](const sol::table& Table, const char* Key,
+				uint32 DefaultSeed) -> FPerlinNoiseShaker
+				{
+					FPerlinNoiseShaker Noise;
+					Noise.Seed = DefaultSeed;
 
+					sol::object Value = Table.raw_get<sol::object>(Key);
+					if (!Value.valid() || Value.get_type() == sol::type::nil)
+					{
+						return Noise;
+					}
+					if (!Value.is<sol::table>())
+					{
+						throw sol::error(FString("Invalid shake axis: ") + Key);
+					}
+
+					const sol::table Axis = Value.as<sol::table>();
+					Noise.Amplitude = ReadNumber(Axis, "amplitude", Noise.Amplitude);
+					Noise.Frequency = ReadNumber(Axis, "frequency", Noise.Frequency);
+
+					sol::object SeedValue = Axis.raw_get<sol::object>("seed");
+					if (SeedValue.valid() && SeedValue.get_type() != sol::type::nil)
+					{
+						if (SeedValue.get_type() != sol::type::number)
+						{
+							throw sol::error(FString("Invalid Perlin seed: ") + Key);
+						}
+
+						const double Seed = SeedValue.as<double>();
+						if (!std::isfinite(Seed) || Seed < 0.0 || Seed > 4294967295.0 || std::floor(Seed) != Seed)
+						{
+							throw sol::error(FString("Perlin seed must be a uint32 integer: ") + Key);
+						}
+						Noise.Seed = static_cast<uint32>(Seed);
+					}
+
+					return Noise;
+				};
+			// 숫자 시간과 변화량의 매핑을 기존 곡선으로 변환
+			const auto ReadCurve = [](const sol::table& Table, const char* Key) -> FRichCurve
+				{
+					FRichCurve Curve;
+
+					sol::object Value = Table.raw_get<sol::object>(Key);
+					if (!Value.valid() || Value.get_type() == sol::type::nil)
+					{
+						return Curve;
+					}
+					if (!Value.is<sol::table>())
+					{
+						throw sol::error(FString("Invalid shake curve: ") + Key);
+					}
+
+					const sol::table Axis = Value.as<sol::table>();
+					for (const auto& Pair : Axis)
+					{
+						if (Pair.first.get_type() != sol::type::number || Pair.second.get_type() != sol::type::number)
+						{
+							throw sol::error(FString("Curve time and value must be numeric: ") + Key);
+						}
+
+						const float Time = Pair.first.as<float>();
+						const float Number = Pair.second.as<float>();
+						if (!std::isfinite(Time) || Time < 0.0f || !std::isfinite(Number))
+						{
+							throw sol::error(FString("Invalid curve time or value: ") + Key);
+						}
+
+						Curve.AddKey(Time, Number);
+					}
+
+					return Curve;
+				};
 			const float Duration = ReadNumber(Settings, "duration", 0.0f, true);
 			const float BlendIn = ReadNumber(Settings, "blend_in", 0.0f, true);
 			const float BlendOut = ReadNumber(Settings, "blend_out", 0.0f, true);
-
-			const FWaveOscillator X = ReadWave(Settings, "x");
-			const FWaveOscillator Y = ReadWave(Settings, "y");
-			const FWaveOscillator Z = ReadWave(Settings, "z");
-			const FWaveOscillator Pitch = ReadWave(Settings, "pitch");
-			const FWaveOscillator Yaw = ReadWave(Settings, "yaw");
-			const FWaveOscillator Roll = ReadWave(Settings, "roll");
-			const FWaveOscillator FOV = ReadWave(Settings, "fov");
-
 			bool bSingleInstance = false;
 			sol::object Single = Settings.raw_get<sol::object>("single_instance");
 			if (Single.valid() && Single.get_type() != sol::type::nil)
@@ -387,31 +458,104 @@ void FLuaRuntime::BindCameraFunctions(sol::environment& Environment, UScriptComp
 				}
 			}
 
-			// Lua 참조 대신 파싱한 값만 전달
-			const FCameraShakeInitializer Initialize =[Duration, BlendIn, BlendOut, X, Y, Z, Pitch, Yaw, Roll, FOV]
-				(UCameraShakeBase& Shake)
-				{
-					auto* Pattern = Cast<UWaveOscillatorCameraShakePattern>(Shake.GetRootShakePattern());
-					assert(Pattern != nullptr);
+			// 패턴별 파싱 결과만 초기화 함수에 복사
+			UClass* ShakeClass = nullptr;
+			FCameraShakeInitializer Initialize;
 
-					Pattern->Duration = Duration;
-					Pattern->BlendInTime = BlendIn;
-					Pattern->BlendOutTime = BlendOut;
-					Pattern->X = X;
-					Pattern->Y = Y;
-					Pattern->Z = Z;
-					Pattern->Pitch = Pitch;
-					Pattern->Yaw = Yaw;
-					Pattern->Roll = Roll;
-					Pattern->FOV = FOV;
-				};
+			if (PatternName == "Wave")
+			{
+				const FWaveOscillator X = ReadWave(Settings, "x");
+				const FWaveOscillator Y = ReadWave(Settings, "y");
+				const FWaveOscillator Z = ReadWave(Settings, "z");
+				const FWaveOscillator Pitch = ReadWave(Settings, "pitch");
+				const FWaveOscillator Yaw = ReadWave(Settings, "yaw");
+				const FWaveOscillator Roll = ReadWave(Settings, "roll");
+				const FWaveOscillator FOV = ReadWave(Settings, "fov");
 
+				ShakeClass = UWaveCameraShake::StaticClass();
+				Initialize = [Duration, BlendIn, BlendOut, X, Y, Z, Pitch, Yaw, Roll, FOV](UCameraShakeBase& Shake)
+					{
+						auto* Pattern = Cast<UWaveOscillatorCameraShakePattern>(Shake.GetRootShakePattern());
+						assert(Pattern != nullptr);
+
+						Pattern->Duration = Duration;
+						Pattern->BlendInTime = BlendIn;
+						Pattern->BlendOutTime = BlendOut;
+						Pattern->X = X;
+						Pattern->Y = Y;
+						Pattern->Z = Z;
+						Pattern->Pitch = Pitch;
+						Pattern->Yaw = Yaw;
+						Pattern->Roll = Roll;
+						Pattern->FOV = FOV;
+					};
+			}
+			else if (PatternName == "Perlin")
+			{
+				const FPerlinNoiseShaker X = ReadPerlin(Settings, "x", 11);
+				const FPerlinNoiseShaker Y = ReadPerlin(Settings, "y", 23);
+				const FPerlinNoiseShaker Z = ReadPerlin(Settings, "z", 37);
+				const FPerlinNoiseShaker Pitch = ReadPerlin(Settings, "pitch", 53);
+				const FPerlinNoiseShaker Yaw = ReadPerlin(Settings, "yaw", 71);
+				const FPerlinNoiseShaker Roll = ReadPerlin(Settings, "roll", 89);
+				const FPerlinNoiseShaker FOV = ReadPerlin(Settings, "fov", 107);
+
+				ShakeClass = UPerlinCameraShake::StaticClass();
+				Initialize = [Duration, BlendIn, BlendOut, X, Y, Z, Pitch, Yaw, Roll, FOV](UCameraShakeBase& Shake)
+					{
+						auto* Pattern = Cast<UPerlinNoiseCameraShakePattern>(Shake.GetRootShakePattern());
+						assert(Pattern != nullptr);
+
+						Pattern->Duration = Duration;
+						Pattern->BlendInTime = BlendIn;
+						Pattern->BlendOutTime = BlendOut;
+						Pattern->X = X;
+						Pattern->Y = Y;
+						Pattern->Z = Z;
+						Pattern->Pitch = Pitch;
+						Pattern->Yaw = Yaw;
+						Pattern->Roll = Roll;
+						Pattern->FOV = FOV;
+					};
+			}
+			else if (PatternName == "Curve")
+			{
+				const FRichCurve X = ReadCurve(Settings, "x");
+				const FRichCurve Y = ReadCurve(Settings, "y");
+				const FRichCurve Z = ReadCurve(Settings, "z");
+				const FRichCurve Pitch = ReadCurve(Settings, "pitch");
+				const FRichCurve Yaw = ReadCurve(Settings, "yaw");
+				const FRichCurve Roll = ReadCurve(Settings, "roll");
+				const FRichCurve FOV = ReadCurve(Settings, "fov");
+
+				ShakeClass = UCurveCameraShake::StaticClass();
+				Initialize = [Duration, BlendIn, BlendOut, X, Y, Z, Pitch, Yaw, Roll, FOV](UCameraShakeBase& Shake)
+					{
+						auto* Pattern = Cast<UCurveCameraShakePattern>(Shake.GetRootShakePattern());
+						assert(Pattern != nullptr);
+
+						Pattern->Duration = Duration;
+						Pattern->BlendInTime = BlendIn;
+						Pattern->BlendOutTime = BlendOut;
+						Pattern->X = X;
+						Pattern->Y = Y;
+						Pattern->Z = Z;
+						Pattern->Pitch = Pitch;
+						Pattern->Yaw = Yaw;
+						Pattern->Roll = Roll;
+						Pattern->FOV = FOV;
+					};
+			}
+			else
+			{
+				throw sol::error("Unsupported camera shake pattern");
+			}
+
+			// 검증된 설정으로 기존 Manager 재생 요청
 			UWorld* World = Script->GetOwner()->GetWorld();
 			APlayerCameraManager* Manager = World->GetPlayerCameraManager();
 
-			return Manager && Manager->StartCameraShake(
-				PresetName, UWaveCameraShake::StaticClass(), bSingleInstance,
-				Initialize, Scale, PlaySpace) != nullptr;
+			return Manager && Manager->StartCameraShake(PresetName, ShakeClass, bSingleInstance, Initialize, Scale, PlaySpace) != nullptr;
 		});
 }
 

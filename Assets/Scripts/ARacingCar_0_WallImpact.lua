@@ -16,18 +16,16 @@ local WallHitCooldown = 0.0
 
 -- 벽 충돌 Shake 프리셋
 local WallImpactShake = {
-    pattern = "Wave",
+    pattern = "Perlin",
     duration = 0.25,
     blend_in = 0.02,
     blend_out = 0.15,
     single_instance = false,
     play_space = "CameraLocal",
 
-    --y = { amplitude = 0.15, frequency = 18.0, phase = 0.0 },
-    --z = { amplitude = 0.09, frequency = 23.0, phase = 0.0 },
-    roll = { amplitude = 0.8, frequency = 20.0, phase = 0.0 }
+    -- Roll 변화량과 노이즈 진행량
+    roll = { amplitude = 0.8, frequency = 20.0, seed = 89 }
 }
-
 function BeginPlay()
     -- 물리 이동 전 쿨다운 갱신
     script.set_tick_group("PrePhysics")
