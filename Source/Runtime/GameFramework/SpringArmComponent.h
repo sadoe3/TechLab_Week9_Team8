@@ -15,6 +15,8 @@ class USpringArmComponent : public USceneComponent
         PROPERTY(CameraLagMaxDistance)
         PROPERTY(bEnableCameraRotationLag)
         PROPERTY(CameraRotationLagSpeed)
+        PROPERTY(bDoCollisionTest)
+        PROPERTY(ProbeSize)
     REFLECT_END()
 
 public:
@@ -42,9 +44,15 @@ public:
     float GetCameraRotationLagSpeed() const { return CameraRotationLagSpeed; }
     void SetEnableCameraRotationLag(bool bEnabled);
     void SetCameraRotationLagSpeed(float Speed);
+    bool IsCollisionTestEnabled() const { return bDoCollisionTest; }
+    float GetProbeSize() const { return ProbeSize; }
+    void SetDoCollisionTest(bool bEnabled);
+    void SetProbeSize(float Radius);
 
 private:
-    void UpdateLagTickEnabled();
+    void UpdateCameraTickEnabled();
+    FVector CalculateDesiredEndpoint() const;
+    bool UpdateCollisionProbe();
 
     // 현재 엔진의 월드 단위. 차량 카메라의 기존 거리 4에 가까운 기본 길이를 사용한다.
     float TargetArmLength = 3.0f;
@@ -61,4 +69,8 @@ private:
     float CameraRotationLagSpeed = 10.0f;
     FQuat LaggedArmRotation = FQuat::Identity();
     bool bCameraRotationLagInitialized = false;
+    bool bDoCollisionTest = true;
+    float ProbeSize = 0.12f; // 현재 월드 단위의 구체 반지름. 부모 Scale을 적용하지 않는다.
+    FVector ProbedEndpoint = FVector::ZeroVector;
+    bool bProbeInitialized = false;
 };

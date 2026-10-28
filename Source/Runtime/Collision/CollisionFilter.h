@@ -5,7 +5,7 @@
 class AActor;
 
 enum class ECollisionEnabled : int32 { NoCollision, QueryOnly };
-enum class ECollisionChannel : int32 { WorldStatic, WorldDynamic, Pawn, Count };
+enum class ECollisionChannel : int32 { WorldStatic, WorldDynamic, Pawn, Camera, Count };
 enum class ECollisionResponse : int32 { Ignore, Overlap, Block };
 
 struct FCollisionResponseContainer
@@ -14,6 +14,7 @@ struct FCollisionResponseContainer
 	int32 WorldStatic = static_cast<int32>(ECollisionResponse::Block);
 	int32 WorldDynamic = static_cast<int32>(ECollisionResponse::Block);
 	int32 Pawn = static_cast<int32>(ECollisionResponse::Block);
+	int32 Camera = static_cast<int32>(ECollisionResponse::Block);
 
 	ECollisionResponse GetResponse(ECollisionChannel Channel) const;
 	void SetResponse(ECollisionChannel Channel, ECollisionResponse Response);
