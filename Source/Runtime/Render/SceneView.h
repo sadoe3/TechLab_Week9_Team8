@@ -33,6 +33,9 @@ struct FSceneView
     float FadeAmount = 0.0f;
     FLinearColor FadeColor{0.0f, 0.0f, 0.0f, 1.0f};
 
+    // 각 띠의 높이 비율. Editor View는 기본값 0으로 합성을 생략한다.
+    float LetterBoxHeightRatio = 0.0f;
+
     bool IsOrthographic() const { return ProjectionSettings.Mode == EProjectionMode::Orthographic; }
     FVector GetCameraLocation() const { return CameraLocation; }
     FVector GetCameraForward() const { return CameraForward; }

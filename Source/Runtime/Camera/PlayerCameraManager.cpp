@@ -112,6 +112,21 @@ const FLinearColor& APlayerCameraManager::GetFadeColor() const
     return CameraFade.GetColor();
 }
 
+void APlayerCameraManager::StartCameraLetterBox(float TargetHeightRatio, float Duration)
+{
+    CameraLetterBox.Start(TargetHeightRatio, Duration);
+}
+
+void APlayerCameraManager::StopCameraLetterBox()
+{
+    CameraLetterBox.Stop();
+}
+
+float APlayerCameraManager::GetLetterBoxHeightRatio() const
+{
+    return CameraLetterBox.GetHeightRatio();
+}
+
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
     // Modifier에서 World.SetViewTarget이 UpdateCamera(0)를 다시 호출할 수 있다.
@@ -122,6 +137,8 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     }
     // 재진입 검사 뒤에서 Modifier의 적용 여부와 독립적으로 페이드를 진행한다.
     CameraFade.Update(DeltaTime);
+    // 재진입 검사 뒤에서 Modifier의 활성화 여부와 독립적으로 갱신한다.
+    CameraLetterBox.Update(DeltaTime);
     // World가 이동 갱신 이후 명시적으로 호출한다. 일반 Actor Tick에는 등록하지 않는다.
     UpdateViewTarget(ViewTarget, DeltaTime);
     FillCameraCache(ViewTarget.POV);

@@ -132,6 +132,8 @@ public:
 	void RenderOutputPass(FViewport& Viewport, const FSceneView& View, const FSceneViewRenderSettings& Settings);
 	// HUD와 텍스트까지 출력한 최종 View 위에 페이드를 합성한다.
 	void RenderCameraFadePass(FViewport& Viewport, const FSceneView& View);
+	// HUD와 텍스트 위에 검은 띠를 합성한다. Fade보다 먼저 호출한다.
+	void RenderCameraLetterBoxPass(FViewport& Viewport, const FSceneView& View);
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
 
@@ -181,6 +183,10 @@ private:
 	bool InitCameraFadePass();
 	FPipelineState CameraFadePipelineState;
 	TUniquePtr<FConstantBuffer> CameraFadeCB;
+
+	bool InitCameraLetterBoxPass();
+	FPipelineState CameraLetterBoxPipelineState;
+	TUniquePtr<FConstantBuffer> CameraLetterBoxCB;
 
 	// 공통 GPU 패스 자원 소유
 	TUniquePtr<FFogRenderer> FogRenderer;

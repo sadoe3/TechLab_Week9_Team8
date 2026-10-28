@@ -46,6 +46,16 @@ void FGameViewportClient::UpdateInput(const FViewportInput& Input, FVector2 Outp
 		// 3: 진행 중이거나 유지 중인 효과를 즉시 해제한다.
 		Manager->StopCameraFade();
 	}
+	else if (FInputSystem::IsKeyPressed(EKeyCode::Num4))
+	{
+		// 4: 현재 높이에서 1초 동안 각 띠를 화면 높이의 10%로 표시하고 유지한다.
+		Manager->StartCameraLetterBox(0.1f, 1.0f);
+	}
+	else if (FInputSystem::IsKeyPressed(EKeyCode::Num5))
+	{
+		// 5: 표시 도중에도 현재 높이에서 이어서 1초 동안 띠를 숨긴다.
+		Manager->StartCameraLetterBox(0.0f, 1.0f);
+	}
 }
 
 FSceneView FGameViewportClient::CreateSceneView(const FVector2 OutputSize) const
@@ -64,5 +74,7 @@ FSceneView FGameViewportClient::CreateSceneView(const FVector2 OutputSize) const
 	View.FinalPostProcessSettings = POV.PostProcessSettings;
 	View.FadeAmount = Manager->GetFadeAmount();
 	View.FadeColor = Manager->GetFadeColor();
+	// Renderer는 Manager 대신 이번 View에 복사한 높이를 사용한다.
+	View.LetterBoxHeightRatio = Manager->GetLetterBoxHeightRatio();
 	return View;
 }

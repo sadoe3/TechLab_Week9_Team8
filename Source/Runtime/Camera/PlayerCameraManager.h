@@ -2,6 +2,7 @@
 
 #include "Camera/CameraTypes.h"
 #include "Camera/CameraFade.h"
+#include "Camera/CameraLetterBox.h"
 #include "GameFramework/Actor.h"
 
 class UCameraModifier;
@@ -40,6 +41,11 @@ public:
     float GetFadeAmount() const;
     const FLinearColor& GetFadeColor() const;
 
+    // 각 띠의 목표 높이 비율로 전환한다. 목표 0은 숨김, 시간 0은 즉시 적용이다.
+    void StartCameraLetterBox(float TargetHeightRatio, float Duration);
+    void StopCameraLetterBox();
+    float GetLetterBoxHeightRatio() const;
+
     float DefaultFOV = 60.0f; // Camera Component가 없는 대상에 사용할 수평 시야각(degree).
     float DefaultAspectRatio = 16.0f / 9.0f;
 
@@ -57,6 +63,8 @@ protected:
 private:
     // 시점 대상과 독립적인 값 멤버로 페이드 상태를 유지한다.
     FCameraFade CameraFade;
+    // ViewTarget과 독립적으로 유지하는 Letter Box 상태이다.
+    FCameraLetterBox CameraLetterBox;
     bool bApplyingCameraModifiers = false;
     TArray<UCameraModifier*> PendingModifierDeletes;
     FCameraCacheEntry CameraCachePrivate;

@@ -244,7 +244,8 @@ void UGameEngine::RenderGameView()
 	RenderCommand::EndRenderPass(TextInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
 
-	// HUD와 텍스트까지 합성한 결과에 페이드를 적용한 뒤 백버퍼로 복사한다.
+	// HUD와 텍스트 위에 검은 띠를 합성하고, 띠를 포함한 화면 전체에 Fade를 적용한다.
+	Renderer->RenderCameraLetterBoxPass(*GameViewport, View);
 	Renderer->RenderCameraFadePass(*GameViewport, View);
 
 	// 백버퍼 복사·프레임 참조 해제
