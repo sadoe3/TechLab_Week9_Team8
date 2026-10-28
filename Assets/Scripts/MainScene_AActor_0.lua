@@ -129,7 +129,7 @@ function BeginPlay()
     game.set_score(0)
 
     GoDisplayRemaining = 0.0
-    game.set_countdown(tostring(math.ceil(CountdownSeconds)))
+    game.set_countdown("")
     game.set_race_time(0.0)
 
     print(string.format("[Race] Countdown: %d", math.ceil(CountdownSeconds)))
@@ -151,6 +151,7 @@ function Tick(DeltaTime)
     if Race.State == "Intro" then   
         if not game.is_sequence_playing() then
            Race.State = "Countdown"
+           game.set_countdown(tostring(math.ceil(CountdownSeconds)))
         end
         return
     end
