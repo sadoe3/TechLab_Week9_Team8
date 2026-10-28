@@ -23,7 +23,6 @@
 #include "Engine/World.h"
 #include "Core/TimeDilation.h"
 #include "UObject/UObjectIterator.h"
-#include <Cinematic/SequencePlayer.h>
 
 namespace
 {
@@ -178,7 +177,6 @@ bool FEngineLoop::Tick()
 		// 프레임 시작·실행
 		const float DeltaTime = EngineTimer::GetDeltaTime();
 		FTimeDilation::Tick();
-		FSequencePlayer::Tick();
 		GEngine->PreTick(DeltaTime);
 		GEngine->Tick(DeltaTime);
 		// 렌더 참조 정리 후 종료 요청 처리

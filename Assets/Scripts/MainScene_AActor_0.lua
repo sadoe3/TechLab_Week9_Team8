@@ -152,6 +152,9 @@ function Tick(DeltaTime)
 
     if Race.State == "Intro" then   
         if not world.is_sequence_playing() then
+           -- 인트로 완료·중단 후 주행 시점 및 화면 효과 복원
+           world.stop_sequence()
+           world.set_view_target(Race.Player)
            Race.State = "Countdown"
            game.set_countdown(tostring(math.ceil(CountdownSeconds)))
         end

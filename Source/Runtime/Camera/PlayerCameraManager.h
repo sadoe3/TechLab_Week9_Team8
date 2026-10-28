@@ -6,7 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Camera/CameraShakeBase.h"
 #include "UObject/WeakObjectPtr.h"
-
+#include "Camera/CameraTransitionCurve.h"
+#include "Core/Misc/Optional.h"
 
 class UCameraModifier;
 
@@ -35,6 +36,7 @@ public:
 
     // 즉시 선택 또는 시간 지정 전환
     void SetViewTarget(AActor* NewViewTarget, const FViewTargetTransitionParams& Params = {});
+    void SetViewTargetWithCurve(AActor* NewViewTarget, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve& Curve);
     // 대상은 유지하고 현재 캐시에서 새 POV로 전환한다. 진행 중인 전환은 덮어쓰지 않는다.
     bool BlendToCurrentViewTarget(const FViewTargetTransitionParams& Params);
     // 현재 대상 조회
@@ -100,4 +102,10 @@ private:
 
     // 콜백 중 대상 변경 식별
     uint32 ViewTargetGeneration = 0;
+
+    // 기본 보간과 사용자 곡선의 공통 전환 경로
+    void SetViewTargetInternal(AActor* NewViewTarget, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve* Curve);
+
+    // 진행 중인 전환의 사용자 곡선
+    TOptional<FCameraTransitionCurve> ActiveBlendCurve;
 };

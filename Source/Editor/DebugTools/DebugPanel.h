@@ -27,7 +27,6 @@ private:
 	void DrawLightCullingSection(const FShadowCullingStats* Stats);
 	void DrawCasterCullingSection(const FShadowCullingStats* Stats);
 	void DrawTimeDilationSection();
-	void DrawSequenceSection();
 
 	FShadowCullingSettings* ShadowSettings = nullptr;
 	std::function<const FShadowCullingStats*(bool)> ShadowStatsQuery;

@@ -3,8 +3,6 @@
 #include "Core/TimeDilation.h"
 #include <cfloat>
 #include <cstdio>
-#include <Cinematic/SequencePlayer.h>
-#include <Cinematic/SequenceSerializer.h>
 
 namespace
 {
@@ -113,7 +111,6 @@ void FDebugPanel::OnRender()
 	}
 
 	DrawTimeDilationSection();
-	DrawSequenceSection();
 	if (!ShadowSettings)
 	{
 		ImGui::TextDisabled("Shadow settings are not connected.");
@@ -321,49 +318,5 @@ void FDebugPanel::DrawTimeDilationSection()
 	}
 
 	ImGui::TextDisabled("Real %.4f s    Game %.4f s", FTimeDilation::GetRealDelta(), FTimeDilation::GetGameDelta());
-	ImGui::Spacing();
-}
-
-void FDebugPanel::DrawSequenceSection()
-{
-	if (!ImGui::CollapsingHeader("Sequence", ImGuiTreeNodeFlags_DefaultOpen)) return;
-
-	if (BeginControlTable("##SequenceControls"))
-	{
-		ControlRow("Test Sequence", "Plays 1s Wait, 2s Wait, then Finish. Uses unscaled time.");
-		if (ImGui::Button("Play Test Sequence", ImVec2(-FLT_MIN, 0.0f)))
-		{
-			TArray<FSequenceStep> Steps;
-			Steps.Push({ 1.0f, ESequenceAction::Wait });
-			Steps.Push({ 2.0f, ESequenceAction::Wait });
-			Steps.Push({ 0.0f, ESequenceAction::Finish });
-			FSequencePlayer::Play(Steps, nullptr);
-		}
-
-		ControlRow("Stop", "Cancels the sequence in progress.");
-		if (ImGui::Button("Stop Sequence", ImVec2(-FLT_MIN, 0.0f))) FSequencePlayer::Stop();
-
-		ControlRow("Save", "Writes the test sequence to Sequences/Test.sequence.");
-		if (ImGui::Button("Save Sequence", ImVec2(-FLT_MIN, 0.0f)))
-		{
-			TArray<FSequenceStep> Steps;
-			Steps.Push({ 1.0f, ESequenceAction::Wait });
-			Steps.Push({ 2.0f, ESequenceAction::Wait });
-			Steps.Push({ 0.0f, ESequenceAction::Finish });
-			SequenceSerializer::Save(Steps, "Sequences/Test.sequence");
-		}
-
-		ControlRow("Load", "Reads Sequences/Intro.sequence and plays it.");
-		if (ImGui::Button("Load Sequence", ImVec2(-FLT_MIN, 0.0f)))
-		{
-			TArray<FSequenceStep> Steps;
-			if (SequenceSerializer::Load(Steps, "Sequences/Intro.sequence"))
-				FSequencePlayer::Play(Steps, nullptr);
-		}
-
-		ImGui::EndTable();
-	}
-
-	ImGui::TextDisabled("%s", FSequencePlayer::IsPlaying() ? "Playing" : "Idle");
 	ImGui::Spacing();
 }
