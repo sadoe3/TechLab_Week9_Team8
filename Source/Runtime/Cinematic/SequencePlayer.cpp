@@ -3,11 +3,13 @@
 #include "Core/TimeDilation.h"
 #include "Core/EngineLog.h"
 
-void FSequencePlayer::Play(const TArray<FSequenceStep>& InSteps)
+void FSequencePlayer::Play(const TArray<FSequenceStep>& InSteps, UWorld* World)
 {
 	Steps = InSteps;
 	CurrentIndex = 0;
 	Elapsed = 0.0f;
+
+	WorldPtr = World;
 
 	EnterStep();
 }
@@ -25,6 +27,7 @@ void FSequencePlayer::Tick()
 void FSequencePlayer::Stop()
 {
 	Steps.Empty();
+	WorldPtr.Reset();
 	CurrentIndex = 0;
 	Elapsed = 0.0f;
 }

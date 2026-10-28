@@ -336,7 +336,7 @@ void FDebugPanel::DrawSequenceSection()
 			Steps.Push({ 1.0f, ESequenceAction::Wait });
 			Steps.Push({ 2.0f, ESequenceAction::Wait });
 			Steps.Push({ 0.0f, ESequenceAction::Finish });
-			FSequencePlayer::Play(Steps);
+			FSequencePlayer::Play(Steps, nullptr);
 		}
 
 		ControlRow("Stop", "Cancels the sequence in progress.");

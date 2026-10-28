@@ -124,7 +124,7 @@ function BeginPlay()
     end
 
     Race.Reset(Player, CountdownSeconds, CheckpointCount)
-    game.play_intro_sequence()
+    world.play_intro_sequence()
     Player.Velocity = Vector(0, 0, 0)
     game.set_score(0)
 
@@ -149,7 +149,7 @@ function Tick(DeltaTime)
     end
 
     if Race.State == "Intro" then   
-        if not game.is_sequence_playing() then
+        if not world.is_sequence_playing() then
            Race.State = "Countdown"
            game.set_countdown(tostring(math.ceil(CountdownSeconds)))
         end
@@ -203,7 +203,7 @@ end
 function EndPlay()
     -- C++에 보관된 결과 화면 상태를 씬 종료 시 정리합니다.
     game.reset_result_ui()
-    game.stop_sequence()
+    world.stop_sequence()
     GoDisplayRemaining = 0.0
     game.set_countdown("")
     Race.Stop()

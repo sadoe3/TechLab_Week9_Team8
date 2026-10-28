@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EnginePCH.h"
+#include "Engine/World.h"
 
 enum class ESequenceAction {
 	Wait, Finish
@@ -9,12 +10,13 @@ enum class ESequenceAction {
 struct FSequenceStep {
 	float Duration = 0.0f;
 	ESequenceAction Action = ESequenceAction::Wait;
+	FString TargetName;
 };
 
 
 class FSequencePlayer {
 public:
-	static void Play(const TArray <FSequenceStep> & InSteps);
+	static void Play(const TArray <FSequenceStep> & InSteps, UWorld * World);
 	static void Tick();
 	static void Stop();
 	static bool IsPlaying();
@@ -26,5 +28,7 @@ private:
 	inline static TArray <FSequenceStep> Steps;
 	inline static int32 CurrentIndex = 0;
 	inline static  float Elapsed = 0.0f;
+
+	inline static TWeakObjectPtr<UWorld> WorldPtr;
 
 };	

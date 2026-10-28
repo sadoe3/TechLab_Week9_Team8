@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include "Engine/Engine.h"
+#include "Cinematic/SequencePlayer.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -118,6 +119,25 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 		{
 			return GEngine && GEngine->RequestExit(WeakWorld.Get());
 		});
+	WorldTable.set_function("play_intro_sequence", [WeakWorld]()
+		{
+			UWorld* World = WeakWorld.Get();
+			TArray<FSequenceStep> Steps;
+			Steps.Push({ 3.0f , ESequenceAction::Wait });
+			FSequencePlayer::Play(Steps, World);
+		}
+	);
+	WorldTable.set_function("stop_sequence", []()
+		{
+			FSequencePlayer::Stop();
+		}
+	);
+	WorldTable.set_function("is_sequence_playing", []()
+		{
+			return FSequencePlayer::IsPlaying();
+		}
+	);
+
 	Environment["world"] = WorldTable;
 	return Environment;
 }
