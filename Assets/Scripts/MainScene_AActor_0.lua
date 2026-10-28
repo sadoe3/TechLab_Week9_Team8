@@ -168,10 +168,6 @@ function Tick(DeltaTime)
     if Race.State == "Finished" then
         Race.Player.Velocity = Race.Player.Velocity * (1 - 1.5 * DeltaTime)
 
-        -- 주행 중 넓어진 시야를 기본 FOV로 복원
-        -- RacingCar.lua의 BaseFOV(60.0)
-        Race.Player.CameraFOV = 60 + (Race.Player.CameraFOV - 60) * (1 - 1.5 * DeltaTime)
-
         return
     end
 
