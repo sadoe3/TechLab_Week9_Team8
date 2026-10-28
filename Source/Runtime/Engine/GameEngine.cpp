@@ -20,7 +20,7 @@ FEngineConfig UGameEngine::GetConfig() const
 	Desc.Width = 1280;
 	Desc.Height = 720;
 	Desc.bBorderless = false;
-	Desc.SyncInterval = 0;   // 0 = VSync 끔 (FPS 측정용)
+	Desc.SyncInterval = 1;   // 0 = VSync 끔 (FPS 측정용)
 	Desc.bCreateDepthBuffer = false;
 	Desc.bExitOnEscape = false;        
 	return Desc;

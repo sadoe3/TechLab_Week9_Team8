@@ -1,0 +1,274 @@
+{
+    "Version": 2,
+    "Length": 5.0,
+    "Rate": 1.0,
+    "Loop": false,
+    "HoldEnd": true,
+    "Tracks": [
+        {
+            "Type": "Location.X",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": -85.162373,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": -85.23355,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Location.Y",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": -55.70319,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": -55.42945,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Location.Z",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": -0.05008,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": -0.10008,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Pitch",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 15.724632,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": 14.758957,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Yaw",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": -170.902229,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": -164.640035,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Roll",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 0.0,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 2.0,
+                    "Value": 0.0,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Camera.FOV",
+            "TargetName": "TrailerOpeningCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 60.0,
+                    "Interpolation": "Constant"
+                }
+            ]
+        },
+        {
+            "Type": "Location.X",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": -85.863177,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": -86.294324,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Location.Y",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": -54.131925,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": -53.878721,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Location.Z",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": -0.40008,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": -0.40008,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Pitch",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": 7.961532,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": 8.154644,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Yaw",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": -133.182392,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": -122.585939,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Rotation.Roll",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 2.0,
+                    "Value": 0.0,
+                    "Interpolation": "Cubic"
+                },
+                {
+                    "Time": 5.0,
+                    "Value": 0.0,
+                    "Interpolation": "Cubic"
+                }
+            ]
+        },
+        {
+            "Type": "Camera.FOV",
+            "TargetName": "TrailerSideCamera",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 60.0,
+                    "Interpolation": "Constant"
+                }
+            ]
+        },
+        {
+            "Type": "ViewTarget",
+            "TargetName": "",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 0.0,
+                    "Interpolation": "Constant",
+                    "TargetName": "TrailerOpeningCamera",
+                    "BlendTime": 0.0,
+                    "BlendFunction": "Cubic",
+                    "BlendExp": 2.0
+                },
+                {
+                    "Time": 2.0,
+                    "Value": 0.0,
+                    "Interpolation": "Constant",
+                    "TargetName": "TrailerSideCamera",
+                    "BlendTime": 0.0,
+                    "BlendFunction": "Cubic",
+                    "BlendExp": 2.0
+                }
+            ]
+        },
+        {
+            "Type": "Fade",
+            "TargetName": "",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 1.0,
+                    "Interpolation": "Linear"
+                },
+                {
+                    "Time": 0.2,
+                    "Value": 0.0,
+                    "Interpolation": "Linear"
+                }
+            ]
+        },
+        {
+            "Type": "LetterBox",
+            "TargetName": "",
+            "Keys": [
+                {
+                    "Time": 0.0,
+                    "Value": 0.08,
+                    "Interpolation": "Constant"
+                }
+            ]
+        }
+    ]
+}

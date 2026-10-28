@@ -58,7 +58,7 @@ FEngineConfig UEditorEngine::GetConfig() const
 	Desc.Width = 1920;
 	Desc.Height = 1080;
 	Desc.bBorderless = false;
-	Desc.SyncInterval = 0;
+	Desc.SyncInterval = 1;
 	// View는 각자 깊이 버퍼를 쓰고 백버퍼에는 ImGui만 그린다.
 	Desc.bCreateDepthBuffer = false;
 	Desc.bExitOnEscape = false;
