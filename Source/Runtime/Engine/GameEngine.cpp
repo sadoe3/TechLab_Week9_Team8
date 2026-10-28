@@ -3,6 +3,7 @@
 #include "Launch/LaunchEngineLoop.h"
 #include "Serialization/JsonArchive.h"
 #include "Core/Window.h"
+#include "Core/TimeDilation.h"
 #include "Engine/GameViewportClient.h"
 #include "Render/RenderCommand.h"
 #include "Render/Swapchain.h"
@@ -88,7 +89,7 @@ void UGameEngine::PreTick(float DeltaTime)
 void UGameEngine::Tick(float DeltaTime)
 {
 	// 게임 World 갱신
-	GameWorld->Tick(DeltaTime);
+	GameWorld->Tick(DeltaTime * FTimeDilation::GetDilation());
 	// 갱신 후 랜더 Transform 반영
 	GameWorld->GetScene().UpdateAllTransforms();
 	RenderGameView();

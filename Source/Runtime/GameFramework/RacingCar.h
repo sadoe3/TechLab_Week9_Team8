@@ -2,6 +2,7 @@
 
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
+#include "Core/Misc/Delegate.h"
 
 class UTextRenderComponent;
 class UPrimitiveComponent;
@@ -84,4 +85,5 @@ private:
 	bool bWaitingForConfirmRelease = true;
 
 	void HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit);
+	void HandleSlomoFinished();
 };
