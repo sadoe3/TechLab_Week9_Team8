@@ -9,6 +9,7 @@ namespace {
 		{ ESequenceAction::Finish, "Finish" },
 		{ ESequenceAction::SetViewTarget, "SetViewTarget" },
 		{ ESequenceAction::Fade, "Fade" },
+		{ ESequenceAction::LetterBox, "LetterBox" },
 	};
 
 }

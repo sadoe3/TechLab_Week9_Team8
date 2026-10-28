@@ -1,32 +1,47 @@
 {
     "Steps": [
         {
+            "Action": "LetterBox",
+            "Duration": 0.0,
+            "TargetName": "",
+            "Params": { "Ratio": 0.12 }
+        },
+        {
             "Action": "SetViewTarget",
+            "Duration": 0.0,
+            "TargetName": "ACameraActor_1",
+            "Params": {}
+        },
+        {
+            "Action": "Fade",
             "Duration": 1.0,
-            "TargetName": "ACameraActor_1"
+            "TargetName": "",
+            "Params": { "From": 1.0, "To": 0.0 }
         },
         {
             "Action": "Wait",
             "Duration": 2.0,
-            "TargetName": ""
+            "TargetName": "",
+            "Params": {}
         },
         {
             "Action": "SetViewTarget",
             "Duration": 0.0,
-            "TargetName": "ARacingCar_0"
+            "TargetName": "ARacingCar_0",
+            "Params": {}
+        },
+        {
+            "Action": "LetterBox",
+            "Duration": 0.5,
+            "TargetName": "",
+            "Params": { "Ratio": 0.0 }
         },
         {
             "Action": "Finish",
             "Duration": 0.0,
-            "TargetName": ""
-        },
-	{
-   	 "Action": "Fade",
-   	 "Duration": 1.0,
-  	  "TargetName": "",
- 	   "Params": { "From": 1.0, "To": 0.0 }
-	}
-
+            "TargetName": "",
+            "Params": {}
+        }
     ],
     "Version": 1
 }

@@ -106,6 +106,18 @@ void FSequencePlayer::EnterStep()
 		Manager->StartCameraFade(From, To, Step.Duration, FLinearColor(0, 0, 0), true);
 		break;
 	}
+	case ESequenceAction::LetterBox:
+	{
+		UWorld* World = WorldPtr.Get();
+		if (World == nullptr) break;
+
+		APlayerCameraManager* Manager = World->GetPlayerCameraManager();
+		if (Manager == nullptr) break;
+
+		const float Ratio = GetParam(Step, "Ratio", 0.12f);
+		Manager->StartCameraLetterBox(Ratio, Step.Duration);
+		break;
+	}
 	}
 
 	
