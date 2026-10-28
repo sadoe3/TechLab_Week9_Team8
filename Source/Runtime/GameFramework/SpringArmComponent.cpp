@@ -39,17 +39,32 @@ void USpringArmComponent::TickComponent(float DeltaTime)
     if (bEnableCameraRotationLag)
     {
         // Rotation Lag
-        FQuat DesiredRotation = GetWorldRotation().Quaternion();
-        // 목표에 도달하면 정확히 목표값을 사용한다. 반복 Slerp/정규화의 반올림으로 정지 화면이 흔들리는 것을 막는다.
-        if (bCameraRotationLagInitialized && CameraRotationLagSpeed > 0.0f
-            && !LaggedArmRotation.Equals(DesiredRotation))
+        const FQuat ArmRotation = GetWorldRotation().Quaternion();
+        FQuat DesiredRotation = ArmRotation;
+        if (bCameraRotationLagInitialized && CameraRotationLagSpeed > 0.0f)
         {
-            DesiredRotation = FQuat::Slerp(LaggedArmRotation, DesiredRotation, FMath::Clamp(DeltaTime * CameraRotationLagSpeed, 0.0f, 1.0f));
+            constexpr float MaxLagTimeStep = 1.0f / 120.0f;
+            const float FrameTime = FMath::Max(DeltaTime, 0.0f);
+            DesiredRotation = LaggedArmRotation;
+            float RemainingTime = FrameTime;
+            while (RemainingTime > 0.0f)
+            {
+                const float Step = FMath::Min(RemainingTime, MaxLagTimeStep);
+                RemainingTime -= Step;
+                // Euler 각도 대신 Quaternion의 최단 경로로 구간별 목표를 만든다.
+                const FQuat StepTarget = RemainingTime > 0.0f
+                    ? FQuat::Slerp(PreviousArmRotation, ArmRotation, 1.0f - RemainingTime / FrameTime)
+                    : ArmRotation;
+                // 도달한 목표는 그대로 사용해 정지 화면의 반복 정규화 흔들림을 막는다.
+                DesiredRotation = DesiredRotation.Equals(StepTarget) ? StepTarget
+                    : FQuat::Slerp(DesiredRotation, StepTarget, FMath::Clamp(Step * CameraRotationLagSpeed, 0.0f, 1.0f));
+            }
         }
         bLagRotated = bCameraRotationLagInitialized
             && (DesiredRotation.X != LaggedArmRotation.X || DesiredRotation.Y != LaggedArmRotation.Y
                 || DesiredRotation.Z != LaggedArmRotation.Z || DesiredRotation.W != LaggedArmRotation.W);
         LaggedArmRotation = DesiredRotation;
+        PreviousArmRotation = ArmRotation;
         bCameraRotationLagInitialized = true;
     }
 

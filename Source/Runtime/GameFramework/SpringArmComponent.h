@@ -69,6 +69,7 @@ private:
     bool bEnableCameraRotationLag = false;
     float CameraRotationLagSpeed = 10.0f;
     FQuat LaggedArmRotation = FQuat::Identity();
+    FQuat PreviousArmRotation = FQuat::Identity(); // 보간 결과가 아닌 이전 프레임의 목표 회전.
     bool bCameraRotationLagInitialized = false;
     bool bDoCollisionTest = true;
     float ProbeSize = 0.12f; // 현재 월드 단위의 구체 반지름. 부모 Scale을 적용하지 않는다.
