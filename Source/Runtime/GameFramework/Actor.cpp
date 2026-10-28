@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/Level.h"
 #include "Component/SceneComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Component/ParticleSubUVComponent.h"
 #include "Core/EngineLog.h"
 #include "UObject/Object.h"
@@ -278,6 +279,23 @@ void AActor::RemoveOwnedComponent(UActorComponent* Component)
     {
         RootComponent = nullptr;
     }
+}
+
+void AActor::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
+{
+    for (UActorComponent* Component : Components)
+    {
+        UCameraComponent* Camera = Cast<UCameraComponent>(Component);
+        if (Camera && Camera->IsActive() && !Camera->IsPendingDestroy())
+        {
+            Camera->GetCameraView(DeltaTime, OutResult);
+            return;
+        }
+    }
+
+    // 카메라가 없으면 Actor 위치·회전만 채우고 호출자가 설정한 FOV·투영 값은 유지한다.
+    OutResult.Location = GetActorLocation();
+    OutResult.Rotation = RootComponent ? RootComponent->GetWorldRotation() : FRotator();
 }
 
 FVector AActor::GetActorLocation() const

@@ -8,6 +8,7 @@
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Input/InputSystem.h"
 
 #include "UObject/UObjectIterator.h"
@@ -92,6 +93,15 @@ bool UWorld::Init()
 	Levels.Add(PersistentLevel);
 	CurrentLevel = PersistentLevel;
 
+	PlayerCameraManager = NewObject<APlayerCameraManager>(this);
+	if (!PlayerCameraManager)
+	{
+		HTR_LOG(Error, "Failed to create PlayerCameraManager");
+		return false;
+	}
+	PlayerCameraManager->World = this;
+	PlayerCameraManager->Level = nullptr;
+
 	//카메라 생성
 	CreateFallbackCamera();
 
@@ -169,6 +179,10 @@ void UWorld::Tick(float DeltaTime)
 		// 이동이 끝난 뒤 갱신해 렌더 프록시와 카메라가 같은 프레임의 Transform을 사용한다.
 		Scene.UpdateAllTransforms();
 	}
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->UpdateCamera(DeltaTime);
+	}
 }
 
 bool UWorld::ClearWorld()
@@ -215,6 +229,12 @@ bool UWorld::ClearWorld()
 		Actor->UninitializeComponents();
 	}
 
+	// 종료 콜백이 Modifier를 정리할 기회를 준 뒤, Actor 해제 전에 남은 효과를 해제한다.
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ClearCameraModifiers();
+	}
+
 	// 렌더 등록 일괄 제거
 	Scene.RemoveAllPrimitives();
 	PhysicsScene.RemoveAllBodies();
@@ -234,7 +254,7 @@ bool UWorld::ClearWorld()
 	// Fallback Tick 복구
 	if (FallbackCamera)
 	{
-		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+		FallbackCamera->RegisterAllActorTickFunctions(GetViewTarget() == FallbackCamera);
 	}
 
 	HTR_LOG(Info, "{} : ", GetActorNum());
@@ -587,6 +607,9 @@ UCameraComponent* UWorld::FindCameraComponent(AActor* Actor) const
 
 bool UWorld::SetViewTarget(AActor* Actor)
 {
+	if (!PlayerCameraManager)
+		return false;
+
 	if (Actor && (!AcceptsChanges() || Actor->IsPendingDestroy()))
 	{
 		return false;
@@ -594,32 +617,41 @@ bool UWorld::SetViewTarget(AActor* Actor)
 	// nullptr은 내장 카메라로 복귀하는 명시적인 요청입니다.
 	AActor* NewViewTarget = Actor ? Actor : FallbackCamera;
 
-	// 카메라가 없으면 현재 선택과 Tick 등록 상태를 유지합니다.
-	UCameraComponent* NewCamera = FindCameraComponent(NewViewTarget);
-	if (!NewCamera || NewCamera->IsPendingDestroy())
+	if (!NewViewTarget || NewViewTarget->GetWorld() != this)
 		return false;
 
-	if (MainViewTarget == NewViewTarget)
-		return true;
+	// 카메라 없는 대상을 거쳐도 Viewport의 입력 차단 상태를 유지한다.
+	if (UCameraComponent* NewCamera = FindCameraComponent(NewViewTarget))
+		NewCamera->SetExternalInputManaged(!bCameraInputEnabled);
 
-	// 전환 직후에도 기존 뷰포트의 입력 차단 상태를 유지합니다.
-	if (UCameraComponent* PreviousCamera = GetMainCamera())
-		NewCamera->SetExternalInputManaged(PreviousCamera->IsExternalInputManaged());
-
-	MainViewTarget = NewViewTarget;
+	PlayerCameraManager->SetViewTarget(NewViewTarget);
+	// 초기화·즉시 전환·씬 정리 직후에도 새 대상의 시점을 읽을 수 있도록 합니다.
+	PlayerCameraManager->UpdateCamera(0.0f);
 
 	// Level 밖의 내장 카메라만 선택 여부에 따라 Tick을 등록·해제합니다.
 	// 배치 액터의 Tick 등록은 기존 Actor 생명주기가 관리합니다.
 	if (FallbackCamera)
-		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+		FallbackCamera->RegisterAllActorTickFunctions(GetViewTarget() == FallbackCamera);
 
 	return true;
+}
+
+void UWorld::SetCameraInputEnabled(bool bEnabled)
+{
+	bCameraInputEnabled = bEnabled;
+	if (UCameraComponent* Camera = GetMainCamera())
+		Camera->SetExternalInputManaged(!bEnabled);
+}
+
+AActor* UWorld::GetViewTarget() const
+{
+	return PlayerCameraManager ? PlayerCameraManager->GetViewTarget() : nullptr;
 }
 
 UCameraComponent* UWorld::GetMainCamera() const
 {
 	// 컴포넌트 포인터를 따로 보관하지 않고 현재 액터에서 조회합니다.
-	return FindCameraComponent(MainViewTarget);
+	return FindCameraComponent(GetViewTarget());
 }
 
 int32 UWorld::GetActorNum()
@@ -657,7 +689,7 @@ void UWorld::DestroyActorNow(AActor* Actor)
 	Actor->UninitializeComponents();
 
 	// 삭제 전 시점 복구
-	if (MainViewTarget == Actor)
+	if (GetViewTarget() == Actor)
 	{
 		SetViewTarget(nullptr);
 	}
@@ -876,6 +908,9 @@ void UWorld::BeginPlay()
 
 	StartPendingObjects();
 	PlayState = EWorldPlayState::Playing;
+	// 게임 시작 코드의 대상 지정·카메라 설정을 첫 화면 이전에 캐시에 반영한다.
+	if (PlayerCameraManager)
+		PlayerCameraManager->UpdateCamera(0.0f);
 }
 
 void UWorld::EndPlay()
@@ -1110,7 +1145,7 @@ void UWorld::StartPendingObjects()
 	// Fallback도 시작하지만, 선택되지 않았다면 Tick 등록은 해제합니다.
 	if (FallbackCamera)
 	{
-		FallbackCamera->RegisterAllActorTickFunctions(MainViewTarget == FallbackCamera);
+		FallbackCamera->RegisterAllActorTickFunctions(GetViewTarget() == FallbackCamera);
 	}
 }
 
@@ -1137,7 +1172,12 @@ void UWorld::Shutdown()
 	EndPlay();
 	ClearWorld();
 
-	MainViewTarget = nullptr;
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->SetViewTarget(nullptr);
+		delete PlayerCameraManager;
+		PlayerCameraManager = nullptr;
+	}
 
 	// 내장 카메라 해제
 	delete FallbackCamera;

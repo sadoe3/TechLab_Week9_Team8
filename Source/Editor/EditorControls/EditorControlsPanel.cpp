@@ -196,13 +196,13 @@ void FEditorControlsPanel::DrawCameraProperties()
 	// Camera Projection Table
 	if (ImGui::BeginTable("Camera Projection", 2))
 	{
-		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+		ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
 		ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 
 		// FOV 또는 Ortho Width
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		ImGui::Text(bOrthogonal ? "Ortho Width" : "FOV");
+		ImGui::Text(bOrthogonal ? "Ortho Width" : "Horizontal FOV");
 
 		ImGui::TableSetColumnIndex(1);
 		ImGui::SetNextItemWidth(-1.0f);

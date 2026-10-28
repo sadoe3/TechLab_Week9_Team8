@@ -89,6 +89,18 @@ FMatrix UCameraComponent::GetViewMatrix() const
     return InverseTranslation * InverseRotation;
 }
 
+void UCameraComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
+{
+    DesiredView.Location = GetWorldLocation();
+    DesiredView.Rotation = GetWorldRotation();
+    DesiredView.FOV = FieldOfView;
+    DesiredView.AspectRatio = AspectRatio;
+    DesiredView.ProjectionMode = bIsOrthogonal ? EProjectionMode::Orthographic : EProjectionMode::Perspective;
+    DesiredView.OrthoWidth = OrthoWidth;
+    DesiredView.NearClipPlane = NearClipPlane;
+    DesiredView.FarClipPlane = FarClipPlane;
+}
+
 FCameraProjection UCameraComponent::GetProjectionSettings() const
 {
     return {bIsOrthogonal ? EProjectionMode::Orthographic : EProjectionMode::Perspective, FieldOfView, OrthoWidth, NearClipPlane, FarClipPlane};

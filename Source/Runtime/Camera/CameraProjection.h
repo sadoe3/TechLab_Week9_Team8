@@ -8,7 +8,7 @@ enum class EProjectionMode { Perspective, Orthographic };
 struct FCameraProjection
 {
     EProjectionMode Mode = EProjectionMode::Perspective;
-    float FovDegrees = 60.0f;
+    float FovDegrees = 60.0f; // UE의 FMinimalViewInfo::FOV와 같은 수평 시야각(degree).
     float OrthoWidth = 16.0f;
     float NearClip = 0.1f;
     float FarClip = 10000.0f;

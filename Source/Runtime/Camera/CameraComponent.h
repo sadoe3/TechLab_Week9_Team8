@@ -2,6 +2,7 @@
 
 #include "UObject/Class.h"
 #include "Camera/CameraProjection.h"
+#include "Camera/CameraTypes.h"
 #include "../Component/SceneComponent.h"
 #include "../Math/EngineMath.h"
 #include "../Math/Rotator.h"
@@ -16,6 +17,8 @@ public:
 
 	// 매 프레임 카메라 입력/이동 처리
 	virtual void TickComponent(float DeltaTime) override;
+
+	virtual void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView);
 
 	// Camera 행렬 계산
 	FMatrix GetViewMatrix() const;
@@ -69,6 +72,7 @@ public:
 	void UpdateZoom(float DeltaTime);     // 마우스 휠 줌
 
 protected:
+	// UE와 동일하게 에디터·Lua·시점 데이터의 FOV는 수평 시야각(degree)으로 통일한다.
 	float FieldOfView = 60.0f;
 	float AspectRatio = 16.0f / 9.0f;
 	float NearClipPlane = 0.1f;

@@ -23,6 +23,7 @@ class UBillboardComponent;
 class UEngine;
 class FJsonArchive;
 class FLuaRuntime;
+class APlayerCameraManager;
 struct FLODViewContext;
 
 struct FRenderStats
@@ -67,11 +68,13 @@ public:
 
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
-	// 카메라가 있는 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
+	// 같은 World의 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
 	bool SetViewTarget(AActor* Actor);
+	void SetCameraInputEnabled(bool bEnabled);
 
 	// 현재 선택된 시점 제공 액터입니다.
-	AActor* GetViewTarget() const { return MainViewTarget; }
+	AActor* GetViewTarget() const;
+	APlayerCameraManager* GetPlayerCameraManager() const { return PlayerCameraManager; }
 
 	// 선택된 액터의 첫 카메라 컴포넌트를 반환합니다.
 	UCameraComponent* GetMainCamera() const;
@@ -200,8 +203,11 @@ private:
 	// World가 생성·보관하는 최종 복귀용 카메라 액터입니다.
 	ACameraActor* FallbackCamera = nullptr;
 
-	// 현재 시점을 제공하는 액터입니다. 배치 액터의 소유권은 가져오지 않습니다.
-	AActor* MainViewTarget = nullptr;
+	// Level 밖에서 World가 생성·해제하며 시점 선택과 최종 캐시를 관리합니다.
+	APlayerCameraManager* PlayerCameraManager = nullptr;
+	// TODO: PlayerController 도입 시 Viewport의 입력 허용과 플레이어 입력 제어 책임을 분리하고,
+	// 이 상태와 SetCameraInputEnabled의 카메라 적용 처리를 World 밖으로 옮긴다. 현재는 대상 전환 간 입력 상태 보존용이다.
+	bool bCameraInputEnabled = true;
 
 	ULevel* PersistentLevel = nullptr;
 	ULevel* CurrentLevel = nullptr;
