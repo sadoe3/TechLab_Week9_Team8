@@ -798,6 +798,17 @@ void UWorld::QueueComponentForDestroy(UActorComponent* Component)
 	// 호출자가 검증한 Component의 삭제 예약
 	Component->bPendingDestroy = true;
 	PendingDestroyList.Enqueue(Component->GetUUID());
+	// 삭제 예약 시점의 현재·도착 카메라 정리
+	if (GetMainCamera() == Component)
+	{
+		SetViewTarget(nullptr);
+	}
+	else if (GetPendingViewTarget() == Component->GetOwner() && FindCameraComponent(Component->GetOwner()) == Component)
+	{
+		PlayerCameraManager->CancelViewTargetBlend();
+		SyncCameraTargets();
+	}
+
 }
 
 // 다른 World의 객체를 제외하고 Component 교차 중 최근접 결과를 선택한다.
