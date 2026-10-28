@@ -387,10 +387,18 @@ void FRenderer::RenderOutputPass(
 
 	// 데이터 시각화의 색 변환 제외
 	const bool bVisualizeData = IsDataVisualization(View.RenderMode.ViewMode);
+	// Camera의 Gamma 스위치는 OnRender에서 반영해 Tone Mapping과 분리한다.
 	const bool bEncode = !bVisualizeData && ColorWorkflow::bLinear;
 	const bool bToneMap =
 		bEncode && Settings.bToneMapping
 		&& View.RenderMode.ViewMode == EViewMode::Lit;
+
+	// 데이터 시각화에서는 Vignetting도 제외한다. View의 원본 설정은 유지한다.
+	FPostProcessSettings PostProcessSettings = View.FinalPostProcessSettings;
+	if (bVisualizeData)
+	{
+		PostProcessSettings.bEnableVignette = false;
+	}
 
 	// 장면 색상의 톤매핑·sRGB 인코딩
 	RenderCommand::BeginRenderPass(PassInfo);
@@ -398,7 +406,10 @@ void FRenderer::RenderOutputPass(
 
 	GammaEncodeRenderer->OnRender(
 		SceneInfo.ColorRenderTargets[0].Texture,
-		bEncode, bToneMap, Settings.ExposureEV);
+		bEncode,
+		bToneMap,
+		Settings.ExposureEV,
+		PostProcessSettings);
 
 	RenderCommand::EndRenderPass(PassInfo);
 	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);

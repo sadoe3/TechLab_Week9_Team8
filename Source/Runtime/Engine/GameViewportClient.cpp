@@ -61,6 +61,7 @@ FSceneView FGameViewportClient::CreateSceneView(const FVector2 OutputSize) const
 	FSceneView View(POV.Location, Rotation, Projection,
 		FRect{0.0f, 0.0f, OutputSize.X, OutputSize.Y}, GetViewRenderMode());
 	// 이번 View에 사용할 상태를 복사한다. 화면 합성은 Renderer가 수행한다.
+	View.FinalPostProcessSettings = POV.PostProcessSettings;
 	View.FadeAmount = Manager->GetFadeAmount();
 	View.FadeColor = Manager->GetFadeColor();
 	return View;

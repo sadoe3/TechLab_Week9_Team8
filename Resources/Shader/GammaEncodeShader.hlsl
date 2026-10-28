@@ -1,16 +1,26 @@
-// Linear 씬 컬러(float)를 톤매핑한 뒤 화면 표시용 sRGB(8비트)로 인코딩한다.
-// 라이팅·블렌딩·안개는 모두 Linear에서 계산하고, 화면에 내보내기 직전에 한 번만 감마를 적용한다.
+// 씬 컬러에 Tone Mapping과 Vignetting을 적용하고, Gamma ON일 때 sRGB로 변환한다.
+// sRGB 변환은 출력 단계에서 한 번만 수행하며 각 효과는 독립적으로 켜고 끈다.
 Texture2D SceneColor : register(t0);
 
 cbuffer GammaEncodeConstants : register(b0)
 {
-    // 0이면 WorldNormal처럼 값 자체가 데이터인 뷰라서 변환 없이 그대로 옮긴다.
+    // 첫 번째 16바이트: 적용 여부와 노출 배율이다. C++ uint32는 HLSL uint에 대응한다.
     uint bEncode;
-    // 조명 결과의 HDR 범위를 줄이는 단계라 Lit 뷰에서만 켠다. Unlit은 저작한 색이 그대로 보여야 한다.
     uint bToneMap;
-    // 톤매핑 직전에 곱하는 선형 배율 (2^EV)
     float Exposure;
-    uint Padding;
+    uint bEnableVignette;
+
+    // 두 번째 16바이트: Vignetting의 강도와 모양이다.
+    float VignetteIntensity;
+    float VignetteRadius;
+    float VignetteSoftness;
+    float Padding0;
+
+    // 세 번째 16바이트: 픽셀 단위 출력 크기와 정렬용 여백이다.
+    float ViewWidth;
+    float ViewHeight;
+    float Padding1;
+    float Padding2;
 };
 
 struct PSInput
@@ -57,15 +67,44 @@ float3 LinearToSRGB(float3 L)
     return lerp(High, Low, step(L, 0.0031308f));
 }
 
+float3 ApplyVignette(float3 Color, float2 PixelPosition)
+{
+    // 화면 중심을 원점으로 바꾼 뒤, 화면 높이의 절반을 거리 1로 사용한다.
+    float2 ScreenCenter = float2(ViewWidth, ViewHeight) * 0.5f;
+    float2 CenteredPosition = PixelPosition - ScreenCenter;
+    // X와 Y를 같은 길이로 나눠 화면 비율이 달라도 원형을 유지한다.
+    float2 NormalizedPosition = CenteredPosition / (ViewHeight * 0.5f);
+    float DistanceFromCenter = length(NormalizedPosition);
+
+    // Radius 안쪽은 0, Radius + Softness 바깥은 1이며 경계는 부드럽게 연결한다.
+    float OuterRadius = VignetteRadius + VignetteSoftness;
+    float VignetteMask =
+        smoothstep(VignetteRadius, OuterRadius, DistanceFromCenter);
+
+    // 중심부의 밝기는 유지하고, 최대 감쇠 영역은 (1 - Intensity)배 밝기로 만든다.
+    float Attenuation = 1.0f - VignetteIntensity * VignetteMask;
+    return Color * Attenuation;
+}
+
 float4 mainPS(PSInput Input) : SV_TARGET
 {
     // 입력과 출력 크기가 같으므로 샘플러 없이 같은 픽셀을 그대로 읽는다.
     float3 Color = SceneColor.Load(int3(Input.Position.xy, 0)).rgb;
 
-    if (bToneMap)
+    // 각 효과를 별도의 조건으로 검사한다.
+    if (bToneMap != 0)
+    {
         Color = ACESFitted(Color * Exposure);
-    if (bEncode)
+    }
+    // 출력용 sRGB 변환 전에 감쇠를 적용한다.
+    if (bEnableVignette != 0)
+    {
+        Color = ApplyVignette(Color, Input.Position.xy);
+    }
+    if (bEncode != 0)
+    {
         Color = LinearToSRGB(Color);
+    }
 
     // 뷰포트 텍스처를 ImGui가 알파 블렌딩으로 그리므로 최종 출력은 불투명으로 고정한다.
     return float4(Color, 1.0f);

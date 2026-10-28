@@ -53,6 +53,18 @@ public:
 	float GetOrthoWidth() const { return OrthoWidth; }
 	void SetOrthoWidth(float InOrthoWidth) { OrthoWidth = InOrthoWidth; }
 
+	// 설정 조회 시 복사하지 않도록 읽기 전용 참조를 제공한다.
+	const FPostProcessSettings& GetPostProcessSettings() const
+	{
+		return PostProcessSettings;
+	}
+
+	// Camera가 독립적인 설정값을 소유하도록 전달받은 값을 복사한다.
+	void SetPostProcessSettings(const FPostProcessSettings& InPostProcessSettings)
+	{
+		PostProcessSettings = InPostProcessSettings;
+	}
+
 	// 마우스 조작 설정
 	float GetMoveSpeed() const { return MoveSpeed; }
 	void SetMoveSpeed(float InMoveSpeed) { MoveSpeed = InMoveSpeed; }
@@ -80,6 +92,9 @@ protected:
 
 	bool bIsOrthogonal = false;
 	float OrthoWidth = 16.0f;
+
+	// 기본값은 Gamma ON, Vignetting OFF다.
+	FPostProcessSettings PostProcessSettings;
 	
 	float MoveSpeed = 10.0f;
 	float MouseSensitivity = 0.05f;

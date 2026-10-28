@@ -949,6 +949,9 @@ bool UEditorEngine::ViewSupportsShadows(const FSceneView& View) const
 void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FSceneView& View, FEditorViewportClient* OverlayClient)
 {
 	const FEditorSettings& Settings = SettingsPanel->GetSettings();
+	// Camera와 원본 View는 보존하고 Editor·PIE 렌더링에만 패널 설정을 적용한다.
+	FSceneView RenderView = View;
+	RenderView.FinalPostProcessSettings = Settings.PostProcessSettings;
 	const FRenderingInfo& ViewRenderingInfo = Viewport.GetRenderingInfo();
 	FRenderQueue& RenderQueue = Viewport.GetSceneRenderData().RenderQueue;
 
@@ -969,7 +972,14 @@ void UEditorEngine::RenderFrame(FViewport& Viewport, UWorld& ViewWorld, const FS
 
 	// 공통 장면 패스 실행
 	FShadowFrameData DirectionalFrame;
-	SceneRenderer.RenderView(*Renderer, Viewport, ViewWorld, View,ShadowResourceIndex, Settings, DirectionalFrame);
+	SceneRenderer.RenderView(
+		*Renderer,
+		Viewport,
+		ViewWorld,
+		RenderView,
+		ShadowResourceIndex,
+		Settings,
+		DirectionalFrame);
 
 	const FDirectionalShadowResources& DirectionalResources = Viewport.GetDirectionalShadow();
 	const bool bDirectionalReady =
