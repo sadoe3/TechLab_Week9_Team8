@@ -12,6 +12,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Camera/WaveCameraShake.h"
 #include <cassert>
+#include "Camera/CameraTypes.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -81,21 +82,75 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 		});
 	// 카메라를 가진 Actor로 게임 시점 변경
 	WorldTable.set_function("set_view_target",
-		[WeakWorld](sol::object Target) -> bool
+		[WeakWorld](sol::object Target,sol::variadic_args Args) -> bool
 		{
 			UWorld* World = WeakWorld.Get();
-			if (!World || !World->AcceptsChanges())
+			if (!World || !World->AcceptsChanges() || Args.size() > 4)
 			{
 				return false;
 			}
 
-			// 명시적인 nil 요청은 내장 카메라로 복귀
+			FViewTargetTransitionParams Params;
+			FString FunctionName = "Cubic";
+			const auto ReadArg = [&Args]<typename T>(std::size_t Index, sol::type Expected, T & Value) -> bool
+			{
+				if (Index >= Args.size() || Args.get_type(Index) == sol::type::nil)
+				{
+					return true;
+				}
+
+				if (Args.get_type(Index) != Expected)
+				{
+					return false;
+				}
+
+				Value = Args.get<T>(Index);
+				return true;
+			};
+
+			// 위치별 인수 해석과 수치 범위 확인
+			if (!ReadArg(0, sol::type::number, Params.BlendTime)
+				|| !ReadArg(1, sol::type::boolean, Params.bLockOutgoing)
+				|| !ReadArg(2, sol::type::string, FunctionName)
+				|| !ReadArg(3, sol::type::number, Params.BlendExp)
+				|| !std::isfinite(Params.BlendTime) || Params.BlendTime < 0.0f
+				|| !std::isfinite(Params.BlendExp) || Params.BlendExp <= 0.0f)
+			{
+				return false;
+			}
+
+			// 지원하는 보간 이름의 명시적 변환
+			if (FunctionName == "Linear")
+			{
+				Params.BlendFunction = EViewTargetBlendFunction::Linear;
+			}
+			else if (FunctionName == "Cubic")
+			{
+				Params.BlendFunction = EViewTargetBlendFunction::Cubic;
+			}
+			else if (FunctionName == "EaseIn")
+			{
+				Params.BlendFunction = EViewTargetBlendFunction::EaseIn;
+			}
+			else if (FunctionName == "EaseOut")
+			{
+				Params.BlendFunction = EViewTargetBlendFunction::EaseOut;
+			}
+			else if (FunctionName == "EaseInOut")
+			{
+				Params.BlendFunction = EViewTargetBlendFunction::EaseInOut;
+			}
+			else
+			{
+				return false;
+			}
+
+			// nil 요청의 즉시 Fallback 복귀
 			if (Target.get_type() == sol::type::nil)
 			{
 				return World->SetViewTarget(nullptr);
 			}
 
-			// 기존 Actor 바인딩 타입 확인
 			if (!Target.is<TWeakObjectPtr<AActor>>())
 			{
 				return false;
@@ -103,7 +158,8 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 
 			// 소멸한 참조의 Fallback 전환 방지
 			AActor* TargetActor = Target.as<TWeakObjectPtr<AActor>>().Get();
-			return TargetActor && World->SetViewTarget(TargetActor);
+			return TargetActor && World->SetViewTarget(TargetActor, Params);
+
 		});
 	// 다음 프레임 씬 전환 예약
 	WorldTable.set_function("change_scene",

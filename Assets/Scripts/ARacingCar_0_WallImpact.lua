@@ -23,8 +23,8 @@ local WallImpactShake = {
     single_instance = false,
     play_space = "CameraLocal",
 
-    y = { amplitude = 0.15, frequency = 18.0, phase = 0.0 },
-    z = { amplitude = 0.09, frequency = 23.0, phase = 0.0 },
+    --y = { amplitude = 0.15, frequency = 18.0, phase = 0.0 },
+    --z = { amplitude = 0.09, frequency = 23.0, phase = 0.0 },
     roll = { amplitude = 0.8, frequency = 20.0, phase = 0.0 }
 }
 
