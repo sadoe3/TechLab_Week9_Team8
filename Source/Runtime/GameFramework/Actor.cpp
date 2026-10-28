@@ -7,6 +7,7 @@
 #include "Component/ParticleSubUVComponent.h"
 #include "Core/EngineLog.h"
 #include "UObject/Object.h"
+#include "Camera/PlayerCameraManager.h"
 
 enum class EAttachmentRule;
 
@@ -441,6 +442,12 @@ void AActor::DestroyComponentNow(UActorComponent* Component)
     if (World->GetMainCamera() == Component)
     {
         World->SetViewTarget(nullptr);
+    }
+    // 전환 대상 카메라 삭제시 전환 취소
+    else if (World->GetPendingViewTarget() == this && World->FindCameraComponent(this) == Component)
+    {
+        World->GetPlayerCameraManager()->CancelViewTargetBlend();
+        World->SyncCameraTargets();
     }
 
     Component->UnregisterComponent();

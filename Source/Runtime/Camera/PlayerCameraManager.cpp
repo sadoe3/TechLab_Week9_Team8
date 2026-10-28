@@ -177,16 +177,14 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
             {
                 AActor* From = Current.Target.Get();
                 AActor* To = Pending.Target.Get();
-                return From && !From->IsPendingDestroy()
-                    && To && !To->IsPendingDestroy();
+                return From && !From->IsPendingDestroy() && To && !To->IsPendingDestroy();
             };
-
         if (!TargetsStillValid())
         {
             CancelViewTargetBlend();
             return;
         }
-
+        // 도착 대상의 현재 시점 갱신
         UpdateViewTarget(Pending, Step);
         if (ViewTargetGeneration != UpdatingGeneration)
         {
@@ -197,7 +195,6 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
             CancelViewTargetBlend();
             return;
         }
-
         BlendTimeToGo = FMath::Max(0.0f, BlendTimeToGo - Step);
         if (BlendTimeToGo <= 0.0f || Current.POV.ProjectionMode != Pending.POV.ProjectionMode)
         {
@@ -219,9 +216,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
     {
         ViewTarget = Current;
     }
-
     FillCameraCache(NewPOV);
-
 }
 
 void APlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime)
