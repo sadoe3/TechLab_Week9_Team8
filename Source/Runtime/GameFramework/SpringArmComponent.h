@@ -64,6 +64,7 @@ private:
 
     // 실행 중 상태는 저장/복제하지 않는다. 첫 Tick에서 현재 시작점으로 초기화한다.
     FVector LaggedArmOrigin = FVector::ZeroVector;
+    FVector PreviousArmOrigin = FVector::ZeroVector; // 보간 결과가 아닌 이전 프레임의 목표 위치.
     bool bCameraLagInitialized = false;
     bool bEnableCameraRotationLag = false;
     float CameraRotationLagSpeed = 10.0f;

@@ -61,11 +61,21 @@ void USpringArmComponent::TickComponent(float DeltaTime)
         FVector DesiredLocation = ArmOrigin;
         if (bCameraLagInitialized && CameraLagSpeed > 0.0f)
         {
-            // UE VInterpTo와 동일하게 남은 거리의 일부를 따라간다. Getter에서는 상태를 갱신하지 않는다.
-            const FVector Delta = ArmOrigin - LaggedArmOrigin;
-            if (Delta.SizeSquared() >= 1.e-8f)
+            // 긴 프레임에서도 목표 이동 경로를 나눠 따라간다. 이전 목표와 Lag 결과는 서로 다른 상태다.
+            constexpr float MaxLagTimeStep = 1.0f / 120.0f;
+            const float FrameTime = FMath::Max(DeltaTime, 0.0f);
+            DesiredLocation = LaggedArmOrigin;
+            float RemainingTime = FrameTime;
+            while (RemainingTime > 0.0f)
             {
-                DesiredLocation = LaggedArmOrigin + Delta * FMath::Clamp(DeltaTime * CameraLagSpeed, 0.0f, 1.0f);
+                const float Step = FMath::Min(RemainingTime, MaxLagTimeStep);
+                RemainingTime -= Step;
+                const FVector StepTarget = RemainingTime > 0.0f
+                    ? PreviousArmOrigin + (ArmOrigin - PreviousArmOrigin) * (1.0f - RemainingTime / FrameTime)
+                    : ArmOrigin;
+                const FVector Delta = StepTarget - DesiredLocation;
+                DesiredLocation = Delta.SizeSquared() < 1.e-8f ? StepTarget
+                    : DesiredLocation + Delta * FMath::Clamp(Step * CameraLagSpeed, 0.0f, 1.0f);
             }
         }
         if (CameraLagMaxDistance > 0.0f)
@@ -81,6 +91,7 @@ void USpringArmComponent::TickComponent(float DeltaTime)
         bLagMoved = bCameraLagInitialized
             && (DesiredLocation - LaggedArmOrigin).SizeSquared() > 0.0f;
         LaggedArmOrigin = DesiredLocation;
+        PreviousArmOrigin = ArmOrigin;
         bCameraLagInitialized = true;
     }
     // 부모가 멈춘 뒤에도 Lag로 자식 위치가 바뀌므로 자식 Transform을 갱신한다.
