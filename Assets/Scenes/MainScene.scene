@@ -38818,15 +38818,30 @@
                             }
                         },
                         {
+                            "Class": "USpringArmComponent",
+                            "Name": "VehicleSpringArm",
+                            "Parent": "StaticMeshComponent",
+                            "Properties": {
+                                "TargetArmLength": 2.0,
+                                "TargetOffset": { "X": 0.0, "Y": 0.0, "Z": 0.0 },
+                                "SocketOffset": { "X": 0.0, "Y": 0.0, "Z": 0.0 },
+                                "Transform": {
+                                    "Location": { "X": 0.0, "Y": 0.0, "Z": 2.0 },
+                                    "Rotation": { "Pitch": 0.0, "Roll": 0.0, "Yaw": 0.0 },
+                                    "Scale": { "X": 1.0, "Y": 1.0, "Z": 1.0 }
+                                }
+                            }
+                        },
+                        {
                             "Class": "UCameraComponent",
                             "Name": "VehicleCamera",
-                            "Parent": "StaticMeshComponent",
+                            "Parent": "VehicleSpringArm",
                             "Properties": {
                                 "Transform": {
                                     "Location": {
-                                        "X": -4.0,
+                                        "X": 0.0,
                                         "Y": 0.0,
-                                        "Z": 2.0
+                                        "Z": 0.0
                                     },
                                     "Rotation": {
                                         "Pitch": 15.000003814697266,
@@ -39763,6 +39778,14 @@
                                 "bLooping": false,
                                 "bReceiveShadow": false,
                                 "bVisible": true
+                            }
+                        },
+                        {
+                            "Class": "UScriptComponent",
+                            "Name": "CameraScript",
+                            "Parent": "",
+                            "Properties": {
+                                "ScriptPath": "Assets/Scripts/ARacingCar_0_WallImpact.lua"
                             }
                         }
                     ],

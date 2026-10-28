@@ -16,6 +16,7 @@
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
 #include "Containers/Queue.h"
+#include "Camera/CameraTypes.h"
 
 //class ACameraActor;
 class ULevel;
@@ -69,11 +70,12 @@ public:
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
 	// 같은 World의 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
-	bool SetViewTarget(AActor* Actor);
+	bool SetViewTarget(AActor* Actor, const FViewTargetTransitionParams& Params = {});
 	void SetCameraInputEnabled(bool bEnabled);
 
 	// 현재 선택된 시점 제공 액터입니다.
 	AActor* GetViewTarget() const;
+	AActor* GetPendingViewTarget()const;
 	APlayerCameraManager* GetPlayerCameraManager() const { return PlayerCameraManager; }
 
 	// 선택된 액터의 첫 카메라 컴포넌트를 반환합니다.
@@ -178,6 +180,9 @@ private:
 
 	// 같은 World의 액터에서 첫 카메라 컴포넌트를 찾습니다.
 	UCameraComponent* FindCameraComponent(AActor* Actor) const;
+	
+	// 출발/도착 대상 입력 정책과 틱처리를 반영
+	void SyncCameraTargets();
 
 	EWorldType WorldType = EWorldType::None;
 

@@ -10,14 +10,6 @@ local SwampOverlapCount = 0
 local BaseFOV = 91.5
 local SpeedFOVIncrease = 30.0
 local FOVInterpSpeed = 20.0
-local WallParticleComponentName = "WallParticles"
-local WallParticleCount = 8
-local WallParticleOffset = 0.03
-local WallHitInterval = 0.1
-local WallHitCooldown = 0.0
-
-local WallHitSoundPath = "Assets/Audio/SFX/WallHit.wav"
-local WallHitSoundVolume = 0.7
 
 local EngineSoundId = -1
 local EngineVolume = 0.2
@@ -38,7 +30,6 @@ function BeginPlay()
 end
 
 function Tick(DeltaTime)
-    WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
     if Race.State == "Finished" and EngineSoundId >= 0 then
         audio.stop(EngineSoundId)
         EngineSoundId = -1
@@ -138,31 +129,7 @@ function Tick(DeltaTime)
     obj.CameraFOV = obj.CameraFOV + (TargetFOV - obj.CameraFOV) * Alpha
 end
 
--- 측면 Blocking Hit의 파티클 재생
 function OnHit(OtherActor, Hit, OtherComponent)
-    if Race.State ~= "Running" then
-        return
-    end
-    if WallHitCooldown > 0.0 or not OtherActor:IsValid() or
-        not OtherComponent:IsValid() or not Hit.bBlockingHit then
-        return
-    end
-
-    -- 바닥·천장 방향 충돌 제외
-    if math.abs(Hit.ImpactNormal.z) > 0.5 then
-        return
-    end
-
-    local position = Hit.ImpactPoint + Hit.ImpactNormal * WallParticleOffset
-    local emitted = obj:EmitParticleBurst(
-        WallParticleComponentName, position, Hit.ImpactNormal, WallParticleCount)
-
-    audio.play(WallHitSoundPath, false, WallHitSoundVolume)
-
-    if emitted > 0 then
-        WallHitCooldown = WallHitInterval
-
-    end
 end
 
 local CoinParticleComponentName = "CoinParticles"

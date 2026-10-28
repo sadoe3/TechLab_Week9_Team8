@@ -4,12 +4,15 @@
 #include "Camera/CameraFade.h"
 #include "Camera/CameraLetterBox.h"
 #include "GameFramework/Actor.h"
+#include "Camera/CameraShakeBase.h"
+#include "UObject/WeakObjectPtr.h"
+
 
 class UCameraModifier;
 
 struct FTViewTarget
 {
-    AActor* Target = nullptr; // 비소유 참조. 대상 해제 전 소유자가 선택을 해제한다.
+    TWeakObjectPtr<AActor> Target; // 비소유 참조
     FMinimalViewInfo POV;
 };
 
@@ -30,8 +33,15 @@ public:
     bool RemoveCameraModifier(UCameraModifier* Modifier);
     void ClearCameraModifiers();
 
-    void SetViewTarget(AActor* NewViewTarget);
-    AActor* GetViewTarget() const { return ViewTarget.Target; }
+    // 즉시 선택 또는 시간 지정 전환
+    void SetViewTarget(AActor* NewViewTarget, const FViewTargetTransitionParams& Params = {});
+    // 현재 대상 조회
+    AActor* GetViewTarget() const{ return ViewTarget.Target.Get(); }
+    // Transition 도착 대상 조회
+    AActor* GetPendingViewTarget() const{ return PendingViewTarget.Target.Get();}
+    // Transition 취소
+    void CancelViewTargetBlend();
+
     virtual void UpdateCamera(float DeltaTime);
     const FMinimalViewInfo& GetCameraCacheView() const { return CameraCachePrivate.POV; }
 
@@ -46,6 +56,19 @@ public:
     void StopCameraLetterBox();
     float GetLetterBoxHeightRatio() const;
 
+    // 등록된 Modifier 조회
+    UCameraModifier* FindCameraModifierByClass(UClass* ModifierClass) const;
+
+    // Shake 재생 제어
+    UCameraShakeBase* StartCameraShake(UClass* ShakeClass, float Scale = 1.0f,
+        ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal);
+    // 프리셋 이름과 초기화 설정으로 재생
+    UCameraShakeBase* StartCameraShake(FName PresetName, UClass* ShakeClass, bool bSingleInstance,
+        const FCameraShakeInitializer& Initialize, float Scale = 1.0f,
+        ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal);
+    void StopCameraShake(UCameraShakeBase* Shake, bool bImmediately = false);
+    void StopAllCameraShakes(bool bImmediately = false);
+
     float DefaultFOV = 60.0f; // Camera Component가 없는 대상에 사용할 수평 시야각(degree).
     float DefaultAspectRatio = 16.0f / 9.0f;
 
@@ -59,7 +82,7 @@ protected:
     void FillCameraCache(const FMinimalViewInfo& NewInfo);
 
     FTViewTarget ViewTarget;
-
+    FTViewTarget PendingViewTarget;
 private:
     // 시점 대상과 독립적인 값 멤버로 페이드 상태를 유지한다.
     FCameraFade CameraFade;
@@ -68,4 +91,11 @@ private:
     bool bApplyingCameraModifiers = false;
     TArray<UCameraModifier*> PendingModifierDeletes;
     FCameraCacheEntry CameraCachePrivate;
+    
+    // 진행 중인 Transition 설정과 남은 시간
+    FViewTargetTransitionParams BlendParams;
+    float BlendTimeToGo = 0.0f;
+
+    // 콜백 중 대상 변경 식별
+    uint32 ViewTargetGeneration = 0;
 };

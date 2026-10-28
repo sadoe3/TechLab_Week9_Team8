@@ -732,7 +732,7 @@ namespace
 			{
 				const char* Items = nullptr;
 				if (Property.Name == "CollisionEnabled") Items = "NoCollision\0QueryOnly\0";
-				else if (Property.Name == "ObjectType") Items = "WorldStatic\0WorldDynamic\0Pawn\0";
+				else if (Property.Name == "ObjectType") Items = "WorldStatic\0WorldDynamic\0Pawn\0Camera\0";
 				else if (Property.Name.starts_with("CollisionResponses.")) Items = "Ignore\0Overlap\0Block\0";
 				if (Items)
 				{

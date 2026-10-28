@@ -66,7 +66,9 @@ local function ProcessPendingTriggers()
                     Race.State = "Finished"
                     Race.FinishScore = game.get_score()
                     Race.FinishTime = Race.ElapsedTime
-                    
+                    -- 주행 중 넓어진 시야를 기본 FOV로 복원합니다.
+                    -- RacingCar.lua의 BaseFOV(60.0)와 같은 값을 사용합니다.
+                    Race.Player.CameraFOV = 91.5
 
                     -- 최고 기록을 각각 갱신하고 파일에 저장합니다.
                     local BestScore, BestFinishTime, SaveSucceeded =

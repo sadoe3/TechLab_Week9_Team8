@@ -95,6 +95,37 @@ FQuat FQuat::Normalized() const
 	return Result;
 }
 
+bool FQuat::Equals(const FQuat& Other, float Tolerance) const
+{
+	// q와 -q는 같은 회전이므로 두 부호를 모두 비교한다.
+	const FQuatRegister A = VectorSIMD::Load(V);
+	const FQuatRegister B = VectorSIMD::Load(Other.V);
+	return VectorSIMD::IsNearlyEqual(A, B, Tolerance)
+		|| VectorSIMD::IsNearlyEqual(A, VectorSIMD::Sub(VectorSIMD::SetZero(), B), Tolerance);
+}
+
+FQuat FQuat::Slerp(const FQuat& A, const FQuat& B, float Alpha)
+{
+	float Dot = A.X * B.X + A.Y * B.Y + A.Z * B.Z + A.W * B.W;
+	// q와 -q는 같은 회전이다. 짧은 경로로 보간하도록 부호를 맞춘다.
+	const float Sign = Dot < 0.0f ? -1.0f : 1.0f;
+	Dot = FMath::Clamp(Dot * Sign, 0.0f, 1.0f);
+	float WeightA = 1.0f - Alpha;
+	float WeightB = Alpha;
+	if (Dot < 0.9995f)
+	{
+		const float Angle = std::acos(Dot);
+		const float InvSin = 1.0f / std::sin(Angle);
+		WeightA = std::sin((1.0f - Alpha) * Angle) * InvSin;
+		WeightB = std::sin(Alpha * Angle) * InvSin;
+	}
+	WeightB *= Sign;
+	return FQuat(A.X * WeightA + B.X * WeightB,
+		A.Y * WeightA + B.Y * WeightB,
+		A.Z * WeightA + B.Z * WeightB,
+		A.W * WeightA + B.W * WeightB).Normalized();
+}
+
 FVector FQuat::RotateVector(const FVector& V) const
 {
 	FQuatRegister Q = VectorSIMD::Load(this->V);

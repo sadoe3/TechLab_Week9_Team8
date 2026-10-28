@@ -154,7 +154,7 @@ bool UScriptComponent::TryLoadScript()
     // 기존 실행 환경을 수정하지 않고 교체 후보를 만든다.
     sol::environment NewEnvironment = Runtime->CreateEnvironment(OwnerActor);
     Runtime->BindCoroutineFunctions(NewEnvironment, this, ScriptPath);
-
+    Runtime->BindCameraFunctions(NewEnvironment, this);
 
     // 후보 파일 실행 중 코루틴 생성 차단
     bLoadingScript = true;
