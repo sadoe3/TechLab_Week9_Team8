@@ -26,6 +26,7 @@ class FJsonArchive;
 class FLuaRuntime;
 class APlayerCameraManager;
 struct FLODViewContext;
+struct FCameraTransitionCurve;
 
 struct FRenderStats
 {
@@ -71,6 +72,8 @@ public:
 
 	// 같은 World의 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
 	bool SetViewTarget(AActor* Actor, const FViewTargetTransitionParams& Params = {});
+	// 사용자 시간 곡선을 사용하는 시점 전환
+	bool SetViewTargetWithCurve(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve& Curve);
 	void SetCameraInputEnabled(bool bEnabled);
 
 	// 현재 선택된 시점 제공 액터입니다.
@@ -254,4 +257,7 @@ private:
 
 	// World 전용 Lua VM 소유
 	TUniquePtr<FLuaRuntime> LuaRuntime;
+
+	// 대상 검증과 카메라 동기화의 공통 경로
+	bool SetViewTargetInternal(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve* Curve);
 };

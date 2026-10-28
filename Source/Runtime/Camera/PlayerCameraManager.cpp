@@ -89,27 +89,44 @@ void APlayerCameraManager::ClearCameraModifiers()
 
 void APlayerCameraManager::SetViewTarget(AActor* NewViewTarget, const FViewTargetTransitionParams& Params)
 {
-    // 삭제 예약 대상의 신규 선택 제외
+    // 기존 기본 보간 요청
+    SetViewTargetInternal(NewViewTarget, Params, nullptr);
+}
+
+void APlayerCameraManager::SetViewTargetWithCurve(AActor* NewViewTarget, const FViewTargetTransitionParams& Params,
+    const FCameraTransitionCurve& Curve)
+{
+    // 사용자 시간 곡선 요청
+    SetViewTargetInternal(NewViewTarget, Params, &Curve);
+}
+
+void APlayerCameraManager::SetViewTargetInternal(AActor* NewViewTarget, const FViewTargetTransitionParams& Params,
+    const FCameraTransitionCurve* Curve)
+{
+    // 삭제 예약 대상 제외
     if (NewViewTarget && NewViewTarget->IsPendingDestroy())
     {
         return;
     }
+
     AActor* Current = GetViewTarget();
-    // 동일대상 혹은 즉시 Transition
+
+    // 전환 중이 아닌 동일 대상 요청 유지
     if (BlendTimeToGo <= 0.0f && NewViewTarget == Current)
     {
         return;
     }
 
-    // 즉시 선택과 진행 중 Transition 취소
-    if (!NewViewTarget || !Current || Current->IsPendingDestroy() || !std::isfinite(Params.BlendTime) || Params.BlendTime <= 0.0f)
+    // 즉시 선택과 진행 중 전환 취소
+    if (!NewViewTarget || !Current || Current->IsPendingDestroy()
+        || !std::isfinite(Params.BlendTime) || Params.BlendTime <= 0.0f)
     {
         CancelViewTargetBlend();
         ViewTarget.Target = NewViewTarget;
         return;
     }
 
-    // 동일 Transition대상의 경우 재시작으로 갱신하지 않음
+    // 동일 도착 대상의 재시작 방지
     if (NewViewTarget == GetPendingViewTarget())
     {
         return;
@@ -127,6 +144,17 @@ void APlayerCameraManager::SetViewTarget(AActor* NewViewTarget, const FViewTarge
     BlendParams = Params;
     BlendParams.bLockOutgoing = Params.bLockOutgoing || bWasBlending;
     BlendTimeToGo = Params.BlendTime;
+
+    // 수락한 전환 설정의 독립 복사
+    if (Curve)
+    {
+        ActiveBlendCurve.Emplace(*Curve);
+    }
+    else
+    {
+        ActiveBlendCurve.Reset();
+    }
+
     ++ViewTargetGeneration;
 }
 void APlayerCameraManager::CancelViewTargetBlend()
@@ -135,6 +163,7 @@ void APlayerCameraManager::CancelViewTargetBlend()
     PendingViewTarget = FTViewTarget();
     BlendParams = FViewTargetTransitionParams();
     BlendTimeToGo = 0.0f;
+    ActiveBlendCurve.Reset();
     ++ViewTargetGeneration;
 }
 
@@ -209,7 +238,9 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
             ViewTarget = Current;
             PendingViewTarget = Pending;
             const float TimeAlpha = 1.0f - BlendTimeToGo / BlendParams.BlendTime;
-            NewPOV.BlendViewInfo(Pending.POV, BlendParams.GetBlendAlpha(TimeAlpha));
+            const float Alpha = ActiveBlendCurve.IsSet() ? ActiveBlendCurve->Eval(TimeAlpha) : BlendParams.GetBlendAlpha(TimeAlpha);
+
+            NewPOV.BlendViewInfo(Pending.POV, Alpha);
         }
     }
     else
