@@ -310,7 +310,11 @@ void FDebugPanel::DrawTimeDilationSection()
 			FTimeDilation::SetDilation(Dilation);
 
 		ControlRow("Reset", "Back to normal speed.");
-		if (ImGui::Button("1.0", ImVec2(-FLT_MIN, 0.0f))) FTimeDilation::ResetDilation();
+		if (ImGui::Button("Normal Speed", ImVec2(-FLT_MIN, 0.0f))) FTimeDilation::ResetDilation();
+		
+		ControlRow("Test Slomo", "...");
+		if (ImGui::Button("Test Slomo", ImVec2(-FLT_MIN, 0.0f))) FTimeDilation::StartSlomo(0.3f, 0.1f, 1.0f, 0.8f);
+
 		ImGui::EndTable();
 	}
 

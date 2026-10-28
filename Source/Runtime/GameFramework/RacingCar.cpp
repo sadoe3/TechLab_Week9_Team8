@@ -248,7 +248,7 @@ void ARacingCar::UpdateHudForFieldOfView()
 
 	const float BaseTangent = tanf(FMath::DegreesToRadians(BaseFieldOfView) * 0.5f);
 	if (BaseTangent <= 0.0f) return;
-	const float Scale = tanf(FMath::DegreesToRadians(CurrentFov) * 0.5f) / BaseTangent;
+	const float Scale = tanf(FMath::DegreesToRadians(CurrentFov) * 0.5f) / BaseTangent / VehicleCamera->GetAspectRatio();
 
 	if (ScoreText)
 	{
