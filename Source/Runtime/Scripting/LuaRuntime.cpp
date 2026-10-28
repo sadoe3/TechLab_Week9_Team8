@@ -15,6 +15,7 @@
 #include "Camera/CurveCameraShake.h"
 #include <cassert>
 #include "Camera/CameraTypes.h"
+#include "Camera/CameraTransitionCurve.h"
 
 // 기본 라이브러리 준비 후 공통 C++ 바인딩
 FLuaRuntime::FLuaRuntime()
@@ -162,6 +163,138 @@ sol::environment FLuaRuntime::CreateEnvironment(AActor* OwnerActor)
 			AActor* TargetActor = Target.as<TWeakObjectPtr<AActor>>().Get();
 			return TargetActor && World->SetViewTarget(TargetActor, Params);
 
+		});
+	// 사용자 시간 곡선을 사용하는 시점 전환
+	WorldTable.set_function("set_view_target_with_curve",
+		[WeakWorld](sol::object Target, sol::object SettingsValue) -> bool
+		{
+			UWorld* World = WeakWorld.Get();
+			if (!World || !World->AcceptsChanges() || SettingsValue.get_type() != sol::type::table)
+			{
+				return false;
+			}
+
+			const sol::table Settings = SettingsValue.as<sol::table>();
+			FViewTargetTransitionParams Params;
+			FCameraTransitionCurve Curve;
+
+			// 필수 전환 시간과 선택적 출발 시점 고정
+			const sol::object Duration = Settings.raw_get<sol::object>("duration");
+			if (Duration.get_type() != sol::type::number)
+			{
+				return false;
+			}
+
+			Params.BlendTime = Duration.as<float>();
+			if (!std::isfinite(Params.BlendTime) || Params.BlendTime < 0.0f)
+			{
+				return false;
+			}
+
+			const sol::object Lock = Settings.raw_get<sol::object>("lock_outgoing");
+			if (Lock.get_type() != sol::type::nil)
+			{
+				if (Lock.get_type() != sol::type::boolean)
+				{
+					return false;
+				}
+				Params.bLockOutgoing = Lock.as<bool>();
+			}
+
+			// 정규화 좌표의 숫자 검증
+			const auto ReadUnit = [](const sol::object& Value, float& Out) -> bool
+				{
+					if (Value.get_type() != sol::type::number)
+					{
+						return false;
+					}
+
+					const double Number = Value.as<double>();
+					if (!std::isfinite(Number) || Number < 0.0 || Number > 1.0)
+					{
+						return false;
+					}
+
+					Out = static_cast<float>(Number);
+					return true;
+				};
+
+			const sol::object ModeValue = Settings.raw_get<sol::object>("mode");
+			if (ModeValue.get_type() != sol::type::string)
+			{
+				return false;
+			}
+
+			const FString Mode = ModeValue.as<FString>();
+			if (Mode == "Bezier")
+			{
+				Curve.Type = ECameraTransitionCurveType::Bezier;
+
+				// 두 제어점의 좌표 변환
+				const auto ReadControl = [&Settings, &ReadUnit](const char* Name, FVector2& Out) -> bool
+					{
+						const sol::object Value = Settings.raw_get<sol::object>(Name);
+						if (Value.get_type() != sol::type::table)
+						{
+							return false;
+						}
+
+						const sol::table Point = Value.as<sol::table>();
+						return ReadUnit(Point.raw_get<sol::object>("x"), Out.X)
+							&& ReadUnit(Point.raw_get<sol::object>("y"), Out.Y);
+					};
+
+				if (!ReadControl("control1", Curve.Control1) || !ReadControl("control2", Curve.Control2))
+				{
+					return false;
+				}
+			}
+			else if (Mode == "Curve")
+			{
+				const sol::object KeysValue = Settings.raw_get<sol::object>("keys");
+				if (KeysValue.get_type() != sol::type::table)
+				{
+					return false;
+				}
+
+				// 누락 가능한 양 끝점의 기본값
+				Curve.Keys.AddKey(0.0f, 0.0f);
+				Curve.Keys.AddKey(1.0f, 1.0f);
+
+				const sol::table Keys = KeysValue.as<sol::table>();
+				for (const auto& Pair : Keys)
+				{
+					float Time = 0.0f;
+					float Value = 0.0f;
+
+					if (!ReadUnit(Pair.first, Time) || !ReadUnit(Pair.second, Value)
+						|| (Time == 0.0f && Value != 0.0f)
+						|| (Time == 1.0f && Value != 1.0f))
+					{
+						return false;
+					}
+
+					Curve.Keys.AddKey(Time, Value);
+				}
+			}
+			else
+			{
+				return false;
+			}
+
+			// 검증 완료 후 대상 변경 요청
+			if (Target.get_type() == sol::type::nil)
+			{
+				return World->SetViewTarget(nullptr);
+			}
+
+			if (!Target.is<TWeakObjectPtr<AActor>>())
+			{
+				return false;
+			}
+
+			AActor* TargetActor = Target.as<TWeakObjectPtr<AActor>>().Get();
+			return TargetActor && World->SetViewTargetWithCurve(TargetActor, Params, Curve);
 		});
 	// 다음 프레임 씬 전환 예약
 	WorldTable.set_function("change_scene",
