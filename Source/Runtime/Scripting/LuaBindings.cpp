@@ -562,6 +562,7 @@ namespace LuaBindings
 		Game.set_function("reset_result_ui", []()
 			{
 				FGameHud::SetResultScreen(ERaceResultScreen::Hidden);
+				FTimeDilation::ResetDilation();
 			}
 		);
 	}

@@ -1164,6 +1164,7 @@ void UEditorEngine::EndPlayMap()
 	bIsPaused = false;
 	bStepRequested = false;
 	OnActiveWorldChanged();
+	FTimeDilation::ResetDilation();
 }
 
 bool UEditorEngine::CreatePIEWindow()
