@@ -124,6 +124,7 @@ function BeginPlay()
     end
 
     Race.Reset(Player, CountdownSeconds, CheckpointCount)
+    game.play_intro_sequence()
     Player.Velocity = Vector(0, 0, 0)
     game.set_score(0)
 
@@ -144,6 +145,13 @@ function Tick(DeltaTime)
     if not Race.Player or not Race.Player:IsValid() then
         print("[Race] Player is unavailable")
         Race.Stop()
+        return
+    end
+
+    if Race.State == "Intro" then   
+        if not game.is_sequence_playing() then
+           Race.State = "Countdown"
+        end
         return
     end
 

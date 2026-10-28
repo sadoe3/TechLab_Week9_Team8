@@ -17,7 +17,7 @@ local Race = {
 
 -- 새 주행 초기화
 function Race.Reset(Player, CountdownSeconds, CheckpointCount)
-    Race.State = "Countdown"
+    Race.State = "Intro"
     Race.Player = Player
     Race.CountdownRemaining = CountdownSeconds
     Race.ElapsedTime = 0.0

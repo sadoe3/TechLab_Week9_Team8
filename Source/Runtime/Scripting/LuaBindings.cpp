@@ -9,6 +9,7 @@
 #include "GameFramework/Character.h"
 #include "Core/GameHud.h"
 #include "Core/TimeDilation.h"
+#include "Cinematic/SequencePlayer.h"
 #include "GameFramework/RacingCar.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Swamp.h"
@@ -557,6 +558,18 @@ namespace LuaBindings
 			{
 				FTimeDilation::StartSlomo(0.3f, 0.1f, 2.0f, 0.8f);
 				FGameHud::SetResultScreen(ERaceResultScreen::Finish);
+			}
+		);
+		Game.set_function("play_intro_sequence", []()
+			{
+				TArray<FSequenceStep> Steps;
+				Steps.Push({ 3.0f , ESequenceAction::Wait });
+				FSequencePlayer::Play(Steps);
+			}
+		);
+		Game.set_function("is_sequence_playing", []()
+			{
+				return FSequencePlayer::IsPlaying();
 			}
 		);
 		Game.set_function("reset_result_ui", []()
