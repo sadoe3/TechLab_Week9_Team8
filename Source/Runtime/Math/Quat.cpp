@@ -246,3 +246,37 @@ FQuat FQuat::MakeFromEuler(float RollRadian, float PitchRadian, float YawRadian)
 		CR * CP * CY + SR * SP * SY
 	);
 }
+
+FQuat FQuat::Slerp(const FQuat& A, const FQuat& B, float Alpha)
+{
+	// 입력 회전 정규화
+	const FQuat Start = A.Normalized();
+	FQuat End = B.Normalized();
+	Alpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
+	float Dot = Start.X * End.X + Start.Y * End.Y + Start.Z * End.Z + Start.W * End.W;
+
+	// 동일 회전 표현 중 짧은 경로 선택
+	if (Dot < 0.0f)
+	{
+		End = FQuat(-End.X, -End.Y, -End.Z, -End.W);
+		Dot = -Dot;
+	}
+	Dot = FMath::Clamp(Dot, 0.0f, 1.0f);
+	float StartWeight = 1.0f - Alpha;
+	float EndWeight = Alpha;
+
+	// 내적값이 1에 가까움-> sin값이 0에 가까움-> 이때는 선형보간
+	if (Dot < 0.99995f)
+	{
+		const float Angle = std::acos(Dot);
+		const float InvSin = 1.0f / std::sin(Angle);
+		StartWeight = std::sin((1.0f - Alpha) * Angle) * InvSin;
+		EndWeight = std::sin(Alpha * Angle) * InvSin;
+	}
+	return FQuat(
+		Start.X * StartWeight + End.X * EndWeight,
+		Start.Y * StartWeight + End.Y * EndWeight,
+		Start.Z * StartWeight + End.Z * EndWeight,
+		Start.W * StartWeight + End.W * EndWeight).Normalized();
+
+}
