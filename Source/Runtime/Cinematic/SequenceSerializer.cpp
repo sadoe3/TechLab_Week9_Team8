@@ -70,3 +70,53 @@ bool SequenceSerializer::Save(const TArray<FSequenceStep>& Steps, const FString&
 	File << Root.dump(4);
 	return true;
 }
+
+bool SequenceSerializer::Load(TArray<FSequenceStep>& OutSteps, const FString& Path)
+{
+	std::ifstream File(Path);
+	if (!File.is_open())
+	{
+		HTR_LOG(Error, "[Sequence] Failed to open file: {}", Path);
+		return false;
+	}
+
+	const json Root = json::parse(File, nullptr, false);
+	if (Root.is_discarded())
+	{
+		HTR_LOG(Error, "[Sequence] Invalid JSON: {}", Path);
+		return false;
+	}
+
+	const auto StepsNode = Root.find("Steps");
+	if (StepsNode == Root.end() || !StepsNode->is_array())
+	{
+		HTR_LOG(Error, "[Sequence] Missing Steps array: {}", Path);
+		return false;
+	}
+
+	TArray<FSequenceStep> Loaded;
+	for (const json& Entry : *StepsNode)
+	{
+		if (!Entry.is_object())
+		{
+			HTR_LOG(Error, "[Sequence] Step is not an object: {}", Path);
+			return false;
+		}
+
+		FSequenceStep Step;
+		Step.Duration = Entry.value("Duration", 0.0f);
+		Step.TargetName = Entry.value("TargetName", FString());
+
+		const FString ActionName = Entry.value("Action", FString());
+		if (!FromString(ActionName, Step.Action))
+		{
+			HTR_LOG(Error, "[Sequence] Unknown action '{}' in {}", ActionName, Path);
+			return false;
+		}
+
+		Loaded.Push(Step);
+	}
+
+	OutSteps = Loaded;
+	return true;
+}
