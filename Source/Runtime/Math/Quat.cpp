@@ -95,6 +95,15 @@ FQuat FQuat::Normalized() const
 	return Result;
 }
 
+bool FQuat::Equals(const FQuat& Other, float Tolerance) const
+{
+	// q와 -q는 같은 회전이므로 두 부호를 모두 비교한다.
+	const FQuatRegister A = VectorSIMD::Load(V);
+	const FQuatRegister B = VectorSIMD::Load(Other.V);
+	return VectorSIMD::IsNearlyEqual(A, B, Tolerance)
+		|| VectorSIMD::IsNearlyEqual(A, VectorSIMD::Sub(VectorSIMD::SetZero(), B), Tolerance);
+}
+
 FQuat FQuat::Slerp(const FQuat& A, const FQuat& B, float Alpha)
 {
 	float Dot = A.X * B.X + A.Y * B.Y + A.Z * B.Z + A.W * B.W;

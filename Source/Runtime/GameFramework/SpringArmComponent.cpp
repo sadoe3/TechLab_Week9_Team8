@@ -40,7 +40,9 @@ void USpringArmComponent::TickComponent(float DeltaTime)
     {
         // Rotation Lag
         FQuat DesiredRotation = GetWorldRotation().Quaternion();
-        if (bCameraRotationLagInitialized && CameraRotationLagSpeed > 0.0f)
+        // 목표에 도달하면 정확히 목표값을 사용한다. 반복 Slerp/정규화의 반올림으로 정지 화면이 흔들리는 것을 막는다.
+        if (bCameraRotationLagInitialized && CameraRotationLagSpeed > 0.0f
+            && !LaggedArmRotation.Equals(DesiredRotation))
         {
             DesiredRotation = FQuat::Slerp(LaggedArmRotation, DesiredRotation, FMath::Clamp(DeltaTime * CameraRotationLagSpeed, 0.0f, 1.0f));
         }

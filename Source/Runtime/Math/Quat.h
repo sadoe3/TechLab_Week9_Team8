@@ -33,6 +33,7 @@ struct FQuat
 	FQuat UnitInverse() const;
 	FQuat Inverse() const;
 	FQuat Normalized() const;
+	bool Equals(const FQuat& Other, float Tolerance = 1.e-6f) const;
 	FVector RotateVector(const FVector& V) const;
 	FMatrix ToFMatrix() const;
 	FRotator ToFRotator() const;
