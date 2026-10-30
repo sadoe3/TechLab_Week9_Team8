@@ -11,6 +11,7 @@ class UActorComponent : public UObject
 	DECLARE_CLASS(UActorComponent, UObject)
 
 	REFLECT_START(ClassName)
+		PROPERTY(bHiddenInGame) // 게임 표시 여부 저장
 	REFLECT_END()
 
 public:
