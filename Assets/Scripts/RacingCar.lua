@@ -7,17 +7,9 @@ local BrakeDamping = 1.5
 local StopSpeed = 0.01
 local SwampMaxSpeed = 2.0
 local SwampOverlapCount = 0
-local BaseFOV = 60.0
+local BaseFOV = 91.5
 local SpeedFOVIncrease = 30.0
 local FOVInterpSpeed = 20.0
-local WallParticleComponentName = "WallParticles"
-local WallParticleCount = 8
-local WallParticleOffset = 0.03
-local WallHitInterval = 0.1
-local WallHitCooldown = 0.0
-
-local WallHitSoundPath = "Assets/Audio/SFX/WallHit.wav"
-local WallHitSoundVolume = 0.7
 
 local EngineSoundId = -1
 local EngineVolume = 0.2
@@ -30,6 +22,7 @@ local score = 0
 
 function BeginPlay()
     script.set_tick_group("PrePhysics")
+    obj.CameraFOV = BaseFOV
     WallHitCooldown = 0.0
     score = 0
     audio.play_bgm(BGMPath, 0.7)
@@ -37,15 +30,18 @@ function BeginPlay()
 end
 
 function Tick(DeltaTime)
-    WallHitCooldown = math.max(0.0, WallHitCooldown - DeltaTime)
     if Race.State == "Finished" and EngineSoundId >= 0 then
         audio.stop(EngineSoundId)
         EngineSoundId = -1
     end
+
     if Race.State ~= "Running" then
-        obj.Velocity = Vector(0, 0, 0)
+        if Race.State ~= "Finished" then    
+            obj.Velocity = Vector(0, 0, 0)
+        end
         return
     end
+
     local MoveAxis = 0.0
     local TurnAxis = 0.0
     -- W/S는 추진력, A/D는 조향만 담당합니다. 동시 입력은 S와 A가 우선합니다.
@@ -133,31 +129,7 @@ function Tick(DeltaTime)
     obj.CameraFOV = obj.CameraFOV + (TargetFOV - obj.CameraFOV) * Alpha
 end
 
--- 측면 Blocking Hit의 파티클 재생
 function OnHit(OtherActor, Hit, OtherComponent)
-    if Race.State ~= "Running" then
-        return
-    end
-    if WallHitCooldown > 0.0 or not OtherActor:IsValid() or
-        not OtherComponent:IsValid() or not Hit.bBlockingHit then
-        return
-    end
-
-    -- 바닥·천장 방향 충돌 제외
-    if math.abs(Hit.ImpactNormal.z) > 0.5 then
-        return
-    end
-
-    local position = Hit.ImpactPoint + Hit.ImpactNormal * WallParticleOffset
-    local emitted = obj:EmitParticleBurst(
-        WallParticleComponentName, position, Hit.ImpactNormal, WallParticleCount)
-
-    audio.play(WallHitSoundPath, false, WallHitSoundVolume)
-
-    if emitted > 0 then
-        WallHitCooldown = WallHitInterval
-
-    end
 end
 
 local CoinParticleComponentName = "CoinParticles"

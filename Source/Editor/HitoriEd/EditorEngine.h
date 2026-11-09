@@ -11,10 +11,6 @@
 #include "Editor/Rendering/GridRenderer.h"
 #include "Editor/Gizmo/GizmoRenderer.h"
 #include "Render/LineBatcher.h"
-#include "Render/FogRenderer.h"
-#include "Render/FXAARenderer.h"
-#include "Render/GammaEncodeRenderer.h"
-#include "Render/DepthViewRenderer.h"
 #include "Render/ShadowCascadeDebugRenderer.h"
 #include "Engine/GameViewportClient.h"
 #include "Render/SceneRenderer.h"
@@ -26,6 +22,7 @@
 #include "Editor/EditorControls/EditorControlsPanel.h"
 #include "Editor/Settings/SettingsPanel.h"
 #include "Editor/DebugTools/DebugPanel.h"
+#include "Editor/Cinematic/SequencerPanel.h"
 #include "Editor/DebugTools/ShadowAtlasPanel.h"
 #include "Editor/Viewports/ViewportsPanel.h"
 #include "Editor/ContentDrawer/ContentDrawerPanel.h"
@@ -33,8 +30,6 @@
 #include "Editor/Rendering/Outline.h"
 #include "Editor/Rendering/OutLineRenderer.h"
 #include "Editor/Outliner/OutlinerPanel.h"
-
-#include "Render/SkyboxRenderer.h"
 
 #include "PlayInEditorDataTypes.h"
 #include "Core/Misc/Optional.h"
@@ -118,20 +113,8 @@ private:
 	// 화면 합성과 View 설정 보관으로 프레임을 마무리한다.
 	void EndFrame();
 
-	//불투명 물체에 대한 Pass
-	void RenderOpaquePass(FViewport& Viewport, const FRenderingInfo& ViewRenderingInfo, const FSceneView& View, FRenderQueue& RenderQueue, const FDirectionalLightInfo& DirectionalLight);
-	//안개에 대한 Pass
-	void RenderFogPass(UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FVector& ViewCameraLocation,const FMatrix& ViewProjection, FRenderQueue& RenderQueue);
 	//Overlay Pass
 	void RenderOverlayPass(FEditorViewportClient* OverlayClient, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FSceneView& View, FRenderQueue& RenderQueue);
-	//Gamma Encode Pass: Linear 씬 컬러를 톤매핑하고 화면 표시용 sRGB로 인코딩한다
-	void RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, bool bEncode, bool bToneMap, float ExposureEV);
-	//FXAA Pass
-	void RenderFXAAPass(FTexture2D* FxaaTarget, const FRenderingInfo& ViewRenderingInfo);
-	//Depth Pass
-	void RenderDepthPass(const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward);
-
-
 
 	FWorldContext& GetEditorWorldContext();
 	FWorldContext* GetPIEWorldContext(int32 WorldPIEInstance = 0);
@@ -150,15 +133,10 @@ private:
 	TUniquePtr<FGridRenderer> GridRenderer;
 	TUniquePtr<FGizmoRenderer> GizmoRenderer;
 	TUniquePtr<FTextRenderer> TextRenderer;
-	TUniquePtr<FFogRenderer> FogRenderer;
 	TUniquePtr<FLineBatcher> LineBatcher;
 	TUniquePtr<FGizmo> Gizmo;
 	TUniquePtr<FOutline> Outline;
 	TUniquePtr<FOutlineRenderer> OutlineRenderer;
-	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;
-	TUniquePtr<FFXAARenderer> FXAARenderer;
-	TUniquePtr<FGammaEncodeRenderer> GammaEncodeRenderer;
-	TUniquePtr<FDepthViewRenderer> DepthViewRenderer;
 	TUniquePtr<FShadowCascadeDebugRenderer> ShadowCascadeDebugRenderer;
 
 	UFont* SystemFont;
@@ -169,6 +147,7 @@ private:
 	FEditorControlsPanel* EditorControlsPanel = nullptr;
 	FSettingsPanel* SettingsPanel = nullptr;
 	FDebugPanel* DebugPanel = nullptr;
+	FSequencerPanel* SequencerPanel = nullptr;
 	FShadowAtlasPanel* ShadowAtlasPanel = nullptr;
 	FViewportsPanel* ViewportsPanel = nullptr;
 	FSceneRenderer SceneRenderer;

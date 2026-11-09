@@ -1,0 +1,70 @@
+{
+    "HoldEnd": true,
+    "Length": 4.5,
+    "Loop": false,
+    "Rate": 1.0,
+    "Tracks": [
+        {
+            "Keys": [
+                {
+                    "Interpolation": "Constant",
+                    "Time": 0.0,
+                    "Value": 0.11999999731779099
+                },
+                {
+                    "Interpolation": "Linear",
+                    "Time": 4.0,
+                    "Value": 0.11999999731779099
+                },
+                {
+                    "Interpolation": "Constant",
+                    "Time": 4.5,
+                    "Value": 0.0
+                }
+            ],
+            "TargetName": "",
+            "Type": "LetterBox"
+        },
+        {
+            "Keys": [
+                {
+                    "BlendExp": 2.0,
+                    "BlendFunction": "Cubic",
+                    "BlendTime": 0.0,
+                    "Interpolation": "Constant",
+                    "TargetName": "ACameraActor_1",
+                    "Time": 0.0,
+                    "Value": 0.0
+                },
+                {
+                    "BlendExp": 2.0,
+                    "BlendFunction": "EaseIn",
+                    "BlendTime": 2.25,
+                    "Interpolation": "Cubic",
+                    "TargetName": "ARacingCar_0",
+                    "Time": 0.7666666507720947,
+                    "Value": 0.0
+                }
+            ],
+            "TargetName": "",
+            "Type": "ViewTarget"
+        },
+        {
+            "Keys": [
+                {
+                    "Interpolation": "Linear",
+                    "Time": 0.0,
+                    "Value": 1.0
+                },
+                {
+                    "Interpolation": "Constant",
+                    "Time": 1.0,
+                    "Value": 0.0
+                }
+            ],
+            "TargetName": "",
+            "Type": "Fade"
+        }
+    ],
+    "Version": 2
+}

@@ -89,6 +89,21 @@ FMatrix UCameraComponent::GetViewMatrix() const
     return InverseTranslation * InverseRotation;
 }
 
+void UCameraComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
+{
+    DesiredView.Location = GetWorldLocation();
+    DesiredView.Rotation = GetWorldRotation();
+    DesiredView.FOV = FieldOfView;
+    DesiredView.AspectRatio = AspectRatio;
+    DesiredView.ProjectionMode = bIsOrthogonal ? EProjectionMode::Orthographic : EProjectionMode::Perspective;
+    DesiredView.OrthoWidth = OrthoWidth;
+    DesiredView.NearClipPlane = NearClipPlane;
+    DesiredView.FarClipPlane = FarClipPlane;
+
+    // Camera 설정을 이번 POV에 값으로 복사해 Camera Cache에 함께 보관한다.
+    DesiredView.PostProcessSettings = PostProcessSettings;
+}
+
 FCameraProjection UCameraComponent::GetProjectionSettings() const
 {
     return {bIsOrthogonal ? EProjectionMode::Orthographic : EProjectionMode::Perspective, FieldOfView, OrthoWidth, NearClipPlane, FarClipPlane};

@@ -9,6 +9,7 @@ ECollisionResponse FCollisionResponseContainer::GetResponse(ECollisionChannel Ch
 	case ECollisionChannel::WorldStatic: Value = WorldStatic; break;
 	case ECollisionChannel::WorldDynamic: Value = WorldDynamic; break;
 	case ECollisionChannel::Pawn: Value = Pawn; break;
+	case ECollisionChannel::Camera: Value = Camera; break;
 	default: return ECollisionResponse::Ignore;
 	}
 	return static_cast<ECollisionResponse>(std::clamp(Value, 0, 2));
@@ -21,12 +22,13 @@ void FCollisionResponseContainer::SetResponse(ECollisionChannel Channel, ECollis
 	case ECollisionChannel::WorldStatic: WorldStatic = static_cast<int32>(Response); break;
 	case ECollisionChannel::WorldDynamic: WorldDynamic = static_cast<int32>(Response); break;
 	case ECollisionChannel::Pawn: Pawn = static_cast<int32>(Response); break;
+	case ECollisionChannel::Camera: Camera = static_cast<int32>(Response); break;
 	}
 }
 
 void FCollisionResponseContainer::SetAllResponses(ECollisionResponse Response)
 {
-	WorldStatic = WorldDynamic = Pawn = static_cast<int32>(Response);
+	WorldStatic = WorldDynamic = Pawn = Camera = static_cast<int32>(Response);
 }
 
 FCollisionFilterData FCollisionFilterData::FromSettings(ECollisionChannel Channel, const FCollisionResponseContainer& Responses, const AActor* Owner)

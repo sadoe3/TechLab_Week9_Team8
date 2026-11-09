@@ -18,6 +18,7 @@ class USceneComponent : public UActorComponent
 
 	REFLECT_START(ClassName)
 		PROPERTY(Transform)
+		PROPERTY(bAbsoluteRotation)
 		REFLECT_END()
 
 public:
@@ -33,6 +34,9 @@ public:
 
 	const FRotator& GetRelativeRotation() const { return Transform.Rotation; }
 	void SetRelativeRotation(const FRotator& InRotation);
+	bool IsUsingAbsoluteRotation() const { return bAbsoluteRotation; }
+	// 회전 수치는 유지하고 해석만 전환한다. Absolute에서는 Transform.Rotation이 월드 회전이다.
+	void SetUsingAbsoluteRotation(bool bInAbsoluteRotation);
 	void SetRelativeLocationAndRotation(const FVector& NewLocation, const FRotator& NewRotation);
 	const FVector& GetRelativeScale3D() const { return Transform.Scale; }
 	void SetRelativeScale3D(const FVector& InScale);
@@ -46,6 +50,15 @@ public:
 	// Attatch-To
 	USceneComponent* GetAttachParent() const { return AttachParent; }
 	const TArray<USceneComponent*>& GetAttachChildren() const { return AttachChildren; }
+
+	// todo: 현재는 socket의 기능이 구현되어 있지 않아서, 임시적으로 이 방식을 통해 socket의 개념을 적용하였다.
+	// todo: 나중에 scoket이 구현되면, 이 함수는 제거해야한다 (현재 이 방식을 이용하면 socket을 최대 1개만 사용할 수 있기때문)
+	// 이 함수는 자식의 상대 변환이 기준으로 삼는 월드 변환을 반환한다.
+	// 기본은 이 Component의 월드 변환이다.
+	FTransform GetTransformForAttachment() const;
+	virtual FRotator GetRotationForAttachment() const;
+	virtual FVector GetLocationForAttachment() const;
+
 	void SetupAttachment(USceneComponent* InParent, EAttachmentRule Rule = EAttachmentRule::KeepRelative);
 	void DetachFromParent(EAttachmentRule Rule = EAttachmentRule::KeepRelative);
 

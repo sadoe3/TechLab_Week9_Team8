@@ -5,6 +5,8 @@
 #include "Text/Font.h"
 
 #include "RenderingInfo.h"
+#include "Buffer.h"
+#include "PipelineState.h"
 #include "ViewMode.h"
 #include "LightInfo.h"
 #include "Occlusion/GPUOcclusion.h"
@@ -19,6 +21,12 @@ class FViewport;
 class FSceneRenderer;
 class UWorld;
 struct FSceneView;
+// 공통 GPU 패스 타입
+class FFogRenderer;
+class FSkyboxRenderer;
+class FFXAARenderer;
+class FGammaEncodeRenderer;
+class FDepthViewRenderer;
 
 // Directional의 기존 Depth 셰이더와 b0 크기를 공유하되, 별도 버퍼에 올린다.
 struct FShadowDepthPassConstants
@@ -92,7 +100,12 @@ enum class ESceneMeshPass : uint8 { Color, DepthPrepass, OpaqueAfterPrepass };
 class FRenderer
 {
 public:
+	// GPU 패스 자원의 수명 경계
+	FRenderer();
+	~FRenderer();
 	bool Init();
+	// 공통 장면 GPU 패스 초기화
+	bool InitScenePasses();
 	uint32 AllocateShadowResources(bool bEditorWorld);
 	void ReleaseShadowResources(uint32 Index);
 	const FShadowResources* GetShadowResources(uint32 Index) const;
@@ -106,6 +119,21 @@ public:
 	void SetViewMode(const FViewRenderMode& Mode);
 	void SetLighting(const FLightingConstants& GlobalLights, const TArray<FPointLightInfo>& PointLights, const TArray<FSpotLightInfo>& SpotLights);
 
+	// 장면 깊이·조명 컬링·메시 출력
+	void RenderGeometryPass(FViewport& Viewport, const FSceneView& View, const FSceneViewRenderSettings& Settings, const FDirectionalLightInfo& DirectionalLight);
+
+	// 장면 색상 위 안개 합성
+	void RenderFogPass(UWorld& World, const FRenderingInfo& SceneInfo, const FSceneView& View);
+
+	// 장면 색상 위 HUD 합성
+	void RenderHudPass(FViewport& Viewport, const FSceneView& View);
+
+	// 표시용 색 변환·후처리 출력
+	void RenderOutputPass(FViewport& Viewport, const FSceneView& View, const FSceneViewRenderSettings& Settings);
+	// HUD와 텍스트까지 출력한 최종 View 위에 페이드를 합성한다.
+	void RenderCameraFadePass(FViewport& Viewport, const FSceneView& View);
+	// HUD와 텍스트 위에 검은 띠를 합성한다. Fade보다 먼저 호출한다.
+	void RenderCameraLetterBoxPass(FViewport& Viewport, const FSceneView& View);
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
 
@@ -152,6 +180,21 @@ public:
 	void CullLights(FTileLightCullingResources& Resources, const FMatrix& Projection, FTexture2D* Depth, const TArray<FCullingLight>& Lights, uint32 Width, uint32 Height, bool bVisualizeLightCount);
 
 private:
+	bool InitCameraFadePass();
+	FPipelineState CameraFadePipelineState;
+	TUniquePtr<FConstantBuffer> CameraFadeCB;
+
+	bool InitCameraLetterBoxPass();
+	FPipelineState CameraLetterBoxPipelineState;
+	TUniquePtr<FConstantBuffer> CameraLetterBoxCB;
+
+	// 공통 GPU 패스 자원 소유
+	TUniquePtr<FFogRenderer> FogRenderer;
+	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;
+	TUniquePtr<FFXAARenderer> FXAARenderer;
+	TUniquePtr<FGammaEncodeRenderer> GammaEncodeRenderer;
+	TUniquePtr<FDepthViewRenderer> DepthViewRenderer;
+
 	std::array<TUniquePtr<FShadowResources>, MaxShadowResourceSlots> WorldShadowResources;
 	uint32 NextShadowResourceIndex = 1;
 	// FIFO 소비용 배열의 용량만 재사용하며 매 View의 패킷 값은 새로 채운다.
@@ -175,8 +218,8 @@ private:
 	uint32 PerObjectSlotCapacity = 0;
 	bool bUsePerObjectSlots = false;
 	bool bObjectConstantsPrepared = false;
-	UMaterial* LastMaterial;
-	UStaticMesh* LastMesh;
+	UMaterial* LastMaterial = nullptr;
+	UStaticMesh* LastMesh = nullptr;
 
 	FShaderProgram* ViewModeShader = nullptr;
 	FShaderProgram* ViewModeNormalShader = nullptr;

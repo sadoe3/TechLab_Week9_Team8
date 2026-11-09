@@ -31,6 +31,18 @@ struct FViewRenderMode
 	EShadingModel ShadingModel = EShadingModel::Phong;
 };
 
+// 공통 장면 렌더 옵션
+struct FSceneViewRenderSettings
+{
+	bool bDrawPrimitives = true;
+	bool bExponentialHeightFog = true;
+	bool bVisualizeTileLightCount = false;
+	bool bEnableFXAA = true;
+	bool bDepthView = false;
+	bool bToneMapping = true;
+	float ExposureEV = 0.6f;
+};
+
 inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe", "WorldNormal"};
 inline constexpr const char* LightingModelNames[] = { "Lambert", "Phong", "BlinnPhong" };
 inline constexpr const char* ShadingModelNames[] = { "Gouraud", "Phong" };

@@ -2,9 +2,9 @@
 
 #include "Engine.h"
 #include "Engine/Viewport.h"
-#include "Render/GammaEncodeRenderer.h"
 #include "Render/SceneRenderer.h"
-#include "Render/FogRenderer.h"
+#include "Text/TextRenderer.h"
+
 class UGameEngine : public UEngine
 {
 	DECLARE_CLASS(UGameEngine, UEngine)
@@ -31,9 +31,12 @@ private:
 	// 실행 World의 비소유 참조
 	UWorld* GameWorld = nullptr;
 
-	// 게임 화면과 출력 자원 소유
+	// 게임 화면·장면 자료·텍스트 출력 자원
 	TUniquePtr<FViewport> GameViewport;
-	TUniquePtr<FGammaEncodeRenderer> GammaEncodeRenderer;
 	FSceneRenderer SceneRenderer;
-	TUniquePtr<FFogRenderer> FogRenderer;
+
+	// 게임 노출값 유지·FXAA 활성화
+	FSceneViewRenderSettings RenderSettings{ .ExposureEV = 0.0f };
+
+	TUniquePtr<FTextRenderer> TextRenderer;
 };

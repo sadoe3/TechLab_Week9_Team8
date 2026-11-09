@@ -43,6 +43,7 @@ class UPrimitiveComponent :public USceneComponent
 		PROPERTY(CollisionResponses.WorldStatic)
 		PROPERTY(CollisionResponses.WorldDynamic)
 		PROPERTY(CollisionResponses.Pawn)
+		PROPERTY(CollisionResponses.Camera)
 	REFLECT_END()
 public:
 	UPrimitiveComponent();

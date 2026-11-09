@@ -45,7 +45,7 @@ FSwapchain::FSwapchain(FRenderDevice* InRenderDevice, FWindow* InWindow)
 	Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	// ALLOW_TEARING은 전체화면 전환과 함께 쓸 수 없으므로 둘 중 하나만 지정한다.
-	bAllowTearing = QueryTearingSupport(RenderDevice->GetFactory());
+	bAllowTearing = false;
 	Desc.Flags = bAllowTearing
 		? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
 		: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;

@@ -1,0 +1,23 @@
+{
+    "Steps": [
+        {
+            "Action": "Wait",
+            "Duration": 1.0,
+            "Params": {},
+            "TargetName": ""
+        },
+        {
+            "Action": "Wait",
+            "Duration": 2.0,
+            "Params": {},
+            "TargetName": ""
+        },
+        {
+            "Action": "Finish",
+            "Duration": 0.0,
+            "Params": {},
+            "TargetName": ""
+        }
+    ],
+    "Version": 1
+}

@@ -1,10 +1,12 @@
 #include "EnginePCH.h"
 #include "RacingCar.h"
+#include "GameFramework/SpringArmComponent.h"
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ScriptComponent.h"
 #include "Component/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Input/InputSystem.h"
@@ -19,6 +21,9 @@
 #include "Text/TextRenderer.h"
 #include <cmath>
 #include <format>
+#include <Core/TimeDilation.h>
+#include <Cinematic/SequencePlayer.h>
+
 
 namespace
 {
@@ -80,9 +85,16 @@ ARacingCar::ARacingCar()
 	UStaticMeshComponent* VehicleMesh = GetStaticMeshComponent();
 
 	// Capsule과 같은 부모에 부착하여 충돌 도형의 상대 회전과 카메라를 분리한다.
+	USpringArmComponent* CameraArm = CreateDefaultSubobject<USpringArmComponent>("VehicleSpringArm");
+	CameraArm->SetupAttachment(VehicleMesh);
+	CameraArm->SetRelativeLocation(FVector(0.0f, 0.0f, 2.0f));
+	CameraArm->SetTargetArmLength(4.0f);
+
 	UCameraComponent* Camera = VehicleCamera = CreateDefaultSubobject<UCameraComponent>("VehicleCamera");
-	Camera->SetupAttachment(VehicleMesh);
-	Camera->SetRelativeLocation(FVector(-4.0f, 0.0f, 2.0f));
+	Camera->SetFieldOfView(91.5f);
+	Camera->SetupAttachment(CameraArm);
+	Camera->SetRelativeLocation(FVector::ZeroVector);
+	// 팔은 수평으로 뻗고 Camera만 기울여 기존 구도를 유지한다.
 	Camera->SetRelativeRotation(FRotator(15.0f, 0.0f, 0.0f));
 
 	// 기본 카메라 입력 비활성화
@@ -159,6 +171,10 @@ ARacingCar::ARacingCar()
 void ARacingCar::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
+	FTimeDilation::OnSlomoFinished.AddRaw(this, &ARacingCar::HandleSlomoFinished);
+
 	if (IsPendingDestroy()) return;
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
@@ -167,7 +183,10 @@ void ARacingCar::BeginPlay()
 	}
 
 	// PIE와 게임 빌드에서 이 차량에 붙은 카메라를 시점으로 선택합니다.
-	GetWorld()->SetViewTarget(this);
+	if (!FSequencePlayer::IsPlaying())
+	{
+		GetWorld()->SetViewTarget(this);
+	}
 	
 	ScoreText = Cast<UTextRenderComponent>(FindComponentByName("ScoreText"));
 	if (ScoreText) ScoreText->SetDrawOnTop(true);
@@ -220,12 +239,38 @@ void ARacingCar::BeginPlay()
 	FinishScoreLabelText = FindLeaderboardText("FinishScoreLabelText");
 	FinishTimeLabelText = FindLeaderboardText("FinishTimeLabelText");
 	ResultMenuPointerText = FindLeaderboardText("ResultMenuPointerText");
+	CreditsMenuText = FindLeaderboardText("CreditsMenuText");
+
+	// 크레딧 화면도 같은 방식으로 다시 연결합니다.
+	CreditsTexts.Reset();
+	const auto FindCreditsText = [this](const char* Name)
+	{
+		auto* Text =
+			Cast<UTextRenderComponent>(FindComponentByName(Name));
+		if (Text)
+		{
+			Text->SetDrawOnTop(true);
+			Text->SetVisible(false);
+			CreditsTexts.Add(Text);
+		}
+		return Text;
+	};
+
+	CreditsTitleText = FindCreditsText("CreditsScreenTitle");
+	CreditsTeamText = FindCreditsText("CreditsTeam");
+	CreditsMemberAText = FindCreditsText("CreditsMemberA");
+	CreditsMemberBText = FindCreditsText("CreditsMemberB");
+	CreditsMemberCText = FindCreditsText("CreditsMemberC");
+	CreditsMemberDText = FindCreditsText("CreditsMemberD");
+	CreditsBackText = FindCreditsText("CreditsBack");
+
 	bLeaderboardVisible = false;
+	bCreditsVisible = false;
 	SelectedResultMenu = 0;
 	bWaitingForConfirmRelease = true;
 	UpdateLeaderboardLayout();
 
-	BaseFieldOfView = VehicleCamera ? VehicleCamera->GetFieldOfView() : 0.0f;
+	BaseFieldOfView = 91.5f;
 	LastAppliedFieldOfView = -1.0f;
 	UpdateHudForFieldOfView();
 
@@ -330,6 +375,28 @@ void ARacingCar::CreateLeaderboardHud()
 	RetryText = CreateText("RetryText", "다시 도전");
 	MainMenuText = CreateText("MainMenuText", "메인 메뉴");
 	ResultMenuPointerText = CreateText("ResultMenuPointerText", ">");
+	CreditsMenuText = CreateText("CreditsMenuText", "크레딧");
+
+	// 크레딧 화면은 리더보드를 숨긴 자리에 표시합니다.
+	const auto CreateCreditsText = [this](const char* Name, const FString& Label)
+	{
+		auto* Text = CreateDefaultSubobject<UTextRenderComponent>(Name);
+		Text->SetupAttachment(VehicleCamera);
+		Text->SetRelativeLocation(FVector(3.0f, 0.0f, 0.0f));
+		Text->SetText(Label);
+		Text->SetDrawOnTop(true);
+		Text->SetVisible(false);
+		CreditsTexts.Add(Text);
+		return Text;
+	};
+
+	CreditsTitleText = CreateCreditsText("CreditsScreenTitle", "크레딧");
+	CreditsTeamText = CreateCreditsText("CreditsTeam", "Team 8");
+	CreditsMemberAText = CreateCreditsText("CreditsMemberA", "최강인");
+	CreditsMemberBText = CreateCreditsText("CreditsMemberB", "고민수");
+	CreditsMemberCText = CreateCreditsText("CreditsMemberC", "권동현");
+	CreditsMemberDText = CreateCreditsText("CreditsMemberD", "양효정");
+	CreditsBackText = CreateCreditsText("CreditsBack", "> 돌아가기");
 }
 
 void ARacingCar::UpdateLeaderboardText()
@@ -382,12 +449,25 @@ void ARacingCar::UpdateLeaderboardLayout()
 	PlaceText(FinishScoreText, RightColumn, -0.63f, 0.22f, true);
 	PlaceText(FinishTimeLabelText, LeftColumn, -0.90f, 0.18f, false);
 	PlaceText(FinishTimeText, RightColumn, -0.90f, 0.22f, true);
-	PlaceText(RetryText, -2.5f, -1.32f, 0.19f, false);
-	PlaceText(MainMenuText, -1.25f, -1.32f, 0.19f, false);
+	const float MenuBaseline = -1.32f;
+	const float MenuHorizontal[] = { -2.5f, -1.25f, 0.0f };
+	PlaceText(RetryText, MenuHorizontal[0], MenuBaseline, 0.19f, false);
+	PlaceText(MainMenuText, MenuHorizontal[1], MenuBaseline, 0.19f, false);
+	PlaceText(CreditsMenuText, MenuHorizontal[2], MenuBaseline, 0.19f, false);
 
 	// 선택 표시는 별도로 움직여 메뉴 글자의 위치가 바뀌지 않게 합니다.
-	const float PointerHorizontal = SelectedResultMenu == 0 ? -2.75f : -1.5f;
-	PlaceText(ResultMenuPointerText, PointerHorizontal, -1.32f, 0.19f, false);
+	const int32 MenuIndex = FMath::Clamp(SelectedResultMenu, 0, 2);
+	PlaceText(ResultMenuPointerText,
+		MenuHorizontal[MenuIndex] - 0.25f, MenuBaseline, 0.19f, false);
+
+	// 크레딧 화면은 리더보드와 같은 왼쪽 기준선을 씁니다.
+	PlaceText(CreditsTitleText, LeftColumn, 1.13f, 0.46f, false);
+	PlaceText(CreditsTeamText, LeftColumn, 0.60f, 0.24f, false);
+	PlaceText(CreditsMemberAText, LeftColumn, 0.20f, 0.18f, false);
+	PlaceText(CreditsMemberBText, LeftColumn, -0.10f, 0.18f, false);
+	PlaceText(CreditsMemberCText, LeftColumn, -0.40f, 0.18f, false);
+	PlaceText(CreditsMemberDText, LeftColumn, -0.70f, 0.18f, false);
+	PlaceText(CreditsBackText, LeftColumn, MenuBaseline, 0.19f, false);
 }
 
 void ARacingCar::UpdateLeaderboardHud()
@@ -415,6 +495,7 @@ void ARacingCar::UpdateLeaderboardHud()
 	if (bShouldShow)
 	{
 		// 화면을 켜기 전에 기록과 초기 메뉴 선택을 준비합니다.
+		bCreditsVisible = false;
 		SelectedResultMenu = 0;
 		UpdateLeaderboardText();
 		bWaitingForConfirmRelease = true;
@@ -433,6 +514,11 @@ void ARacingCar::UpdateLeaderboardHud()
 	{
 		Text->SetVisible(bShouldShow);
 	}
+	// 결과 화면을 닫을 때 크레딧이 남지 않게 합니다.
+	for (UTextRenderComponent* Text : CreditsTexts)
+	{
+		if (Text) Text->SetVisible(false);
+	}
 	bLeaderboardVisible = bShouldShow;
 }
 
@@ -448,18 +534,37 @@ void ARacingCar::HandleLeaderboardInput()
 		return;
 	}
 
+	// 크레딧 화면에서는 돌아가기만 받습니다.
+	if (bCreditsVisible)
+	{
+		if (!FInputSystem::IsKeyPressed(EKeyCode::Enter)) return;
+		SetCreditsVisible(false);
+		bWaitingForConfirmRelease = true;
+		return;
+	}
+
 	const bool bUp = FInputSystem::IsKeyPressed(EKeyCode::W)
 		|| FInputSystem::IsKeyPressed(EKeyCode::Up);
 	const bool bDown = FInputSystem::IsKeyPressed(EKeyCode::S)
 		|| FInputSystem::IsKeyPressed(EKeyCode::Down);
-	// 두 메뉴 사이를 이동하며, 위아래 동시 입력은 무시합니다.
+	// 세 메뉴를 순환하며, 위아래 동시 입력은 무시합니다.
 	if (bUp != bDown)
 	{
-		SelectedResultMenu = 1 - SelectedResultMenu;
+		const int32 Step = bDown ? 1 : 2;
+		SelectedResultMenu = (SelectedResultMenu + Step) % 3;
 		UpdateLeaderboardLayout();
 	}
 
 	if (!FInputSystem::IsKeyPressed(EKeyCode::Enter)) return;
+
+	// 크레딧은 씬을 바꾸지 않고 같은 화면 위에서 전환합니다.
+	if (SelectedResultMenu == 2)
+	{
+		SetCreditsVisible(true);
+		bWaitingForConfirmRelease = true;
+		return;
+	}
+
 	if (!GEngine) return;
 
 	// 다시 도전은 차량·코인·체크포인트를 초기화하도록 씬을 다시 읽습니다.
@@ -471,9 +576,25 @@ void ARacingCar::HandleLeaderboardInput()
 	GEngine->RequestSceneChange(GetWorld(), ScenePath);
 }
 
+void ARacingCar::SetCreditsVisible(bool bVisible)
+{
+	bCreditsVisible = bVisible;
+
+	// 리더보드와 크레딧은 같은 자리를 쓰므로 한쪽만 보입니다.
+	for (UTextRenderComponent* Text : LeaderboardTexts)
+	{
+		if (Text) Text->SetVisible(!bVisible);
+	}
+	for (UTextRenderComponent* Text : CreditsTexts)
+	{
+		if (Text) Text->SetVisible(bVisible);
+	}
+}
+
 void ARacingCar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateReverseCameraLag();
 	UpdateHudForFieldOfView();
 	UpdateRaceTimeText();
 	// 상태를 먼저 갱신한 뒤 리더보드 메뉴 입력을 처리합니다.
@@ -490,6 +611,41 @@ void ARacingCar::Tick(float DeltaTime)
 	SpeedNeedlePivot->SetRelativeRotation(FRotator(0.0f, 0.0f, Roll));
 }
 
+void ARacingCar::UpdateReverseCameraLag()
+{
+	const FVector Velocity = GetVelocity();
+	const float Yaw = FMath::DegreesToRadians(GetRootComponent()->GetWorldRotation().Yaw);
+	const bool bReversing = Velocity.X * std::cos(Yaw) + Velocity.Y * std::sin(Yaw) < 0.0f;
+	if (bReversing == bCameraLagSuppressedForReverse) return;
+
+	USpringArmComponent* Arm = Cast<USpringArmComponent>(FindComponentByName("VehicleSpringArm"));
+	if (!Arm) return;
+
+	if (bReversing)
+	{
+		bCameraLagEnabledBeforeReverse = Arm->IsCameraLagEnabled();
+		if (bCameraLagEnabledBeforeReverse)
+		{
+			APlayerCameraManager* Manager = GetWorld()->GetPlayerCameraManager();
+			if (Manager && Manager->GetViewTarget() == this)
+			{
+				FViewTargetTransitionParams Params;
+				Params.BlendTime = 0.2f;
+				Params.BlendFunction = EViewTargetBlendFunction::Cubic;
+				// Lag 해제 전 화면을 고정하고, PostPhysics 이후 갱신되는 차량 POV로 전환한다.
+				Manager->BlendToCurrentViewTarget(Params);
+			}
+			Arm->SetEnableCameraLag(false);
+		}
+	}
+	else if (Arm->IsCameraLagEnabled() != bCameraLagEnabledBeforeReverse)
+	{
+		// 현재 위치에서 Lag를 다시 시작한다. 진행 중인 블렌드는 새 POV를 계속 따라간다.
+		Arm->SetEnableCameraLag(bCameraLagEnabledBeforeReverse);
+	}
+	bCameraLagSuppressedForReverse = bReversing;
+}
+
 void ARacingCar::HandleScoreChanged(int32 NewScore)
 {
 	ScoreText->SetText(std::to_string(NewScore));
@@ -502,6 +658,16 @@ void ARacingCar::HandleCountdownChanged(const FString& NewCountdown)
 
 void ARacingCar::EndPlay()
 {
+	if (bCameraLagSuppressedForReverse)
+	{
+		if (USpringArmComponent* Arm = Cast<USpringArmComponent>(FindComponentByName("VehicleSpringArm")))
+		{
+			if (Arm->IsCameraLagEnabled() != bCameraLagEnabledBeforeReverse)
+				Arm->SetEnableCameraLag(bCameraLagEnabledBeforeReverse);
+		}
+		bCameraLagSuppressedForReverse = false;
+	}
+	FTimeDilation::OnSlomoFinished.RemoveAll(this);
 	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
 	{
 		Capsule->OnComponentHit.RemoveAll(this);
@@ -514,4 +680,9 @@ void ARacingCar::EndPlay()
 void ARacingCar::HandleComponentHit(UPrimitiveComponent* HitComponent, UPrimitiveComponent* OtherComponent, const FHitResult& Hit)
 {
 	SetVelocity(FVector::ZeroVector);
+}
+
+void ARacingCar::HandleSlomoFinished()
+{
+	FGameHud::NotifyFinishUIClosed();
 }

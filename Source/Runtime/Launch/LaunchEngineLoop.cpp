@@ -18,10 +18,10 @@
 #include "Core/SplashScreen.h"
 #include "Core/Stats/LightweightStats.h"
 #include "Core/Async/TaskPool.h"
-
 #include "UObject/UObjectGlobals.h"
 #include "Component/ActorComponent.h"
 #include "Engine/World.h"
+#include "Core/TimeDilation.h"
 #include "UObject/UObjectIterator.h"
 
 namespace
@@ -176,6 +176,7 @@ bool FEngineLoop::Tick()
 		SCOPE_CYCLE_COUNTER(STAT_EngineTick);
 		// 프레임 시작·실행
 		const float DeltaTime = EngineTimer::GetDeltaTime();
+		FTimeDilation::Tick();
 		GEngine->PreTick(DeltaTime);
 		GEngine->Tick(DeltaTime);
 		// 렌더 참조 정리 후 종료 요청 처리

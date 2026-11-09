@@ -16,6 +16,7 @@
 #include "Asset/LOD/StaticMeshLODSelector.h"
 #include "Engine/EngineTypes.h"
 #include "Containers/Queue.h"
+#include "Camera/CameraTypes.h"
 
 //class ACameraActor;
 class ULevel;
@@ -23,7 +24,9 @@ class UBillboardComponent;
 class UEngine;
 class FJsonArchive;
 class FLuaRuntime;
+class APlayerCameraManager;
 struct FLODViewContext;
+struct FCameraTransitionCurve;
 
 struct FRenderStats
 {
@@ -67,11 +70,18 @@ public:
 
 	void GatherRenderPackets(FRenderQueue& RenderArray, const FLODViewContext* LODView = nullptr, const FFrustumPlanes* Frustum = nullptr, FRenderer* Renderer = nullptr);
 
-	// 카메라가 있는 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
-	bool SetViewTarget(AActor* Actor);
+	// 같은 World의 액터를 선택합니다. nullptr이면 Fallback으로 복귀하며 실패 시 기존 선택을 유지합니다.
+	bool SetViewTarget(AActor* Actor, const FViewTargetTransitionParams& Params = {});
+	// 사용자 시간 곡선을 사용하는 시점 전환
+	bool SetViewTargetWithCurve(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve& Curve);
+	// 외부 시간축의 두 대상과 전환 경과 시간 전달
+	bool SetViewTargetBlendAtTime(AActor* From, AActor* To, const FViewTargetTransitionParams& Params, float ElapsedTime);
+	void SetCameraInputEnabled(bool bEnabled);
 
 	// 현재 선택된 시점 제공 액터입니다.
-	AActor* GetViewTarget() const { return MainViewTarget; }
+	AActor* GetViewTarget() const;
+	AActor* GetPendingViewTarget()const;
+	APlayerCameraManager* GetPlayerCameraManager() const { return PlayerCameraManager; }
 
 	// 선택된 액터의 첫 카메라 컴포넌트를 반환합니다.
 	UCameraComponent* GetMainCamera() const;
@@ -175,6 +185,9 @@ private:
 
 	// 같은 World의 액터에서 첫 카메라 컴포넌트를 찾습니다.
 	UCameraComponent* FindCameraComponent(AActor* Actor) const;
+	
+	// 출발/도착 대상 입력 정책과 틱처리를 반영
+	void SyncCameraTargets();
 
 	EWorldType WorldType = EWorldType::None;
 
@@ -200,8 +213,11 @@ private:
 	// World가 생성·보관하는 최종 복귀용 카메라 액터입니다.
 	ACameraActor* FallbackCamera = nullptr;
 
-	// 현재 시점을 제공하는 액터입니다. 배치 액터의 소유권은 가져오지 않습니다.
-	AActor* MainViewTarget = nullptr;
+	// Level 밖에서 World가 생성·해제하며 시점 선택과 최종 캐시를 관리합니다.
+	APlayerCameraManager* PlayerCameraManager = nullptr;
+	// TODO: PlayerController 도입 시 Viewport의 입력 허용과 플레이어 입력 제어 책임을 분리하고,
+	// 이 상태와 SetCameraInputEnabled의 카메라 적용 처리를 World 밖으로 옮긴다. 현재는 대상 전환 간 입력 상태 보존용이다.
+	bool bCameraInputEnabled = true;
 
 	ULevel* PersistentLevel = nullptr;
 	ULevel* CurrentLevel = nullptr;
@@ -243,4 +259,7 @@ private:
 
 	// World 전용 Lua VM 소유
 	TUniquePtr<FLuaRuntime> LuaRuntime;
+
+	// 대상 검증과 카메라 동기화의 공통 경로
+	bool SetViewTargetInternal(AActor* Actor, const FViewTargetTransitionParams& Params, const FCameraTransitionCurve* Curve);
 };

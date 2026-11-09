@@ -10,6 +10,7 @@
 
 class UWorld;
 class ULevel;
+struct FMinimalViewInfo;
 
 class AActor : public UObject
 {
@@ -25,6 +26,9 @@ public:
 	// 액터 자신의 로직. 컴포넌트는 각자의 PrimaryComponentTick으로 따로 실행된다.
 	virtual void Tick(float DeltaTime) {}
 	virtual void EndPlay() {};
+
+	// View Target의 기본 시점. 특수한 시점이 필요한 Actor는 재정의한다.
+	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult);
 
 	// 게임 실행중인가
 	bool CanRunGameplay() const;
